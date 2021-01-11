@@ -591,36 +591,14 @@ namespace System.Security.Cryptography
 
         private SafeRsaHandle GenerateKey()
         {
-            SafeRsaHandle key = Interop.Crypto.RsaCreate();
-            bool generated = false;
+            SafeRsaHandle rsa;
 
-            Interop.Crypto.CheckValidOpenSslHandle(key);
-
-            try
+            using (SafeEvpPKeyHandle pkey = Interop.Crypto.RsaGenerateKey(KeySize))
             {
-                using (SafeBignumHandle exponent = Interop.Crypto.CreateBignum(DefaultExponent))
-                {
-                    // The documentation for RSA_generate_key_ex does not say that it returns only
-                    // 0 or 1, so the call marshals it back as a full Int32 and checks for a value
-                    // of 1 explicitly.
-                    int response = Interop.Crypto.RsaGenerateKeyEx(
-                        key,
-                        KeySize,
-                        exponent);
-
-                    CheckBoolReturn(response);
-                    generated = true;
-                }
-            }
-            finally
-            {
-                if (!generated)
-                {
-                    key.Dispose();
-                }
+                rsa = Interop.Crypto.EvpPkeyGetRsa(pkey);
             }
 
-            return key;
+            return rsa;
         }
 
         protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm) =>
