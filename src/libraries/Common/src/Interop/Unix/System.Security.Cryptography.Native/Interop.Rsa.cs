@@ -93,7 +93,20 @@ internal static partial class Interop
         internal static extern int RsaGenerateKeyEx(SafeRsaHandle rsa, int bits, SafeBignumHandle e);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_RsaGenerateKey")]
-        internal static extern SafeEvpPKeyHandle RsaGenerateKey(int keySize);
+        private static extern SafeEvpPKeyHandle CryptoNative_RsaGenerateKey(int keySize);
+
+        internal static SafeEvpPKeyHandle RsaGenerateKey(int keySize)
+        {
+            SafeEvpPKeyHandle pkey = CryptoNative_RsaGenerateKey(keySize);
+
+            if (pkey.IsInvalid)
+            {
+                pkey.Dispose();
+                throw CreateOpenSslCryptographicException();
+            }
+
+            return pkey;
+        }
 
         internal static bool RsaSign(int type, ReadOnlySpan<byte> m, int m_len, Span<byte> sigret, out int siglen, SafeRsaHandle rsa) =>
             RsaSign(type, ref MemoryMarshal.GetReference(m), m_len, ref MemoryMarshal.GetReference(sigret), out siglen, rsa);

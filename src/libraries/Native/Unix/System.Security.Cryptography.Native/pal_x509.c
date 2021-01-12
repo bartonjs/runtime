@@ -32,7 +32,7 @@ c_static_assert(PAL_X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY == X509_V_ERR_U
 c_static_assert(PAL_X509_V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE == X509_V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE);
 c_static_assert(PAL_X509_V_ERR_CERT_CHAIN_TOO_LONG == X509_V_ERR_CERT_CHAIN_TOO_LONG);
 c_static_assert(PAL_X509_V_ERR_CERT_REVOKED == X509_V_ERR_CERT_REVOKED);
-c_static_assert(PAL_X509_V_ERR_INVALID_CA == X509_V_ERR_INVALID_CA);
+//c_static_assert(PAL_X509_V_ERR_INVALID_CA == X509_V_ERR_INVALID_CA);
 c_static_assert(PAL_X509_V_ERR_PATH_LENGTH_EXCEEDED == X509_V_ERR_PATH_LENGTH_EXCEEDED);
 c_static_assert(PAL_X509_V_ERR_INVALID_PURPOSE == X509_V_ERR_INVALID_PURPOSE);
 c_static_assert(PAL_X509_V_ERR_CERT_UNTRUSTED == X509_V_ERR_CERT_UNTRUSTED);
@@ -1115,7 +1115,10 @@ CryptoNative_X509ChainVerifyOcsp(X509_STORE_CTX* storeCtx, OCSP_REQUEST* req, OC
 
                     if (bio != NULL)
                     {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcast-qual"
                         if (i2d_OCSP_RESPONSE_bio(bio, resp))
+#pragma clang diagnostic pop
                         {
                             clearErr = 0;
                         }

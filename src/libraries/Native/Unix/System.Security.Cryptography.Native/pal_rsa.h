@@ -92,6 +92,8 @@ Returns 1 upon success, otherwise 0.
 */
 PALEXPORT int32_t CryptoNative_RsaGenerateKeyEx(RSA* rsa, int32_t bits, BIGNUM* e);
 
+PALEXPORT EVP_PKEY* CryptoNative_RsaGenerateKey(int32_t keySize);
+
 /*
 Shims the RSA_sign method.
 
