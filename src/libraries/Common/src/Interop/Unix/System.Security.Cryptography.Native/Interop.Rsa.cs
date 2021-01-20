@@ -89,9 +89,6 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_RsaSize")]
         internal static extern int RsaSize(SafeRsaHandle rsa);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_RsaGenerateKeyEx")]
-        internal static extern int RsaGenerateKeyEx(SafeRsaHandle rsa, int bits, SafeBignumHandle e);
-
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_RsaGenerateKey")]
         private static extern SafeEvpPKeyHandle CryptoNative_RsaGenerateKey(int keySize);
 
@@ -114,6 +111,38 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_RsaSign")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool RsaSign(int type, ref byte m, int m_len, ref byte sigret, out int siglen, SafeRsaHandle rsa);
+
+        internal static int RsaSignHashPkcs1(
+            SafeEvpPKeyHandle pkey,
+            IntPtr digest,
+            ReadOnlySpan<byte> hash,
+            Span<byte> destination)
+        {
+            int ret = CryptoNative_RsaSignHashPkcs1(
+                pkey,
+                digest,
+                ref MemoryMarshal.GetReference(hash),
+                hash.Length,
+                ref MemoryMarshal.GetReference(destination),
+                out int bytesWritten);
+
+            if (ret != 1)
+            {
+                Debug.Assert(ret == 0);
+                throw CreateOpenSslCryptographicException();
+            }
+
+            return bytesWritten;
+        }
+
+        [DllImport(Libraries.CryptoNative)]
+        private static extern int CryptoNative_RsaSignHashPkcs1(
+            SafeEvpPKeyHandle pkey,
+            IntPtr digest,
+            ref byte hash,
+            int hashLen,
+            ref byte dest,
+            out int sigLen);
 
         internal static bool RsaVerify(int type, ReadOnlySpan<byte> m, ReadOnlySpan<byte> sigbuf, SafeRsaHandle rsa)
         {

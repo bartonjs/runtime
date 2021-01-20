@@ -683,7 +683,6 @@ namespace System.Security.Cryptography
 
             if (padding.Mode == RSASignaturePaddingMode.Pkcs1)
             {
-                int algorithmNid = GetAlgorithmNid(hashAlgorithm);
                 SafeRsaHandle rsa = GetKey();
 
                 int bytesRequired = Interop.Crypto.RsaSize(rsa);
@@ -701,16 +700,17 @@ namespace System.Security.Cryptography
                     return false;
                 }
 
-                if (!Interop.Crypto.RsaSign(algorithmNid, hash, hash.Length, destination, out int signatureSize, rsa))
+                using (SafeEvpPKeyHandle key = DuplicateKeyHandle())
                 {
-                    throw Interop.Crypto.CreateOpenSslCryptographicException();
+                    bytesWritten = Interop.Crypto.RsaSignHashPkcs1(
+                        key,
+                        Interop.Crypto.GetDigestAlgorithm(hashAlgorithm.Name),
+                        hash,
+                        destination);
+
+                    Debug.Assert(bytesWritten == bytesRequired);
                 }
 
-                Debug.Assert(
-                    signatureSize == bytesRequired,
-                    $"RSA_sign reported signatureSize was {signatureSize}, when {bytesRequired} was expected");
-
-                bytesWritten = signatureSize;
                 return true;
             }
             else if (padding.Mode == RSASignaturePaddingMode.Pss)
