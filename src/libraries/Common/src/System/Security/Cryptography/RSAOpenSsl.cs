@@ -848,6 +848,37 @@ namespace System.Security.Cryptography
             return nid;
         }
 
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
+        /// <summary>
+        /// Obtain a SafeHandle version of an EVP_PKEY* which wraps an RSA* equivalent
+        /// to the current key for this instance.
+        /// </summary>
+        /// <returns>A SafeHandle for the RSA key in OpenSSL</returns>
+        private SafeEvpPKeyHandle DuplicateKeyHandle()
+        {
+            SafeRsaHandle currentKey = _key.Value;
+            SafeEvpPKeyHandle pkeyHandle = Interop.Crypto.EvpPkeyCreate();
+
+            try
+            {
+                // Wrapping our key in an EVP_PKEY will up_ref our key.
+                // When the EVP_PKEY is Disposed it will down_ref the key.
+                // So everything should be copacetic.
+                if (!Interop.Crypto.EvpPkeySetRsa(pkeyHandle, currentKey))
+                {
+                    throw Interop.Crypto.CreateOpenSslCryptographicException();
+                }
+
+                return pkeyHandle;
+            }
+            catch
+            {
+                pkeyHandle.Dispose();
+                throw;
+            }
+        }
+#endif
+
         private static Exception PaddingModeNotSupported() =>
             new CryptographicException(SR.Cryptography_InvalidPaddingMode);
 
