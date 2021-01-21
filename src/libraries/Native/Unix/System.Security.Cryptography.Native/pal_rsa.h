@@ -86,21 +86,18 @@ Returns the RSA modulus size in bytes.
 PALEXPORT int32_t CryptoNative_RsaSize(RSA* rsa);
 
 /*
-Shims the RSA_generate_key_ex method.
-
-Returns 1 upon success, otherwise 0.
+Generates an RSA-based EVP_PKEY public/private pair with a modulus of the specified size (in bits).
+The public exponent of this key is F4 (0x010001)
 */
-PALEXPORT int32_t CryptoNative_RsaGenerateKeyEx(RSA* rsa, int32_t bits, BIGNUM* e);
-
 PALEXPORT EVP_PKEY* CryptoNative_RsaGenerateKey(int32_t keySize);
 
 /*
-Shims the RSA_sign method.
+Signs a hash using RSA-SSA-PKCS#1_v1.5
 
 Returns 1 upon success, otherwise 0.
 */
 PALEXPORT int32_t
-CryptoNative_RsaSign(int32_t type, const uint8_t* m, int32_t mlen, uint8_t* sigret, int32_t* siglen, RSA* rsa);
+CryptoNative_RsaSignHashPkcs1(EVP_PKEY* pkey, const EVP_MD* digest, const uint8_t* hash, int32_t hashLen, uint8_t* dest, int32_t* sigLen);
 
 /*
 Shims the RSA_verify method.

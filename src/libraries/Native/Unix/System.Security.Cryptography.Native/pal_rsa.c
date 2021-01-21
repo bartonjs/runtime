@@ -144,11 +144,6 @@ int32_t CryptoNative_RsaSize(RSA* rsa)
     return RSA_size(rsa);
 }
 
-int32_t CryptoNative_RsaGenerateKeyEx(RSA* rsa, int32_t bits, BIGNUM* e)
-{
-    return RSA_generate_key_ex(rsa, bits, e, NULL);
-}
-
 EVP_PKEY* CryptoNative_RsaGenerateKey(int32_t keySize)
 {
     EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new_id(EVP_PKEY_RSA, NULL);
@@ -175,37 +170,55 @@ EVP_PKEY* CryptoNative_RsaGenerateKey(int32_t keySize)
 }
 
 int32_t
-CryptoNative_RsaSign(int32_t type, const uint8_t* m, int32_t mlen, uint8_t* sigret, int32_t* siglen, RSA* rsa)
+CryptoNative_RsaSignHashPkcs1(EVP_PKEY* pkey, const EVP_MD* digest, const uint8_t* hash, int32_t hashLen, uint8_t* dest, int32_t* sigLen)
 {
-    if (siglen == NULL)
+    if (sigLen == NULL)
     {
         assert(false);
-        return 0;
+        return -1;
     }
 
-    *siglen = 0;
+    *sigLen = 0;
 
-    if (HasNoPrivateKey(rsa))
+    if (pkey == NULL || digest == NULL || hash == NULL || hashLen < 0 || dest == NULL)
     {
-        ERR_PUT_error(ERR_LIB_RSA, RSA_F_RSA_SIGN, RSA_R_VALUE_MISSING, __FILE__, __LINE__);
-        return 0;
+        return -1;
     }
 
-    // Shared pointer to the metadata about the message digest algorithm
-    const EVP_MD* digest = EVP_get_digestbynid(type);
+    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(pkey, NULL);
 
-    // If the digest itself isn't known then RSA_R_UNKNOWN_ALGORITHM_TYPE will get reported, but
-    // we have to check that the digest size matches what we expect.
-    if (digest != NULL && mlen != EVP_MD_size(digest))
+    if (ctx == NULL)
     {
-        ERR_PUT_error(ERR_LIB_RSA, RSA_F_RSA_SIGN, RSA_R_INVALID_MESSAGE_LENGTH, __FILE__, __LINE__);
         return 0;
     }
 
-    unsigned int unsignedSigLen = 0;
-    int32_t ret = RSA_sign(type, m, Int32ToUint32(mlen), sigret, &unsignedSigLen, rsa);
-    assert(unsignedSigLen <= INT32_MAX);
-    *siglen = (int32_t)unsignedSigLen;
+    int ret = 0;
+
+    if (EVP_PKEY_sign_init(ctx) <= 0)
+    {
+        goto done;
+    }
+
+    if (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_PADDING) <= 0)
+    {
+        goto done;
+    }
+
+    if (EVP_PKEY_CTX_set_signature_md(ctx, digest) <= 0)
+    {
+        goto done;
+    }
+
+    size_t written;
+
+    if (EVP_PKEY_sign(ctx, dest, &written, hash, Int32ToSizeT(hashLen)) > 0)
+    {
+        ret = 1;
+        *sigLen = SizeTToInt32(written);
+    }
+
+done:
+    EVP_PKEY_CTX_free(ctx);
     return ret;
 }
 
