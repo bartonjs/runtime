@@ -123,17 +123,6 @@ CryptoNative_RsaPrivateDecrypt(int32_t flen, const uint8_t* from, uint8_t* to, R
     return RSA_private_decrypt(flen, from, to, rsa, openSslPadding);
 }
 
-int32_t CryptoNative_RsaSignPrimitive(int32_t flen, const uint8_t* from, uint8_t* to, RSA* rsa)
-{
-    if (HasNoPrivateKey(rsa))
-    {
-        ERR_PUT_error(ERR_LIB_RSA, RSA_F_RSA_NULL_PRIVATE_ENCRYPT, RSA_R_VALUE_MISSING, __FILE__, __LINE__);
-        return -1;
-    }
-
-    return RSA_private_encrypt(flen, from, to, rsa, RSA_NO_PADDING);
-}
-
 int32_t CryptoNative_RsaVerificationPrimitive(int32_t flen, const uint8_t* from, uint8_t* to, RSA* rsa)
 {
     return RSA_public_decrypt(flen, from, to, rsa, RSA_NO_PADDING);
