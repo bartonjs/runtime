@@ -678,81 +678,57 @@ namespace System.Security.Cryptography
 
             signature = null;
 
-            // Do not factor out getting _key.Value, since the key creation should not happen on
-            // invalid padding modes.
-
-            if (padding.Mode == RSASignaturePaddingMode.Pkcs1)
+            switch (padding.Mode)
             {
-                SafeRsaHandle rsa = GetKey();
+                case RSASignaturePaddingMode.Pkcs1:
+                case RSASignaturePaddingMode.Pss:
+                    break;
+                default:
+                    throw PaddingModeNotSupported();
+            }
 
-                int bytesRequired = Interop.Crypto.RsaSize(rsa);
+            SafeRsaHandle rsa = GetKey();
 
-                if (allocateSignature)
-                {
-                    Debug.Assert(destination.Length == 0);
-                    signature = new byte[bytesRequired];
-                    destination = signature;
-                }
+            int bytesRequired = Interop.Crypto.RsaSize(rsa);
 
-                if (destination.Length < bytesRequired)
-                {
-                    bytesWritten = 0;
-                    return false;
-                }
+            if (allocateSignature)
+            {
+                Debug.Assert(destination.Length == 0);
+                signature = new byte[bytesRequired];
+                destination = signature;
+            }
 
-                using (SafeEvpPKeyHandle key = DuplicateKeyHandle())
+            if (destination.Length < bytesRequired)
+            {
+                bytesWritten = 0;
+                return false;
+            }
+
+            using (SafeEvpPKeyHandle key = DuplicateKeyHandle())
+            {
+                if (padding.Mode == RSASignaturePaddingMode.Pkcs1)
                 {
                     bytesWritten = Interop.Crypto.RsaSignHashPkcs1(
                         key,
                         Interop.Crypto.GetDigestAlgorithm(hashAlgorithm.Name),
                         hash,
                         destination);
-
-                    Debug.Assert(bytesWritten == bytesRequired);
                 }
-
-                return true;
-            }
-            else if (padding.Mode == RSASignaturePaddingMode.Pss)
-            {
-                RsaPaddingProcessor processor = RsaPaddingProcessor.OpenProcessor(hashAlgorithm);
-                SafeRsaHandle rsa = GetKey();
-
-                int bytesRequired = Interop.Crypto.RsaSize(rsa);
-
-                if (allocateSignature)
+                else
                 {
-                    Debug.Assert(destination.Length == 0);
-                    signature = new byte[bytesRequired];
-                    destination = signature;
+                    Debug.Assert(padding.Mode == RSASignaturePaddingMode.Pss);
+
+                    bytesWritten = Interop.Crypto.RsaSignHashPkcs1(
+                        key,
+                        Interop.Crypto.GetDigestAlgorithm(hashAlgorithm.Name),
+                        hash,
+                        destination);
                 }
 
-                if (destination.Length < bytesRequired)
-                {
-                    bytesWritten = 0;
-                    return false;
-                }
-
-                byte[] pssRented = CryptoPool.Rent(bytesRequired);
-                Span<byte> pssBytes = new Span<byte>(pssRented, 0, bytesRequired);
-
-                processor.EncodePss(hash, pssBytes, KeySize);
-
-                int ret = Interop.Crypto.RsaSignPrimitive(pssBytes, destination, rsa);
-
-                CryptoPool.Return(pssRented, bytesRequired);
-
-                CheckReturn(ret);
-
-                Debug.Assert(
-                    ret == bytesRequired,
-                    $"RSA_private_encrypt returned {ret} when {bytesRequired} was expected");
-
-                bytesWritten = ret;
-                return true;
+                Debug.Assert(bytesWritten == bytesRequired);
             }
 
-            throw PaddingModeNotSupported();
+            return true;
         }
 
         public override bool VerifyHash(

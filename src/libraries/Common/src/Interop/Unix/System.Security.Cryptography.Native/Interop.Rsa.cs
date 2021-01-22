@@ -144,6 +144,38 @@ internal static partial class Interop
             ref byte dest,
             out int sigLen);
 
+        internal static int RsaSignHashPss(
+            SafeEvpPKeyHandle pkey,
+            IntPtr digest,
+            ReadOnlySpan<byte> hash,
+            Span<byte> destination)
+        {
+            int ret = CryptoNative_RsaSignHashPss(
+                pkey,
+                digest,
+                ref MemoryMarshal.GetReference(hash),
+                hash.Length,
+                ref MemoryMarshal.GetReference(destination),
+                out int bytesWritten);
+
+            if (ret != 1)
+            {
+                Debug.Assert(ret == 0);
+                throw CreateOpenSslCryptographicException();
+            }
+
+            return bytesWritten;
+        }
+
+        [DllImport(Libraries.CryptoNative)]
+        private static extern int CryptoNative_RsaSignHashPss(
+            SafeEvpPKeyHandle pkey,
+            IntPtr digest,
+            ref byte hash,
+            int hashLen,
+            ref byte dest,
+            out int sigLen);
+
         internal static bool RsaVerify(int type, ReadOnlySpan<byte> m, ReadOnlySpan<byte> sigbuf, SafeRsaHandle rsa)
         {
             bool ret = RsaVerify(
