@@ -718,7 +718,7 @@ namespace System.Security.Cryptography
                 {
                     Debug.Assert(padding.Mode == RSASignaturePaddingMode.Pss);
 
-                    bytesWritten = Interop.Crypto.RsaSignHashPkcs1(
+                    bytesWritten = Interop.Crypto.RsaSignHashPss(
                         key,
                         Interop.Crypto.GetDigestAlgorithm(hashAlgorithm.Name),
                         hash,

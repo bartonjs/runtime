@@ -100,6 +100,14 @@ PALEXPORT int32_t
 CryptoNative_RsaSignHashPkcs1(EVP_PKEY* pkey, const EVP_MD* digest, const uint8_t* hash, int32_t hashLen, uint8_t* dest, int32_t* sigLen);
 
 /*
+Signs a hash using RSA-SSA-PSS with a salt size equal to the digest size.
+
+Returns 1 upon success, otherwise 0.
+*/
+PALEXPORT int32_t
+CryptoNative_RsaSignHashPss(EVP_PKEY* pkey, const EVP_MD* digest, const uint8_t* hash, int32_t hashLen, uint8_t* dest, int32_t* sigLen);
+
+/*
 Shims the RSA_verify method.
 
 Returns 1 upon success, otherwise 0.

@@ -223,6 +223,64 @@ done:
 }
 
 int32_t
+CryptoNative_RsaSignHashPss(EVP_PKEY* pkey, const EVP_MD* digest, const uint8_t* hash, int32_t hashLen, uint8_t* dest, int32_t* sigLen)
+{
+    if (sigLen == NULL)
+    {
+        assert(false);
+        return -1;
+    }
+
+    *sigLen = 0;
+
+    if (pkey == NULL || digest == NULL || hash == NULL || hashLen < 0 || dest == NULL)
+    {
+        return -1;
+    }
+
+    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(pkey, NULL);
+
+    if (ctx == NULL)
+    {
+        return 0;
+    }
+
+    int ret = 0;
+
+    if (EVP_PKEY_sign_init(ctx) <= 0)
+    {
+        goto done;
+    }
+
+    if (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_PSS_PADDING) <= 0)
+    {
+        goto done;
+    }
+
+    if (EVP_PKEY_CTX_set_rsa_pss_saltlen(ctx, RSA_PSS_SALTLEN_DIGEST) <= 0)
+    {
+        goto done;
+    }
+
+    if (EVP_PKEY_CTX_set_signature_md(ctx, digest) <= 0)
+    {
+        goto done;
+    }
+
+    size_t written;
+
+    if (EVP_PKEY_sign(ctx, dest, &written, hash, Int32ToSizeT(hashLen)) > 0)
+    {
+        ret = 1;
+        *sigLen = SizeTToInt32(written);
+    }
+
+done:
+    EVP_PKEY_CTX_free(ctx);
+    return ret;
+}
+
+int32_t
 CryptoNative_RsaVerify(int32_t type, const uint8_t* m, int32_t mlen, uint8_t* sigbuf, int32_t siglen, RSA* rsa)
 {
     return RSA_verify(type, m, Int32ToUint32(mlen), sigbuf, Int32ToUint32(siglen), rsa);
