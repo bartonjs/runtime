@@ -27,7 +27,7 @@ namespace System.Security.Cryptography
         // 65537 (0x10001) in big-endian form
         private static ReadOnlySpan<byte> DefaultExponent => new byte[] { 0x01, 0x00, 0x01 };
 
-        private Lazy<SafeRsaHandle> _key;
+        private Lazy<SafeEvpPKeyHandle> _key;
 
         public RSAOpenSsl()
             : this(2048)
@@ -37,7 +37,7 @@ namespace System.Security.Cryptography
         public RSAOpenSsl(int keySize)
         {
             base.KeySize = keySize;
-            _key = new Lazy<SafeRsaHandle>(GenerateKey);
+            _key = new Lazy<SafeEvpPKeyHandle>(GenerateKey);
         }
 
         public override int KeySize
@@ -54,7 +54,7 @@ namespace System.Security.Cryptography
 
                 ThrowIfDisposed();
                 FreeKey();
-                _key = new Lazy<SafeRsaHandle>(GenerateKey);
+                _key = new Lazy<SafeEvpPKeyHandle>(GenerateKey);
             }
         }
 
@@ -87,11 +87,8 @@ namespace System.Security.Cryptography
             if (padding == null)
                 throw new ArgumentNullException(nameof(padding));
 
-            SafeRsaHandle key = GetKey();
-            // Temporary blockless using, about to be factored out.
-            using SafeEvpPKeyHandle pkey = DuplicateKeyHandle();
-
-            int rsaSize = Interop.Crypto.RsaSize(key);
+            SafeEvpPKeyHandle key = GetKey();
+            int rsaSize = AsymmetricAlgorithmHelpers.BitsToBytes(KeySize);
             byte[]? buf = null;
             Span<byte> destination = default;
 
@@ -100,7 +97,7 @@ namespace System.Security.Cryptography
                 buf = CryptoPool.Rent(rsaSize);
                 destination = new Span<byte>(buf, 0, rsaSize);
 
-                if (!TryDecrypt(pkey, data, destination, padding, out int bytesWritten))
+                if (!TryDecrypt(key, data, destination, padding, out int bytesWritten))
                 {
                     Debug.Fail($"{nameof(TryDecrypt)} should not return false for RSA_size buffer");
                     throw new CryptographicException();
@@ -139,10 +136,8 @@ namespace System.Security.Cryptography
                 throw PaddingModeNotSupported();
             }
 
-            SafeRsaHandle key = GetKey();
-            int keySizeBytes = Interop.Crypto.RsaSize(key);
-            // Temporary blockless using, about to be factored out.
-            using SafeEvpPKeyHandle pkey = DuplicateKeyHandle();
+            SafeEvpPKeyHandle key = GetKey();
+            int keySizeBytes = AsymmetricAlgorithmHelpers.BitsToBytes(KeySize);
 
             // OpenSSL does not take a length value for the destination, so it can write out of bounds.
             // To prevent the OOB write, decrypt into a temporary buffer.
@@ -158,7 +153,7 @@ namespace System.Security.Cryptography
                     tmp = rent;
                 }
 
-                bool ret = TryDecrypt(pkey, data, tmp, padding, out bytesWritten);
+                bool ret = TryDecrypt(key, data, tmp, padding, out bytesWritten);
 
                 if (ret)
                 {
@@ -186,7 +181,7 @@ namespace System.Security.Cryptography
                 return ret;
             }
 
-            return TryDecrypt(pkey, data, destination, padding, out bytesWritten);
+            return TryDecrypt(key, data, destination, padding, out bytesWritten);
         }
 
         private static bool TryDecrypt(
@@ -230,7 +225,9 @@ namespace System.Security.Cryptography
                 throw new ArgumentNullException(nameof(padding));
 
             Interop.Crypto.RsaPadding rsaPadding = GetInteropPadding(padding, out RsaPaddingProcessor? oaepProcessor);
-            SafeRsaHandle key = GetKey();
+            SafeEvpPKeyHandle pkey = GetKey();
+            // Temporary blockless using, pending refactor.
+            using SafeRsaHandle key = Interop.Crypto.EvpPkeyGetRsa(pkey);
 
             byte[] buf = new byte[Interop.Crypto.RsaSize(key)];
 
@@ -259,7 +256,9 @@ namespace System.Security.Cryptography
             }
 
             Interop.Crypto.RsaPadding rsaPadding = GetInteropPadding(padding, out RsaPaddingProcessor? oaepProcessor);
-            SafeRsaHandle key = GetKey();
+            SafeEvpPKeyHandle pkey = GetKey();
+            // Temporary blockless using, pending refactor.
+            using SafeRsaHandle key = Interop.Crypto.EvpPkeyGetRsa(pkey);
 
             return TryEncrypt(key, data, destination, rsaPadding, oaepProcessor, out bytesWritten);
         }
@@ -342,7 +341,9 @@ namespace System.Security.Cryptography
         public override RSAParameters ExportParameters(bool includePrivateParameters)
         {
             // It's entirely possible that this line will cause the key to be generated in the first place.
-            SafeRsaHandle key = GetKey();
+            SafeEvpPKeyHandle pkey = GetKey();
+            // Temporary blockless using, pending refactor.
+            using SafeRsaHandle key = Interop.Crypto.EvpPkeyGetRsa(pkey);
 
             RSAParameters rsaParameters = Interop.Crypto.ExportRsaParameters(key, includePrivateParameters);
             bool hasPrivateKey = rsaParameters.D != null;
@@ -399,12 +400,23 @@ namespace System.Security.Cryptography
                 }
             }
 
+            SafeEvpPKeyHandle pkey = Interop.Crypto.EvpPkeyCreate();
+
+            if (!Interop.Crypto.EvpPkeySetRsa(pkey, key))
+            {
+                pkey.Dispose();
+                key.Dispose();
+                throw Interop.Crypto.CreateOpenSslCryptographicException();
+            }
+
             FreeKey();
-            _key = new Lazy<SafeRsaHandle>(key);
+
+            _key = new Lazy<SafeEvpPKeyHandle>(pkey);
 
             // Use ForceSet instead of the property setter to ensure that LegalKeySizes doesn't interfere
             // with the already loaded key.
             ForceSetKeySize(BitsPerByte * Interop.Crypto.RsaSize(key));
+            key.Dispose();
         }
 
         public override void ImportRSAPublicKey(ReadOnlySpan<byte> source, out int bytesRead)
@@ -431,12 +443,22 @@ namespace System.Security.Cryptography
 
             Interop.Crypto.CheckValidOpenSslHandle(key);
 
+            SafeEvpPKeyHandle pkey = Interop.Crypto.EvpPkeyCreate();
+
+            if (!Interop.Crypto.EvpPkeySetRsa(pkey, key))
+            {
+                pkey.Dispose();
+                key.Dispose();
+                throw Interop.Crypto.CreateOpenSslCryptographicException();
+            }
+
             FreeKey();
-            _key = new Lazy<SafeRsaHandle>(key);
+            _key = new Lazy<SafeEvpPKeyHandle>(pkey);
 
             // Use ForceSet instead of the property setter to ensure that LegalKeySizes doesn't interfere
             // with the already loaded key.
             ForceSetKeySize(BitsPerByte * Interop.Crypto.RsaSize(key));
+            key.Dispose();
 
             bytesRead = read;
         }
@@ -474,7 +496,7 @@ namespace System.Security.Cryptography
         {
             if (_key != null && _key.IsValueCreated)
             {
-                SafeRsaHandle handle = _key.Value;
+                SafeEvpPKeyHandle handle = _key.Value;
                 handle?.Dispose();
             }
         }
@@ -530,11 +552,11 @@ namespace System.Security.Cryptography
             }
         }
 
-        private SafeRsaHandle GetKey()
+        private SafeEvpPKeyHandle GetKey()
         {
             ThrowIfDisposed();
 
-            SafeRsaHandle key = _key.Value;
+            SafeEvpPKeyHandle key = _key.Value;
 
             if (key == null || key.IsInvalid)
             {
@@ -552,24 +574,9 @@ namespace System.Security.Cryptography
             }
         }
 
-        private static void CheckBoolReturn(int returnValue)
+        private SafeEvpPKeyHandle GenerateKey()
         {
-            if (returnValue != 1)
-            {
-               throw Interop.Crypto.CreateOpenSslCryptographicException();
-            }
-        }
-
-        private SafeRsaHandle GenerateKey()
-        {
-            SafeRsaHandle rsa;
-
-            using (SafeEvpPKeyHandle pkey = Interop.Crypto.RsaGenerateKey(KeySize))
-            {
-                rsa = Interop.Crypto.EvpPkeyGetRsa(pkey);
-            }
-
-            return rsa;
+            return Interop.Crypto.RsaGenerateKey(KeySize);
         }
 
         protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm) =>
@@ -658,9 +665,9 @@ namespace System.Security.Cryptography
                     throw PaddingModeNotSupported();
             }
 
-            SafeRsaHandle rsa = GetKey();
+            SafeEvpPKeyHandle key = GetKey();
 
-            int bytesRequired = Interop.Crypto.RsaSize(rsa);
+            int bytesRequired = AsymmetricAlgorithmHelpers.BitsToBytes(KeySize);
 
             if (allocateSignature)
             {
@@ -675,29 +682,26 @@ namespace System.Security.Cryptography
                 return false;
             }
 
-            using (SafeEvpPKeyHandle key = DuplicateKeyHandle())
+            if (padding.Mode == RSASignaturePaddingMode.Pkcs1)
             {
-                if (padding.Mode == RSASignaturePaddingMode.Pkcs1)
-                {
-                    bytesWritten = Interop.Crypto.RsaSignHashPkcs1(
-                        key,
-                        Interop.Crypto.GetDigestAlgorithm(hashAlgorithm.Name),
-                        hash,
-                        destination);
-                }
-                else
-                {
-                    Debug.Assert(padding.Mode == RSASignaturePaddingMode.Pss);
-
-                    bytesWritten = Interop.Crypto.RsaSignHashPss(
-                        key,
-                        Interop.Crypto.GetDigestAlgorithm(hashAlgorithm.Name),
-                        hash,
-                        destination);
-                }
-
-                Debug.Assert(bytesWritten == bytesRequired);
+                bytesWritten = Interop.Crypto.RsaSignHashPkcs1(
+                    key,
+                    Interop.Crypto.GetDigestAlgorithm(hashAlgorithm.Name),
+                    hash,
+                    destination);
             }
+            else
+            {
+                Debug.Assert(padding.Mode == RSASignaturePaddingMode.Pss);
+
+                bytesWritten = Interop.Crypto.RsaSignHashPss(
+                    key,
+                    Interop.Crypto.GetDigestAlgorithm(hashAlgorithm.Name),
+                    hash,
+                    destination);
+            }
+
+            Debug.Assert(bytesWritten == bytesRequired);
 
             return true;
         }
@@ -734,13 +738,19 @@ namespace System.Security.Cryptography
             if (padding == RSASignaturePadding.Pkcs1)
             {
                 int algorithmNid = GetAlgorithmNid(hashAlgorithm);
-                SafeRsaHandle rsa = GetKey();
-                return Interop.Crypto.RsaVerify(algorithmNid, hash, signature, rsa);
+                SafeEvpPKeyHandle pkey = GetKey();
+
+                using (SafeRsaHandle rsa = Interop.Crypto.EvpPkeyGetRsa(pkey))
+                {
+                    return Interop.Crypto.RsaVerify(algorithmNid, hash, signature, rsa);
+                }
             }
             else if (padding == RSASignaturePadding.Pss)
             {
                 RsaPaddingProcessor processor = RsaPaddingProcessor.OpenProcessor(hashAlgorithm);
-                SafeRsaHandle rsa = GetKey();
+                SafeEvpPKeyHandle pkey = GetKey();
+                // Temporary blockless using, pending refactor.
+                using SafeRsaHandle rsa = Interop.Crypto.EvpPkeyGetRsa(pkey);
 
                 int requiredBytes = Interop.Crypto.RsaSize(rsa);
 
@@ -794,37 +804,6 @@ namespace System.Security.Cryptography
 
             return nid;
         }
-
-#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
-        /// <summary>
-        /// Obtain a SafeHandle version of an EVP_PKEY* which wraps an RSA* equivalent
-        /// to the current key for this instance.
-        /// </summary>
-        /// <returns>A SafeHandle for the RSA key in OpenSSL</returns>
-        private SafeEvpPKeyHandle DuplicateKeyHandle()
-        {
-            SafeRsaHandle currentKey = _key.Value;
-            SafeEvpPKeyHandle pkeyHandle = Interop.Crypto.EvpPkeyCreate();
-
-            try
-            {
-                // Wrapping our key in an EVP_PKEY will up_ref our key.
-                // When the EVP_PKEY is Disposed it will down_ref the key.
-                // So everything should be copacetic.
-                if (!Interop.Crypto.EvpPkeySetRsa(pkeyHandle, currentKey))
-                {
-                    throw Interop.Crypto.CreateOpenSslCryptographicException();
-                }
-
-                return pkeyHandle;
-            }
-            catch
-            {
-                pkeyHandle.Dispose();
-                throw;
-            }
-        }
-#endif
 
         private static Exception PaddingModeNotSupported() =>
             new CryptographicException(SR.Cryptography_InvalidPaddingMode);
