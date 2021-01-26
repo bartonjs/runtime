@@ -220,6 +220,7 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_ReadX509AsDerFromBio)
     DllImportEntry(CryptoNative_RecursiveFreeX509Stack)
     DllImportEntry(CryptoNative_RsaCreate)
+    DllImportEntry(CryptoNative_RsaDecrypt)
     DllImportEntry(CryptoNative_RsaDestroy)
     DllImportEntry(CryptoNative_RsaGenerateKey)
     DllImportEntry(CryptoNative_RsaPrivateDecrypt)

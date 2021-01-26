@@ -123,6 +123,74 @@ CryptoNative_RsaPrivateDecrypt(int32_t flen, const uint8_t* from, uint8_t* to, R
     return RSA_private_decrypt(flen, from, to, rsa, openSslPadding);
 }
 
+int32_t
+CryptoNative_RsaDecrypt(EVP_PKEY* pkey, const uint8_t* data, int8_t dataLen, RsaPadding padding, const EVP_MD* digest, uint8_t* destination)
+{
+    const int UsageError = -2;
+    const int OpenSslError = -1;
+
+    if (pkey == NULL || data == NULL || destination == NULL)
+    {
+        return UsageError;
+    }
+
+    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(pkey, NULL);
+
+    if (ctx == NULL)
+    {
+        return OpenSslError;
+    }
+
+    int ret = OpenSslError;
+
+    if (EVP_PKEY_decrypt_init(ctx) <= 0)
+    {
+        goto done;
+    }
+
+    if (padding == Pkcs1)
+    {
+        if (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_PADDING) <= 0)
+        {
+            goto done;
+        }
+    }
+    else if (padding == OaepSHA1)
+    {
+        if (digest == NULL)
+        {
+            ret = UsageError;
+            goto done;
+        }
+
+        if (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_OAEP_PADDING) <= 0)
+        {
+            goto done;
+        }
+
+        if (EVP_PKEY_CTX_set_rsa_oaep_md(ctx, digest) <= 0)
+        {
+            goto done;
+        }
+    }
+    else
+    {
+        ret = UsageError;
+        goto done;
+    }
+
+    size_t written;
+
+    if (EVP_PKEY_decrypt(ctx, destination, &written, data, Int32ToSizeT(dataLen)) > 0)
+    {
+        ret = SizeTToInt32(written);
+    }
+
+done:
+    EVP_PKEY_CTX_free(ctx);
+    return ret;
+}
+
 int32_t CryptoNative_RsaVerificationPrimitive(int32_t flen, const uint8_t* from, uint8_t* to, RSA* rsa)
 {
     return RSA_public_decrypt(flen, from, to, rsa, RSA_NO_PADDING);
