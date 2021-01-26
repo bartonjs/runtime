@@ -44,6 +44,31 @@ internal static partial class Interop
             SafeRsaHandle rsa,
             RsaPadding padding);
 
+        internal static int RsaDecrypt(
+            SafeEvpPKeyHandle pkey,
+            ReadOnlySpan<byte> data,
+            RSAEncryptionPaddingMode paddingMode,
+            IntPtr digestAlgorithm,
+            Span<byte> destination) =>
+            CryptoNative_RsaDecrypt(
+                pkey,
+                ref MemoryMarshal.GetReference(data),
+                data.Length,
+                paddingMode,
+                digestAlgorithm,
+                ref MemoryMarshal.GetReference(destination),
+                destination.Length);
+
+        [DllImport(Libraries.CryptoNative)]
+        private static extern int CryptoNative_RsaDecrypt(
+            SafeEvpPKeyHandle pkey,
+            ref byte data,
+            int dataLength,
+            RSAEncryptionPaddingMode paddingMode,
+            IntPtr digestAlgorithm,
+            ref byte destination,
+            int destinationLength);
+
         internal static int RsaPrivateDecrypt(
             int flen,
             ReadOnlySpan<byte> from,
