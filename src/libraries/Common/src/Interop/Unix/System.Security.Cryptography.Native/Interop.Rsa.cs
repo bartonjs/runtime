@@ -69,22 +69,6 @@ internal static partial class Interop
             ref byte destination,
             int destinationLength);
 
-        internal static int RsaPrivateDecrypt(
-            int flen,
-            ReadOnlySpan<byte> from,
-            Span<byte> to,
-            SafeRsaHandle rsa,
-            RsaPadding padding) =>
-            RsaPrivateDecrypt(flen, ref MemoryMarshal.GetReference(from), ref MemoryMarshal.GetReference(to), rsa, padding);
-
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_RsaPrivateDecrypt")]
-        private static extern int RsaPrivateDecrypt(
-            int flen,
-            ref byte from,
-            ref byte to,
-            SafeRsaHandle rsa,
-            RsaPadding padding);
-
         internal static int RsaVerificationPrimitive(
             ReadOnlySpan<byte> from,
             Span<byte> to,
@@ -117,14 +101,16 @@ internal static partial class Interop
             return pkey;
         }
 
-        internal static int RsaSignHashPkcs1(
+        internal static int RsaSignHash(
             SafeEvpPKeyHandle pkey,
+            RSASignaturePaddingMode paddingMode,
             IntPtr digest,
             ReadOnlySpan<byte> hash,
             Span<byte> destination)
         {
-            int ret = CryptoNative_RsaSignHashPkcs1(
+            int ret = CryptoNative_RsaSignHash(
                 pkey,
+                paddingMode,
                 digest,
                 ref MemoryMarshal.GetReference(hash),
                 hash.Length,
@@ -141,40 +127,9 @@ internal static partial class Interop
         }
 
         [DllImport(Libraries.CryptoNative)]
-        private static extern int CryptoNative_RsaSignHashPkcs1(
+        private static extern int CryptoNative_RsaSignHash(
             SafeEvpPKeyHandle pkey,
-            IntPtr digest,
-            ref byte hash,
-            int hashLen,
-            ref byte dest,
-            out int sigLen);
-
-        internal static int RsaSignHashPss(
-            SafeEvpPKeyHandle pkey,
-            IntPtr digest,
-            ReadOnlySpan<byte> hash,
-            Span<byte> destination)
-        {
-            int ret = CryptoNative_RsaSignHashPss(
-                pkey,
-                digest,
-                ref MemoryMarshal.GetReference(hash),
-                hash.Length,
-                ref MemoryMarshal.GetReference(destination),
-                out int bytesWritten);
-
-            if (ret != 1)
-            {
-                Debug.Assert(ret == 0);
-                throw CreateOpenSslCryptographicException();
-            }
-
-            return bytesWritten;
-        }
-
-        [DllImport(Libraries.CryptoNative)]
-        private static extern int CryptoNative_RsaSignHashPss(
-            SafeEvpPKeyHandle pkey,
+            RSASignaturePaddingMode paddingMode,
             IntPtr digest,
             ref byte hash,
             int hashLen,

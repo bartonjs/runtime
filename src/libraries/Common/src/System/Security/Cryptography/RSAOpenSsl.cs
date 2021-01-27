@@ -682,24 +682,12 @@ namespace System.Security.Cryptography
                 return false;
             }
 
-            if (padding.Mode == RSASignaturePaddingMode.Pkcs1)
-            {
-                bytesWritten = Interop.Crypto.RsaSignHashPkcs1(
-                    key,
-                    Interop.Crypto.GetDigestAlgorithm(hashAlgorithm.Name),
-                    hash,
-                    destination);
-            }
-            else
-            {
-                Debug.Assert(padding.Mode == RSASignaturePaddingMode.Pss);
-
-                bytesWritten = Interop.Crypto.RsaSignHashPss(
-                    key,
-                    Interop.Crypto.GetDigestAlgorithm(hashAlgorithm.Name),
-                    hash,
-                    destination);
-            }
+            bytesWritten = Interop.Crypto.RsaSignHash(
+                key,
+                padding.Mode,
+                Interop.Crypto.GetDigestAlgorithm(hashAlgorithm.Name),
+                hash,
+                destination);
 
             Debug.Assert(bytesWritten == bytesRequired);
 
