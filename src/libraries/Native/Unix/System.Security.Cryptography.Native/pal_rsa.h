@@ -92,20 +92,14 @@ The public exponent of this key is F4 (0x010001)
 PALEXPORT EVP_PKEY* CryptoNative_RsaGenerateKey(int32_t keySize);
 
 /*
-Signs a hash using RSA-SSA-PKCS#1_v1.5
+Signs a hash using the specified padding algorithm (RSASSA-PKCS1_v1.5 or RSASSA-PSS).
+
+For PSS, the salt length is the digest length, and the MGF1 digest is the same as the data digest.
 
 Returns 1 upon success, otherwise 0.
 */
 PALEXPORT int32_t
-CryptoNative_RsaSignHashPkcs1(EVP_PKEY* pkey, const EVP_MD* digest, const uint8_t* hash, int32_t hashLen, uint8_t* dest, int32_t* sigLen);
-
-/*
-Signs a hash using RSA-SSA-PSS with a salt size equal to the digest size.
-
-Returns 1 upon success, otherwise 0.
-*/
-PALEXPORT int32_t
-CryptoNative_RsaSignHashPss(EVP_PKEY* pkey, const EVP_MD* digest, const uint8_t* hash, int32_t hashLen, uint8_t* dest, int32_t* sigLen);
+CryptoNative_RsaSignHash(EVP_PKEY* pkey, RsaPadding padding, const EVP_MD* digest, const uint8_t* hash, int32_t hashLen, uint8_t* dest, int32_t* sigLen);
 
 /*
 Shims the RSA_verify method.
