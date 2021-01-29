@@ -12,7 +12,7 @@ These values should be kept in sync with Interop.Crypto.RsaPadding.
 typedef enum
 {
     Pkcs1 = 0,
-    OaepSHA1 = 1,
+    OaepOrPss = 1,
     NoPadding = 2,
 } RsaPadding;
 

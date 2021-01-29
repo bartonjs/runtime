@@ -34,13 +34,13 @@ RSA* CryptoNative_DecodeRsaPublicKey(const uint8_t* buf, int32_t len)
 
 static int GetOpenSslPadding(RsaPadding padding)
 {
-    assert(padding == Pkcs1 || padding == OaepSHA1 || padding == NoPadding);
+    assert(padding == Pkcs1 || padding == OaepOrPss || padding == NoPadding);
 
     switch (padding)
     {
         case Pkcs1:
             return RSA_PKCS1_PADDING;
-        case OaepSHA1:
+        case OaepOrPss:
             return RSA_PKCS1_OAEP_PADDING;
         case NoPadding:
             return RSA_NO_PADDING;
@@ -150,7 +150,7 @@ CryptoNative_RsaDecrypt(EVP_PKEY* pkey, const uint8_t* data, int32_t dataLen, Rs
             goto done;
         }
     }
-    else if (padding == OaepSHA1)
+    else if (padding == OaepOrPss)
     {
         if (digest == NULL)
         {
@@ -273,7 +273,7 @@ CryptoNative_RsaSignHash(EVP_PKEY* pkey, RsaPadding padding, const EVP_MD* diges
             goto done;
         }
     }
-    else if (padding == OaepSHA1)
+    else if (padding == OaepOrPss)
     {
         if (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_PSS_PADDING) <= 0)
         {
