@@ -331,6 +331,27 @@ CryptoNative_RsaVerify(int32_t type, const uint8_t* m, int32_t mlen, uint8_t* si
     return RSA_verify(type, m, Int32ToUint32(mlen), sigbuf, Int32ToUint32(siglen), rsa);
 }
 
+BIO* CryptoNative_ExportRSAPublicKey(EVP_PKEY* pkey)
+{
+    BIO* bio = BIO_new(BIO_s_mem());
+
+    if (bio == NULL)
+    {
+        return NULL;
+    }
+
+    // get0 means not upreffed, don't free.
+    RSA* rsa = EVP_PKEY_get0_RSA(pkey);
+
+    if (rsa == NULL || i2d_RSAPublicKey_bio(bio, rsa) <= 0)
+    {
+        BIO_free(bio);
+        return NULL;
+    }
+
+    return bio;
+}
+
 int32_t CryptoNative_GetRsaParameters(const RSA* rsa,
                                       const BIGNUM** n,
                                       const BIGNUM** e,

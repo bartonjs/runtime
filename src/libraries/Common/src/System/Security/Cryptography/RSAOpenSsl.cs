@@ -378,8 +378,11 @@ namespace System.Security.Cryptography
             {
                 AsnValueReader reader = new AsnValueReader(rsaPublicKey, AsnEncodingRules.DER);
                 AsnValueReader pubKey = reader.ReadSequence();
-                ReadOnlySpan<byte> modulus = reader.ReadIntegerBytes();
-                ReadOnlySpan<byte> exponent = reader.ReadIntegerBytes();
+                reader.ThrowIfNotEmpty();
+
+                ReadOnlySpan<byte> modulus = pubKey.ReadIntegerBytes();
+                ReadOnlySpan<byte> exponent = pubKey.ReadIntegerBytes();
+                pubKey.ThrowIfNotEmpty();
 
                 if (modulus[0] == 0)
                 {
@@ -536,16 +539,15 @@ namespace System.Security.Cryptography
             {
                 int size = Interop.Crypto.GetMemoryBioSize(bio);
 
-                if (size > destination.Length)
+                if (destination.Length < size)
                 {
-                    bytesWritten = Interop.Crypto.BioRead(bio, destination);
-                    Debug.Assert(bytesWritten == size);
-
-                    return true;
+                    bytesWritten = 0;
+                    return false;
                 }
 
-                bytesWritten = 0;
-                return false;
+                bytesWritten = Interop.Crypto.BioRead(bio, destination);
+                Debug.Assert(bytesWritten == size);
+                return true;
             }
         }
 
@@ -559,6 +561,7 @@ namespace System.Security.Cryptography
                 byte[] rented = CryptoPool.Rent(size);
 
                 int read = Interop.Crypto.BioRead(bio, rented);
+                Debug.Assert(read == size);
 
                 return new ArraySegment<byte>(rented, 0, read);
             }

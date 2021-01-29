@@ -102,6 +102,10 @@ PALEXPORT int32_t
 CryptoNative_RsaVerify(int32_t type, const uint8_t* m, int32_t mlen, uint8_t* sigbuf, int32_t siglen, RSA* rsa);
 
 /*
+Returns a BIO containing the RSAPublicKey format of the provided key, or NULL on error.
+*/
+PALEXPORT BIO* CryptoNative_ExportRSAPublicKey(EVP_PKEY* pkey);
+/*
 Gets all the parameters from the RSA instance.
 
 Returns 1 upon success, otherwise 0.
