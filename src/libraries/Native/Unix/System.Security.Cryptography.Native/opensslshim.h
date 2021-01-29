@@ -360,18 +360,28 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     RENAMED_FUNCTION(EVP_MD_CTX_free, EVP_MD_CTX_destroy) \
     RENAMED_FUNCTION(EVP_MD_CTX_new, EVP_MD_CTX_create) \
     REQUIRED_FUNCTION(EVP_MD_size) \
+    REQUIRED_FUNCTION(EVP_PKEY_CTX_ctrl) \
     REQUIRED_FUNCTION(EVP_PKEY_CTX_free) \
     REQUIRED_FUNCTION(EVP_PKEY_CTX_new) \
+    REQUIRED_FUNCTION(EVP_PKEY_CTX_new_id) \
+    REQUIRED_FUNCTION(EVP_PKEY_decrypt) \
+    REQUIRED_FUNCTION(EVP_PKEY_decrypt_init) \
     REQUIRED_FUNCTION(EVP_PKEY_derive_set_peer) \
     REQUIRED_FUNCTION(EVP_PKEY_derive_init) \
     REQUIRED_FUNCTION(EVP_PKEY_derive) \
     REQUIRED_FUNCTION(EVP_PKEY_free) \
+    REQUIRED_FUNCTION(EVP_PKEY_get0_RSA) \
     REQUIRED_FUNCTION(EVP_PKEY_get1_DSA) \
     REQUIRED_FUNCTION(EVP_PKEY_get1_EC_KEY) \
     REQUIRED_FUNCTION(EVP_PKEY_get1_RSA) \
+    REQUIRED_FUNCTION(EVP_PKEY_keygen) \
+    REQUIRED_FUNCTION(EVP_PKEY_keygen_init) \
     REQUIRED_FUNCTION(EVP_PKEY_new) \
     REQUIRED_FUNCTION(EVP_PKEY_set1_DSA) \
     REQUIRED_FUNCTION(EVP_PKEY_set1_EC_KEY) \
+    REQUIRED_FUNCTION(EVP_PKEY_sign) \
+    REQUIRED_FUNCTION(EVP_PKEY_sign_init) \
+    REQUIRED_FUNCTION(EVP_PKEY_size) \
     REQUIRED_FUNCTION(EVP_PKEY_set1_RSA) \
     FALLBACK_FUNCTION(EVP_PKEY_up_ref) \
     REQUIRED_FUNCTION(EVP_rc2_cbc) \
@@ -395,6 +405,7 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     REQUIRED_FUNCTION(i2d_OCSP_REQUEST) \
     REQUIRED_FUNCTION(i2d_OCSP_RESPONSE) \
     REQUIRED_FUNCTION(i2d_PKCS7) \
+    REQUIRED_FUNCTION(i2d_RSAPublicKey_bio) \
     REQUIRED_FUNCTION(i2d_X509) \
     REQUIRED_FUNCTION(i2d_X509_PUBKEY) \
     REQUIRED_FUNCTION(OBJ_ln2nid) \
@@ -451,6 +462,7 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     FALLBACK_FUNCTION(RSA_meth_get_flags) \
     REQUIRED_FUNCTION(RSA_new) \
     RENAMED_FUNCTION(RSA_PKCS1_OpenSSL, RSA_PKCS1_SSLeay) \
+    REQUIRED_FUNCTION(RSA_pkey_ctx_ctrl) \
     REQUIRED_FUNCTION(RSA_private_decrypt) \
     REQUIRED_FUNCTION(RSA_private_encrypt) \
     REQUIRED_FUNCTION(RSA_public_decrypt) \
@@ -770,19 +782,29 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_MD_CTX_free EVP_MD_CTX_free_ptr
 #define EVP_MD_CTX_new EVP_MD_CTX_new_ptr
 #define EVP_MD_size EVP_MD_size_ptr
+#define EVP_PKEY_CTX_ctrl EVP_PKEY_CTX_ctrl_ptr
 #define EVP_PKEY_CTX_free EVP_PKEY_CTX_free_ptr
 #define EVP_PKEY_CTX_new EVP_PKEY_CTX_new_ptr
+#define EVP_PKEY_CTX_new_id EVP_PKEY_CTX_new_id_ptr
+#define EVP_PKEY_decrypt EVP_PKEY_decrypt_ptr
+#define EVP_PKEY_decrypt_init EVP_PKEY_decrypt_init_ptr
 #define EVP_PKEY_derive_set_peer EVP_PKEY_derive_set_peer_ptr
 #define EVP_PKEY_derive_init EVP_PKEY_derive_init_ptr
 #define EVP_PKEY_derive EVP_PKEY_derive_ptr
 #define EVP_PKEY_free EVP_PKEY_free_ptr
+#define EVP_PKEY_get0_RSA EVP_PKEY_get0_RSA_ptr
 #define EVP_PKEY_get1_DSA EVP_PKEY_get1_DSA_ptr
 #define EVP_PKEY_get1_EC_KEY EVP_PKEY_get1_EC_KEY_ptr
 #define EVP_PKEY_get1_RSA EVP_PKEY_get1_RSA_ptr
+#define EVP_PKEY_keygen EVP_PKEY_keygen_ptr
+#define EVP_PKEY_keygen_init EVP_PKEY_keygen_init_ptr
 #define EVP_PKEY_new EVP_PKEY_new_ptr
 #define EVP_PKEY_set1_DSA EVP_PKEY_set1_DSA_ptr
 #define EVP_PKEY_set1_EC_KEY EVP_PKEY_set1_EC_KEY_ptr
 #define EVP_PKEY_set1_RSA EVP_PKEY_set1_RSA_ptr
+#define EVP_PKEY_sign EVP_PKEY_sign_ptr
+#define EVP_PKEY_sign_init EVP_PKEY_sign_init_ptr
+#define EVP_PKEY_size EVP_PKEY_size_ptr
 #define EVP_PKEY_up_ref EVP_PKEY_up_ref_ptr
 #define EVP_rc2_cbc EVP_rc2_cbc_ptr
 #define EVP_rc2_ecb EVP_rc2_ecb_ptr
@@ -805,6 +827,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define i2d_OCSP_REQUEST i2d_OCSP_REQUEST_ptr
 #define i2d_OCSP_RESPONSE i2d_OCSP_RESPONSE_ptr
 #define i2d_PKCS7 i2d_PKCS7_ptr
+#define i2d_RSAPublicKey_bio i2d_RSAPublicKey_bio_ptr
 #define i2d_X509 i2d_X509_ptr
 #define i2d_X509_PUBKEY i2d_X509_PUBKEY_ptr
 #define OBJ_ln2nid OBJ_ln2nid_ptr
@@ -861,6 +884,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define RSA_meth_get_flags RSA_meth_get_flags_ptr
 #define RSA_new RSA_new_ptr
 #define RSA_PKCS1_OpenSSL RSA_PKCS1_OpenSSL_ptr
+#define RSA_pkey_ctx_ctrl RSA_pkey_ctx_ctrl_ptr
 #define RSA_private_decrypt RSA_private_decrypt_ptr
 #define RSA_private_encrypt RSA_private_encrypt_ptr
 #define RSA_public_decrypt RSA_public_decrypt_ptr
