@@ -111,21 +111,9 @@ CryptoNative_RsaPublicEncrypt(int32_t flen, const uint8_t* from, uint8_t* to, RS
 }
 
 int32_t
-CryptoNative_RsaPrivateDecrypt(int32_t flen, const uint8_t* from, uint8_t* to, RSA* rsa, RsaPadding padding)
+CryptoNative_RsaDecrypt(EVP_PKEY* pkey, const uint8_t* data, int32_t dataLen, RsaPadding padding, const EVP_MD* digest, uint8_t* destination)
 {
-    if (HasNoPrivateKey(rsa))
-    {
-        ERR_PUT_error(ERR_LIB_RSA, RSA_F_RSA_NULL_PRIVATE_DECRYPT, RSA_R_VALUE_MISSING, __FILE__, __LINE__);
-        return -1;
-    }
-
-    int openSslPadding = GetOpenSslPadding(padding);
-    return RSA_private_decrypt(flen, from, to, rsa, openSslPadding);
-}
-
-int32_t
-CryptoNative_RsaDecrypt(EVP_PKEY* pkey, const uint8_t* data, int8_t dataLen, RsaPadding padding, const EVP_MD* digest, uint8_t* destination)
-{
+    const int WrongSize = -3;
     const int UsageError = -2;
     const int OpenSslError = -1;
 
@@ -139,6 +127,13 @@ CryptoNative_RsaDecrypt(EVP_PKEY* pkey, const uint8_t* data, int8_t dataLen, Rsa
     if (ctx == NULL)
     {
         return OpenSslError;
+    }
+
+    int expectedSize = EVP_PKEY_size(pkey);
+
+    if (dataLen != expectedSize)
+    {
+        return WrongSize;
     }
 
     int ret = OpenSslError;
@@ -168,7 +163,10 @@ CryptoNative_RsaDecrypt(EVP_PKEY* pkey, const uint8_t* data, int8_t dataLen, Rsa
             goto done;
         }
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcast-qual"
         if (EVP_PKEY_CTX_set_rsa_oaep_md(ctx, digest) <= 0)
+#pragma clang diagnostic pop
         {
             goto done;
         }
@@ -177,6 +175,18 @@ CryptoNative_RsaDecrypt(EVP_PKEY* pkey, const uint8_t* data, int8_t dataLen, Rsa
     {
         ret = UsageError;
         goto done;
+    }
+
+    // TODO: Only needed for <3.0
+    {
+        RSA* rsa = EVP_PKEY_get0_RSA(pkey);
+
+        if (rsa == NULL || HasNoPrivateKey(rsa))
+        {
+            ERR_PUT_error(ERR_LIB_RSA, RSA_F_RSA_NULL_PRIVATE_DECRYPT, RSA_R_VALUE_MISSING, __FILE__, __LINE__);
+            ret = -1;
+            goto done;
+        }
     }
 
     size_t written;
@@ -282,9 +292,24 @@ CryptoNative_RsaSignHash(EVP_PKEY* pkey, RsaPadding padding, const EVP_MD* diges
         goto done;
     }
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcast-qual"
     if (EVP_PKEY_CTX_set_signature_md(ctx, digest) <= 0)
+#pragma clang diagnostic pop
     {
         goto done;
+    }
+
+    // TODO: Only needed for <3.0
+    {
+        RSA* rsa = EVP_PKEY_get0_RSA(pkey);
+
+        if (rsa == NULL || HasNoPrivateKey(rsa))
+        {
+            ERR_PUT_error(ERR_LIB_RSA, RSA_F_RSA_NULL_PRIVATE_DECRYPT, RSA_R_VALUE_MISSING, __FILE__, __LINE__);
+            ret = 0;
+            goto done;
+        }
     }
 
     size_t written;

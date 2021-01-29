@@ -56,8 +56,7 @@ internal static partial class Interop
                 data.Length,
                 paddingMode,
                 digestAlgorithm,
-                ref MemoryMarshal.GetReference(destination),
-                destination.Length);
+                ref MemoryMarshal.GetReference(destination));
 
         [DllImport(Libraries.CryptoNative)]
         private static extern int CryptoNative_RsaDecrypt(
@@ -66,8 +65,7 @@ internal static partial class Interop
             int dataLength,
             RSAEncryptionPaddingMode paddingMode,
             IntPtr digestAlgorithm,
-            ref byte destination,
-            int destinationLength);
+            ref byte destination);
 
         internal static int RsaVerificationPrimitive(
             ReadOnlySpan<byte> from,
