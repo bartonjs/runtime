@@ -212,7 +212,21 @@ namespace System.Security.Cryptography
                 hashAlgorithm,
                 destination);
 
-            CheckReturn(returnValue);
+            // -1 is an OpenSSL error (exception)
+            // -2 is a usage error (assert)
+            // -3 is that the data to decrypt was not exactly the right size
+
+            if (returnValue == -3)
+            {
+                throw new CryptographicException(SR.Cryptography_RSA_DecryptWrongSize);
+            }
+
+            if (returnValue < 0)
+            {
+                Debug.Assert(returnValue == -1);
+                throw Interop.Crypto.CreateOpenSslCryptographicException();
+            }
+
             bytesWritten = returnValue;
             return true;
         }
