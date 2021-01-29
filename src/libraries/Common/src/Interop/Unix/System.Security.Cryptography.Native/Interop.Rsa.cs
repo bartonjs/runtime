@@ -211,6 +211,9 @@ internal static partial class Interop
             }
         }
 
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ExportRSAPublicKey")]
+        internal static extern SafeBioHandle ExportRSAPublicKey(SafeEvpPKeyHandle pkey);
+
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetRsaParameters")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool GetRsaParameters(

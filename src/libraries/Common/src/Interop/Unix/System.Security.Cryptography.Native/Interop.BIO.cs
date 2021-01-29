@@ -25,6 +25,12 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioRead")]
         internal static extern int BioRead(SafeBioHandle b, byte[] data, int len);
 
+        internal static int BioRead(SafeBioHandle b, Span<byte> destination) =>
+            CryptoNative_BioRead(b, ref MemoryMarshal.GetReference(destination), destination.Length);
+
+        [DllImport(Libraries.CryptoNative)]
+        private static extern int CryptoNative_BioRead(SafeBioHandle b, ref byte data, int len);
+
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioWrite")]
         internal static extern int BioWrite(SafeBioHandle b, byte[] data, int len);
 

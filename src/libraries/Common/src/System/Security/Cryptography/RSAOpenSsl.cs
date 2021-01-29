@@ -354,20 +354,53 @@ namespace System.Security.Cryptography
 
         public override RSAParameters ExportParameters(bool includePrivateParameters)
         {
-            // It's entirely possible that this line will cause the key to be generated in the first place.
-            SafeEvpPKeyHandle pkey = GetKey();
-            // Temporary blockless using, pending refactor.
-            using SafeRsaHandle key = Interop.Crypto.EvpPkeyGetRsa(pkey);
-
-            RSAParameters rsaParameters = Interop.Crypto.ExportRsaParameters(key, includePrivateParameters);
-            bool hasPrivateKey = rsaParameters.D != null;
-
-            if (hasPrivateKey != includePrivateParameters || !HasConsistentPrivateKey(ref rsaParameters))
+            if (includePrivateParameters)
             {
-                throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
+                // It's entirely possible that this line will cause the key to be generated in the first place.
+                SafeEvpPKeyHandle pkey = GetKey();
+                // Temporary blockless using, pending refactor.
+                using SafeRsaHandle key = Interop.Crypto.EvpPkeyGetRsa(pkey);
+
+                RSAParameters rsaParameters = Interop.Crypto.ExportRsaParameters(key, includePrivateParameters);
+                bool hasPrivateKey = rsaParameters.D != null;
+
+                if (hasPrivateKey != includePrivateParameters || !HasConsistentPrivateKey(ref rsaParameters))
+                {
+                    throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
+                }
+
+                return rsaParameters;
             }
 
-            return rsaParameters;
+            ArraySegment<byte> rsaPublicKey = NativeExportRSAPublicKey();
+
+            try
+            {
+                AsnValueReader reader = new AsnValueReader(rsaPublicKey, AsnEncodingRules.DER);
+                AsnValueReader pubKey = reader.ReadSequence();
+                ReadOnlySpan<byte> modulus = reader.ReadIntegerBytes();
+                ReadOnlySpan<byte> exponent = reader.ReadIntegerBytes();
+
+                if (modulus[0] == 0)
+                {
+                    modulus = modulus.Slice(1);
+                }
+
+                if (exponent[0] == 0)
+                {
+                    exponent = exponent.Slice(1);
+                }
+
+                return new RSAParameters
+                {
+                    Modulus = modulus.ToArray(),
+                    Exponent = exponent.ToArray(),
+                };
+            }
+            finally
+            {
+                CryptoPool.Return(rsaPublicKey);
+            }
         }
 
         public override void ImportParameters(RSAParameters parameters)
@@ -493,6 +526,42 @@ namespace System.Security.Cryptography
         {
             ThrowIfDisposed();
             base.ImportEncryptedPkcs8PrivateKey(password, source, out bytesRead);
+        }
+
+        public override bool TryExportRSAPublicKey(Span<byte> destination, out int bytesWritten)
+        {
+            SafeEvpPKeyHandle key = GetKey();
+
+            using (SafeBioHandle bio = Interop.Crypto.ExportRSAPublicKey(key))
+            {
+                int size = Interop.Crypto.GetMemoryBioSize(bio);
+
+                if (size > destination.Length)
+                {
+                    bytesWritten = Interop.Crypto.BioRead(bio, destination);
+                    Debug.Assert(bytesWritten == size);
+
+                    return true;
+                }
+
+                bytesWritten = 0;
+                return false;
+            }
+        }
+
+        private ArraySegment<byte> NativeExportRSAPublicKey()
+        {
+            SafeEvpPKeyHandle key = GetKey();
+
+            using (SafeBioHandle bio = Interop.Crypto.ExportRSAPublicKey(key))
+            {
+                int size = Interop.Crypto.GetMemoryBioSize(bio);
+                byte[] rented = CryptoPool.Rent(size);
+
+                int read = Interop.Crypto.BioRead(bio, rented);
+
+                return new ArraySegment<byte>(rented, 0, read);
+            }
         }
 
         protected override void Dispose(bool disposing)
