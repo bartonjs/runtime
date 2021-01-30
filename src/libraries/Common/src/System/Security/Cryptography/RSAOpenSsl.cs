@@ -517,6 +517,16 @@ namespace System.Security.Cryptography
             }
         }
 
+        public override byte[] ExportRSAPublicKey()
+        {
+            SafeEvpPKeyHandle key = GetKey();
+
+            using (SafeBioHandle bio = Interop.Crypto.ExportRSAPublicKey(key))
+            {
+                return Interop.Crypto.ReadMemoryBio(bio);
+            }
+        }
+
         public override bool TryExportRSAPrivateKey(Span<byte> destination, out int bytesWritten)
         {
             SafeEvpPKeyHandle key = GetKey();
@@ -524,6 +534,21 @@ namespace System.Security.Cryptography
             using (SafeBioHandle bio = Interop.Crypto.ExportRSAPrivateKey(key))
             {
                 return Interop.Crypto.TryReadMemoryBio(bio, destination, out bytesWritten);
+            }
+        }
+
+        public override byte[] ExportRSAPrivateKey()
+        {
+            SafeEvpPKeyHandle key = GetKey();
+
+            using (SafeBioHandle bio = Interop.Crypto.ExportRSAPrivateKey(key))
+            {
+                ArraySegment<byte> rented = Interop.Crypto.RentReadMemoryBio(bio);
+                byte[] ret = CryptoPool.AllocateArray(rented.Count, pinned: true);
+                rented.AsSpan().CopyTo(ret);
+                CryptoPool.Return(rented);
+
+                return ret;
             }
         }
 

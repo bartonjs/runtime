@@ -40,18 +40,8 @@ namespace Internal.Cryptography
                 ReadOnlySpan<byte> exponent = pubKey.ReadIntegerBytes();
                 pubKey.ThrowIfNotEmpty();
 
-                if (modulus[0] == 0)
-                {
-                    modulus = modulus.Slice(1);
-                }
-
-                if (exponent[0] == 0)
-                {
-                    exponent = exponent.Slice(1);
-                }
-
-                rsaParameters.Modulus = modulus.ToArray();
-                rsaParameters.Exponent = exponent.ToArray();
+                rsaParameters.Modulus = ExportInteger(modulus, pinned: false);
+                rsaParameters.Exponent = ExportInteger(exponent, pinned: false);
             }
             catch (AsnContentException e)
             {
@@ -119,17 +109,17 @@ namespace Internal.Cryptography
                 ReadOnlySpan<byte> qInv = privKey.ReadIntegerBytes();
                 privKey.ThrowIfNotEmpty();
 
-                rsaParameters.Modulus = ExportInteger(modulus);
-                rsaParameters.Exponent = ExportInteger(exponent);
+                rsaParameters.Modulus = ExportInteger(modulus, pinned: false);
+                rsaParameters.Exponent = ExportInteger(exponent, pinned: false);
 
                 int halfModulus = (rsaParameters.Modulus.Length + 1) / 2;
 
-                rsaParameters.D = ExportInteger(d, rsaParameters.Modulus.Length);
-                rsaParameters.P = ExportInteger(p, halfModulus);
-                rsaParameters.Q = ExportInteger(q, halfModulus);
-                rsaParameters.DP = ExportInteger(dp, halfModulus);
-                rsaParameters.DQ = ExportInteger(dq, halfModulus);
-                rsaParameters.InverseQ = ExportInteger(qInv, halfModulus);
+                rsaParameters.D = ExportInteger(d, pinned: true, rsaParameters.Modulus.Length);
+                rsaParameters.P = ExportInteger(p, pinned: true, halfModulus);
+                rsaParameters.Q = ExportInteger(q, pinned: true, halfModulus);
+                rsaParameters.DP = ExportInteger(dp, pinned: true, halfModulus);
+                rsaParameters.DQ = ExportInteger(dq, pinned: true, halfModulus);
+                rsaParameters.InverseQ = ExportInteger(qInv, pinned: true, halfModulus);
             }
             catch (AsnContentException e)
             {
@@ -137,7 +127,7 @@ namespace Internal.Cryptography
             }
         }
 
-        private static byte[] ExportInteger(ReadOnlySpan<byte> integerValue, int targetSize = -1)
+        private static byte[] ExportInteger(ReadOnlySpan<byte> integerValue, bool pinned, int targetSize = -1)
         {
             // The values are signed, so a leading 0 byte may be present to make the value positive.
             // Our export is unsigned, so strip it off if it's found.
@@ -148,7 +138,7 @@ namespace Internal.Cryptography
 
             if (targetSize > integerValue.Length)
             {
-                byte[] ret = CryptoPool.AllocatePinnedArray(targetSize);
+                byte[] ret = CryptoPool.AllocateArray(targetSize, pinned);
                 int shift = targetSize - integerValue.Length;
 
                 ret.AsSpan(0, shift).Clear();

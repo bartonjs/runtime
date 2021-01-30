@@ -40,10 +40,10 @@ namespace System.Security.Cryptography
             ArrayPool<byte>.Shared.Return(array, clearWholeArray);
         }
 
-        internal static byte[] AllocatePinnedArray(int length)
+        internal static byte[] AllocateArray(int length, bool pinned)
         {
             // Reflection-bound to GC.AllocateArray<byte>.
-            return s_allocateArray(length, true);
+            return s_allocateArray(length, pinned);
         }
 
         private static Func<int, bool, byte[]> GetAllocateArray()

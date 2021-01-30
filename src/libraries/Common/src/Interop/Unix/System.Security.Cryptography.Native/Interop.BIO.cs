@@ -116,5 +116,34 @@ internal static partial class Interop
                 }
             }
         }
+
+        internal static byte[] ReadMemoryBio(SafeBioHandle bio)
+        {
+            bool addedRef = false;
+
+            try
+            {
+                bio.DangerousAddRef(ref addedRef);
+                IntPtr bioPtr = bio.DangerousGetHandle();
+
+                int size = GetMemoryBioSize(bioPtr);
+                byte[] ret = new byte[size];
+
+                int read = CryptoNative_BioRead(
+                    bioPtr,
+                    ref MemoryMarshal.GetReference(ret.AsSpan()),
+                    ret.Length);
+
+                Debug.Assert(read == size);
+                return ret;
+            }
+            finally
+            {
+                if (addedRef)
+                {
+                    bio.DangerousRelease();
+                }
+            }
+        }
     }
 }
