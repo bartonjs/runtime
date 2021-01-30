@@ -105,20 +105,11 @@ CryptoNative_RsaVerify(int32_t type, const uint8_t* m, int32_t mlen, uint8_t* si
 Returns a BIO containing the RSAPublicKey format of the provided key, or NULL on error.
 */
 PALEXPORT BIO* CryptoNative_ExportRSAPublicKey(EVP_PKEY* pkey);
-/*
-Gets all the parameters from the RSA instance.
 
-Returns 1 upon success, otherwise 0.
+/*
+Returns a BIO containing the RSAPublicKey format of the provided key, or NULL on error.
 */
-PALEXPORT int32_t CryptoNative_GetRsaParameters(const RSA* rsa,
-                                                const BIGNUM** n,
-                                                const BIGNUM** e,
-                                                const BIGNUM** d,
-                                                const BIGNUM** p,
-                                                const BIGNUM** dmp1,
-                                                const BIGNUM** q,
-                                                const BIGNUM** dmq1,
-                                                const BIGNUM** iqmp);
+PALEXPORT BIO* CryptoNative_ExportRSAPrivateKey(EVP_PKEY* pkey);
 
 /*
 Sets all the parameters on the RSA instance.

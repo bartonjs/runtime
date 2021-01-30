@@ -405,6 +405,7 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     REQUIRED_FUNCTION(i2d_OCSP_REQUEST) \
     REQUIRED_FUNCTION(i2d_OCSP_RESPONSE) \
     REQUIRED_FUNCTION(i2d_PKCS7) \
+    REQUIRED_FUNCTION(i2d_RSAPrivateKey_bio) \
     REQUIRED_FUNCTION(i2d_RSAPublicKey_bio) \
     REQUIRED_FUNCTION(i2d_X509) \
     REQUIRED_FUNCTION(i2d_X509_PUBKEY) \
@@ -827,6 +828,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define i2d_OCSP_REQUEST i2d_OCSP_REQUEST_ptr
 #define i2d_OCSP_RESPONSE i2d_OCSP_RESPONSE_ptr
 #define i2d_PKCS7 i2d_PKCS7_ptr
+#define i2d_RSAPrivateKey_bio i2d_RSAPrivateKey_bio_ptr
 #define i2d_RSAPublicKey_bio i2d_RSAPublicKey_bio_ptr
 #define i2d_X509 i2d_X509_ptr
 #define i2d_X509_PUBKEY i2d_X509_PUBKEY_ptr

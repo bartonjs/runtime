@@ -352,46 +352,25 @@ BIO* CryptoNative_ExportRSAPublicKey(EVP_PKEY* pkey)
     return bio;
 }
 
-int32_t CryptoNative_GetRsaParameters(const RSA* rsa,
-                                      const BIGNUM** n,
-                                      const BIGNUM** e,
-                                      const BIGNUM** d,
-                                      const BIGNUM** p,
-                                      const BIGNUM** dmp1,
-                                      const BIGNUM** q,
-                                      const BIGNUM** dmq1,
-                                      const BIGNUM** iqmp)
+BIO* CryptoNative_ExportRSAPrivateKey(EVP_PKEY* pkey)
 {
-    if (!rsa || !n || !e || !d || !p || !dmp1 || !q || !dmq1 || !iqmp)
+    BIO* bio = BIO_new(BIO_s_mem());
+
+    if (bio == NULL)
     {
-        assert(false);
-
-        // since these parameters are 'out' parameters in managed code, ensure they are initialized
-        if (n)
-            *n = NULL;
-        if (e)
-            *e = NULL;
-        if (d)
-            *d = NULL;
-        if (p)
-            *p = NULL;
-        if (dmp1)
-            *dmp1 = NULL;
-        if (q)
-            *q = NULL;
-        if (dmq1)
-            *dmq1 = NULL;
-        if (iqmp)
-            *iqmp = NULL;
-
-        return 0;
+        return NULL;
     }
 
-    RSA_get0_key(rsa, n, e, d);
-    RSA_get0_factors(rsa, p, q);
-    RSA_get0_crt_params(rsa, dmp1, dmq1, iqmp);
+    // get0 means not upreffed, don't free.
+    RSA* rsa = EVP_PKEY_get0_RSA(pkey);
 
-    return 1;
+    if (rsa == NULL || HasNoPrivateKey(rsa) || i2d_RSAPrivateKey_bio(bio, rsa) <= 0)
+    {
+        BIO_free(bio);
+        return NULL;
+    }
+
+    return bio;
 }
 
 static BIGNUM* MakeBignum(uint8_t* buffer, int32_t bufferLength)
