@@ -354,56 +354,32 @@ namespace System.Security.Cryptography
 
         public override RSAParameters ExportParameters(bool includePrivateParameters)
         {
-            if (includePrivateParameters)
-            {
-                // It's entirely possible that this line will cause the key to be generated in the first place.
-                SafeEvpPKeyHandle pkey = GetKey();
-                // Temporary blockless using, pending refactor.
-                using SafeRsaHandle key = Interop.Crypto.EvpPkeyGetRsa(pkey);
-
-                RSAParameters rsaParameters = Interop.Crypto.ExportRsaParameters(key, includePrivateParameters);
-                bool hasPrivateKey = rsaParameters.D != null;
-
-                if (hasPrivateKey != includePrivateParameters || !HasConsistentPrivateKey(ref rsaParameters))
-                {
-                    throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
-                }
-
-                return rsaParameters;
-            }
-
-            ArraySegment<byte> rsaPublicKey = NativeExportRSAPublicKey();
+            RSAParameters rsaParameters = default;
+            ArraySegment<byte> rented = default;
 
             try
             {
-                AsnValueReader reader = new AsnValueReader(rsaPublicKey, AsnEncodingRules.DER);
-                AsnValueReader pubKey = reader.ReadSequence();
-                reader.ThrowIfNotEmpty();
-
-                ReadOnlySpan<byte> modulus = pubKey.ReadIntegerBytes();
-                ReadOnlySpan<byte> exponent = pubKey.ReadIntegerBytes();
-                pubKey.ThrowIfNotEmpty();
-
-                if (modulus[0] == 0)
+                if (includePrivateParameters)
                 {
-                    modulus = modulus.Slice(1);
+                    rented = NativeExportRSAPrivateKey();
+                    AsymmetricAlgorithmHelpers.FromRSAPrivateKey(rented, ref rsaParameters);
                 }
-
-                if (exponent[0] == 0)
+                else
                 {
-                    exponent = exponent.Slice(1);
+                    rented = NativeExportRSAPublicKey();
+                    AsymmetricAlgorithmHelpers.FromRSAPublicKey(rented, ref rsaParameters);
                 }
-
-                return new RSAParameters
-                {
-                    Modulus = modulus.ToArray(),
-                    Exponent = exponent.ToArray(),
-                };
             }
             finally
             {
-                CryptoPool.Return(rsaPublicKey);
+                if (rented.Array != null)
+                {
+                    CryptoPool.Return(rented);
+                    rented = default;
+                }
             }
+
+            return rsaParameters;
         }
 
         public override void ImportParameters(RSAParameters parameters)
@@ -537,17 +513,17 @@ namespace System.Security.Cryptography
 
             using (SafeBioHandle bio = Interop.Crypto.ExportRSAPublicKey(key))
             {
-                int size = Interop.Crypto.GetMemoryBioSize(bio);
+                return Interop.Crypto.TryReadMemoryBio(bio, destination, out bytesWritten);
+            }
+        }
 
-                if (destination.Length < size)
-                {
-                    bytesWritten = 0;
-                    return false;
-                }
+        public override bool TryExportRSAPrivateKey(Span<byte> destination, out int bytesWritten)
+        {
+            SafeEvpPKeyHandle key = GetKey();
 
-                bytesWritten = Interop.Crypto.BioRead(bio, destination);
-                Debug.Assert(bytesWritten == size);
-                return true;
+            using (SafeBioHandle bio = Interop.Crypto.ExportRSAPrivateKey(key))
+            {
+                return Interop.Crypto.TryReadMemoryBio(bio, destination, out bytesWritten);
             }
         }
 
@@ -557,13 +533,17 @@ namespace System.Security.Cryptography
 
             using (SafeBioHandle bio = Interop.Crypto.ExportRSAPublicKey(key))
             {
-                int size = Interop.Crypto.GetMemoryBioSize(bio);
-                byte[] rented = CryptoPool.Rent(size);
+                return Interop.Crypto.RentReadMemoryBio(bio);
+            }
+        }
 
-                int read = Interop.Crypto.BioRead(bio, rented);
-                Debug.Assert(read == size);
+        private ArraySegment<byte> NativeExportRSAPrivateKey()
+        {
+            SafeEvpPKeyHandle key = GetKey();
 
-                return new ArraySegment<byte>(rented, 0, read);
+            using (SafeBioHandle bio = Interop.Crypto.ExportRSAPrivateKey(key))
+            {
+                return Interop.Crypto.RentReadMemoryBio(bio);
             }
         }
 

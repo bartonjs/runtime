@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
@@ -31,6 +33,9 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative)]
         private static extern int CryptoNative_BioRead(SafeBioHandle b, ref byte data, int len);
 
+        [DllImport(Libraries.CryptoNative)]
+        private static extern int CryptoNative_BioRead(IntPtr b, ref byte data, int len);
+
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioWrite")]
         internal static extern int BioWrite(SafeBioHandle b, byte[] data, int len);
 
@@ -43,7 +48,73 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetMemoryBioSize")]
         internal static extern int GetMemoryBioSize(SafeBioHandle bio);
 
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetMemoryBioSize")]
+        private static extern int GetMemoryBioSize(IntPtr bio);
+
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioCtrlPending")]
         internal static extern int BioCtrlPending(SafeBioHandle bio);
+
+        internal static bool TryReadMemoryBio(SafeBioHandle source, Span<byte> destination, out int bytesWritten)
+        {
+            bool addedRef = false;
+
+            try
+            {
+                source.DangerousAddRef(ref addedRef);
+                IntPtr sourcePtr = source.DangerousGetHandle();
+
+                int size = GetMemoryBioSize(sourcePtr);
+
+                if (destination.Length < size)
+                {
+                    bytesWritten = 0;
+                    return false;
+                }
+
+                bytesWritten = CryptoNative_BioRead(
+                    sourcePtr,
+                    ref MemoryMarshal.GetReference(destination),
+                    destination.Length);
+
+                Debug.Assert(bytesWritten == size);
+                return true;
+            }
+            finally
+            {
+                if (addedRef)
+                {
+                    source.DangerousRelease();
+                }
+            }
+        }
+
+        internal static ArraySegment<byte> RentReadMemoryBio(SafeBioHandle bio)
+        {
+            bool addedRef = false;
+
+            try
+            {
+                bio.DangerousAddRef(ref addedRef);
+                IntPtr bioPtr = bio.DangerousGetHandle();
+
+                int size = GetMemoryBioSize(bioPtr);
+                byte[] rented = CryptoPool.Rent(size);
+
+                int read = CryptoNative_BioRead(
+                    bioPtr,
+                    ref MemoryMarshal.GetReference(rented.AsSpan()),
+                    rented.Length);
+
+                Debug.Assert(read == size);
+                return new ArraySegment<byte>(rented, 0, read);
+            }
+            finally
+            {
+                if (addedRef)
+                {
+                    bio.DangerousRelease();
+                }
+            }
+        }
     }
 }

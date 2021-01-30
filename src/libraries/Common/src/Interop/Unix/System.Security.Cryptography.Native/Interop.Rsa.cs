@@ -157,75 +157,37 @@ internal static partial class Interop
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool RsaVerify(int type, ref byte m, int m_len, ref byte sigbuf, int siglen, SafeRsaHandle rsa);
 
-        internal static RSAParameters ExportRsaParameters(SafeRsaHandle key, bool includePrivateParameters)
+        internal static SafeBioHandle ExportRSAPublicKey(SafeEvpPKeyHandle pkey)
         {
-            Debug.Assert(
-                key != null && !key.IsInvalid,
-                "Callers should check the key is invalid and throw an exception with a message");
+            SafeBioHandle bio = CryptoNative_ExportRSAPublicKey(pkey);
 
-            if (key == null || key.IsInvalid)
+            if (bio.IsInvalid)
             {
-                throw new CryptographicException();
+                bio.Dispose();
+                throw CreateOpenSslCryptographicException();
             }
 
-            bool addedRef = false;
-
-            try
-            {
-                key.DangerousAddRef(ref addedRef);
-
-                IntPtr n, e, d, p, dmp1, q, dmq1, iqmp;
-                if (!GetRsaParameters(key, out n, out e, out d, out p, out dmp1, out q, out dmq1, out iqmp))
-                {
-                    throw new CryptographicException();
-                }
-
-                int modulusSize = Crypto.RsaSize(key);
-
-                // RSACryptoServiceProvider expects P, DP, Q, DQ, and InverseQ to all
-                // be padded up to half the modulus size.
-                int halfModulus = modulusSize / 2;
-
-                RSAParameters rsaParameters = new RSAParameters
-                {
-                    Modulus = Crypto.ExtractBignum(n, modulusSize)!,
-                    Exponent = Crypto.ExtractBignum(e, 0)!,
-                };
-
-                if (includePrivateParameters)
-                {
-                    rsaParameters.D = Crypto.ExtractBignum(d, modulusSize);
-                    rsaParameters.P = Crypto.ExtractBignum(p, halfModulus);
-                    rsaParameters.DP = Crypto.ExtractBignum(dmp1, halfModulus);
-                    rsaParameters.Q = Crypto.ExtractBignum(q, halfModulus);
-                    rsaParameters.DQ = Crypto.ExtractBignum(dmq1, halfModulus);
-                    rsaParameters.InverseQ = Crypto.ExtractBignum(iqmp, halfModulus);
-                }
-
-                return rsaParameters;
-            }
-            finally
-            {
-                if (addedRef)
-                    key.DangerousRelease();
-            }
+            return bio;
         }
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ExportRSAPublicKey")]
-        internal static extern SafeBioHandle ExportRSAPublicKey(SafeEvpPKeyHandle pkey);
+        [DllImport(Libraries.CryptoNative)]
+        private static extern SafeBioHandle CryptoNative_ExportRSAPublicKey(SafeEvpPKeyHandle pkey);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetRsaParameters")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool GetRsaParameters(
-            SafeRsaHandle key,
-            out IntPtr n,
-            out IntPtr e,
-            out IntPtr d,
-            out IntPtr p,
-            out IntPtr dmp1,
-            out IntPtr q,
-            out IntPtr dmq1,
-            out IntPtr iqmp);
+        internal static SafeBioHandle ExportRSAPrivateKey(SafeEvpPKeyHandle pkey)
+        {
+            SafeBioHandle bio = CryptoNative_ExportRSAPrivateKey(pkey);
+
+            if (bio.IsInvalid)
+            {
+                bio.Dispose();
+                throw CreateOpenSslCryptographicException();
+            }
+
+            return bio;
+        }
+
+        [DllImport(Libraries.CryptoNative)]
+        private static extern SafeBioHandle CryptoNative_ExportRSAPrivateKey(SafeEvpPKeyHandle pkey);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SetRsaParameters")]
         [return: MarshalAs(UnmanagedType.Bool)]
