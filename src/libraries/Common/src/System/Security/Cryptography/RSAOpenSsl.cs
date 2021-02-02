@@ -87,6 +87,8 @@ namespace System.Security.Cryptography
             if (padding == null)
                 throw new ArgumentNullException(nameof(padding));
 
+            ValidatePadding(padding);
+
             SafeEvpPKeyHandle key = GetKey();
             int rsaSize = AsymmetricAlgorithmHelpers.BitsToBytes(KeySize);
             byte[]? buf = null;
@@ -118,23 +120,7 @@ namespace System.Security.Cryptography
             RSAEncryptionPadding padding,
             out int bytesWritten)
         {
-            if (padding == null)
-            {
-                throw new ArgumentNullException(nameof(padding));
-            }
-
-            if (padding.Mode == RSAEncryptionPaddingMode.Pkcs1)
-            {
-                // Fail if any options are set other than the mode.
-                if (padding != RSAEncryptionPadding.Pkcs1)
-                {
-                    throw PaddingModeNotSupported();
-                }
-            }
-            else if (padding.Mode != RSAEncryptionPaddingMode.Oaep)
-            {
-                throw PaddingModeNotSupported();
-            }
+            ValidatePadding(padding);
 
             SafeEvpPKeyHandle key = GetKey();
             int keySizeBytes = AsymmetricAlgorithmHelpers.BitsToBytes(KeySize);
@@ -203,9 +189,7 @@ namespace System.Security.Cryptography
                 hashAlgorithm = Interop.Crypto.GetDigestAlgorithm(rsaPadding.OaepHashAlgorithm.Name);
             }
 
-            int returnValue;
-
-            returnValue = Interop.Crypto.RsaDecrypt(
+            int returnValue = Interop.Crypto.RsaDecrypt(
                 key,
                 data,
                 rsaPadding.Mode,
@@ -238,19 +222,16 @@ namespace System.Security.Cryptography
             if (padding == null)
                 throw new ArgumentNullException(nameof(padding));
 
-            Interop.Crypto.RsaPadding rsaPadding = GetInteropPadding(padding, out RsaPaddingProcessor? oaepProcessor);
-            SafeEvpPKeyHandle pkey = GetKey();
-            // Temporary blockless using, pending refactor.
-            using SafeRsaHandle key = Interop.Crypto.EvpPkeyGetRsa(pkey);
+            ValidatePadding(padding);
 
-            byte[] buf = new byte[Interop.Crypto.RsaSize(key)];
+            SafeEvpPKeyHandle key = GetKey();
+            byte[] buf = new byte[AsymmetricAlgorithmHelpers.BitsToBytes(KeySize)];
 
             bool encrypted = TryEncrypt(
                 key,
                 data,
                 buf,
-                rsaPadding,
-                oaepProcessor,
+                padding,
                 out int bytesWritten);
 
             if (!encrypted || bytesWritten != buf.Length)
@@ -269,23 +250,10 @@ namespace System.Security.Cryptography
                 throw new ArgumentNullException(nameof(padding));
             }
 
-            Interop.Crypto.RsaPadding rsaPadding = GetInteropPadding(padding, out RsaPaddingProcessor? oaepProcessor);
-            SafeEvpPKeyHandle pkey = GetKey();
-            // Temporary blockless using, pending refactor.
-            using SafeRsaHandle key = Interop.Crypto.EvpPkeyGetRsa(pkey);
+            ValidatePadding(padding);
 
-            return TryEncrypt(key, data, destination, rsaPadding, oaepProcessor, out bytesWritten);
-        }
-
-        private static bool TryEncrypt(
-            SafeRsaHandle key,
-            ReadOnlySpan<byte> data,
-            Span<byte> destination,
-            Interop.Crypto.RsaPadding rsaPadding,
-            RsaPaddingProcessor? rsaPaddingProcessor,
-            out int bytesWritten)
-        {
-            int rsaSize = Interop.Crypto.RsaSize(key);
+            SafeEvpPKeyHandle key = GetKey();
+            int rsaSize = AsymmetricAlgorithmHelpers.BitsToBytes(KeySize);
 
             if (destination.Length < rsaSize)
             {
@@ -293,38 +261,45 @@ namespace System.Security.Cryptography
                 return false;
             }
 
-            int returnValue;
+            bool ret = TryEncrypt(key, data, destination, padding, out bytesWritten);
+            Debug.Assert(!ret || bytesWritten == rsaSize);
+            return ret;
+        }
 
-            if (rsaPaddingProcessor != null)
+        private static bool TryEncrypt(
+            SafeEvpPKeyHandle key,
+            ReadOnlySpan<byte> data,
+            Span<byte> destination,
+            RSAEncryptionPadding padding,
+            out int bytesWritten)
+        {
+            // Caller should have already checked this.
+            Debug.Assert(!key.IsInvalid);
+
+            // No destination size check here, it's the caller's responsibility.
+            IntPtr hashAlgorithm = IntPtr.Zero;
+
+            if (padding.Mode == RSAEncryptionPaddingMode.Oaep)
             {
-                Debug.Assert(rsaPadding == Interop.Crypto.RsaPadding.NoPadding);
-                byte[] rented = CryptoPool.Rent(rsaSize);
-                Span<byte> tmp = new Span<byte>(rented, 0, rsaSize);
-
-                try
-                {
-                    rsaPaddingProcessor.PadOaep(data, tmp);
-                    returnValue = Interop.Crypto.RsaPublicEncrypt(tmp.Length, tmp, destination, key, rsaPadding);
-                }
-                finally
-                {
-                    CryptographicOperations.ZeroMemory(tmp);
-                    CryptoPool.Return(rented, clearSize: 0);
-                }
-            }
-            else
-            {
-                Debug.Assert(rsaPadding != Interop.Crypto.RsaPadding.NoPadding);
-
-                returnValue = Interop.Crypto.RsaPublicEncrypt(data.Length, data, destination, key, rsaPadding);
+                Debug.Assert(padding.OaepHashAlgorithm.Name != null);
+                hashAlgorithm = Interop.Crypto.GetDigestAlgorithm(padding.OaepHashAlgorithm.Name);
             }
 
-            CheckReturn(returnValue);
+            int returnValue = Interop.Crypto.RsaEncrypt(
+                key,
+                data,
+                padding.Mode,
+                hashAlgorithm,
+                destination);
+
+            if (returnValue < 0)
+            {
+                Debug.Assert(returnValue == -1);
+                throw Interop.Crypto.CreateOpenSslCryptographicException();
+            }
 
             bytesWritten = returnValue;
-            Debug.Assert(returnValue == rsaSize);
             return true;
-
         }
 
         private static Interop.Crypto.RsaPadding GetInteropPadding(
@@ -882,6 +857,27 @@ namespace System.Security.Cryptography
             }
 
             return nid;
+        }
+
+        private static void ValidatePadding(RSAEncryptionPadding padding)
+        {
+            if (padding == null)
+            {
+                throw new ArgumentNullException(nameof(padding));
+            }
+
+            if (padding.Mode == RSAEncryptionPaddingMode.Pkcs1)
+            {
+                // Fail if any options are set other than the mode.
+                if (padding != RSAEncryptionPadding.Pkcs1)
+                {
+                    throw PaddingModeNotSupported();
+                }
+            }
+            else if (padding.Mode != RSAEncryptionPaddingMode.Oaep)
+            {
+                throw PaddingModeNotSupported();
+            }
         }
 
         private static Exception PaddingModeNotSupported() =>
