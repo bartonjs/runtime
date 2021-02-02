@@ -369,6 +369,8 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     REQUIRED_FUNCTION(EVP_PKEY_derive_set_peer) \
     REQUIRED_FUNCTION(EVP_PKEY_derive_init) \
     REQUIRED_FUNCTION(EVP_PKEY_derive) \
+    REQUIRED_FUNCTION(EVP_PKEY_encrypt) \
+    REQUIRED_FUNCTION(EVP_PKEY_encrypt_init) \
     REQUIRED_FUNCTION(EVP_PKEY_free) \
     REQUIRED_FUNCTION(EVP_PKEY_get0_RSA) \
     REQUIRED_FUNCTION(EVP_PKEY_get1_DSA) \
@@ -792,6 +794,8 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_PKEY_derive_set_peer EVP_PKEY_derive_set_peer_ptr
 #define EVP_PKEY_derive_init EVP_PKEY_derive_init_ptr
 #define EVP_PKEY_derive EVP_PKEY_derive_ptr
+#define EVP_PKEY_encrypt EVP_PKEY_encrypt_ptr
+#define EVP_PKEY_encrypt_init EVP_PKEY_encrypt_init_ptr
 #define EVP_PKEY_free EVP_PKEY_free_ptr
 #define EVP_PKEY_get0_RSA EVP_PKEY_get0_RSA_ptr
 #define EVP_PKEY_get1_DSA EVP_PKEY_get1_DSA_ptr

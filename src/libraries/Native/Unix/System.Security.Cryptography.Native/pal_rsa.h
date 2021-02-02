@@ -55,6 +55,14 @@ PALEXPORT int32_t
 CryptoNative_RsaPublicEncrypt(int32_t flen, const uint8_t* from, uint8_t* to, RSA* rsa, RsaPadding padding);
 
 /*
+Encrypt data with an RSA key.
+
+Returns a negative number on error, otherwise the number of bytes written to destination.
+*/
+PALEXPORT int32_t
+CryptoNative_RsaEncrypt(EVP_PKEY* pkey, const uint8_t* data, int32_t dataLen, RsaPadding padding, const EVP_MD* digest, uint8_t* destination);
+
+/*
 Decrypt data with an RSA key.
 
 Returns a negative number on error, otherwise the number of bytes written to destination.

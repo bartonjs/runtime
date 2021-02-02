@@ -223,6 +223,7 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_RsaCreate)
     DllImportEntry(CryptoNative_RsaDecrypt)
     DllImportEntry(CryptoNative_RsaDestroy)
+    DllImportEntry(CryptoNative_RsaEncrypt)
     DllImportEntry(CryptoNative_RsaGenerateKey)
     DllImportEntry(CryptoNative_RsaPublicEncrypt)
     DllImportEntry(CryptoNative_RsaSignHash)
