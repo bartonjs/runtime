@@ -454,6 +454,14 @@ CryptoNative_RsaVerifyHash(EVP_PKEY* pkey, RsaPadding padding, const EVP_MD* dig
         goto done;
     }
 
+    // EVP_PKEY_verify is not consistent on whether a mis-sized hash is an error or just a mismatch.
+    // Normalize to mismatch.
+    if (hashLen != EVP_MD_size(digest))
+    {
+        ret = 0;
+        goto done;
+    }
+
     ret = EVP_PKEY_verify(ctx, signature, Int32ToSizeT(sigLen), hash, Int32ToSizeT(hashLen));
 
 done:
