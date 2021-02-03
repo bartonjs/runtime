@@ -397,6 +397,71 @@ done:
 }
 
 int32_t
+CryptoNative_RsaVerifyHash(EVP_PKEY* pkey, RsaPadding padding, const EVP_MD* digest, const uint8_t* hash, int32_t hashLen, uint8_t* signature, int32_t sigLen)
+{
+    const int UsageError = INT_MIN;
+
+    if (pkey == NULL || digest == NULL || hash == NULL || hashLen < 0 || signature == NULL || sigLen < 0)
+    {
+        return UsageError;
+    }
+
+    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(pkey, NULL);
+
+    if (ctx == NULL)
+    {
+        return -1;
+    }
+
+    int ret = 0;
+
+    if (EVP_PKEY_verify_init(ctx) <= 0)
+    {
+        goto done;
+    }
+
+    if (padding == Pkcs1)
+    {
+        if (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_PADDING) <= 0)
+        {
+            goto done;
+        }
+    }
+    else if (padding == OaepOrPss)
+    {
+        if (EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_PSS_PADDING) <= 0)
+        {
+            goto done;
+        }
+
+        if (EVP_PKEY_CTX_set_rsa_pss_saltlen(ctx, RSA_PSS_SALTLEN_DIGEST) <= 0)
+        {
+            goto done;
+        }
+    }
+    else
+    {
+        // Usage error: unknown padding.
+        ret = UsageError;
+        goto done;
+    }
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcast-qual"
+    if (EVP_PKEY_CTX_set_signature_md(ctx, digest) <= 0)
+#pragma clang diagnostic pop
+    {
+        goto done;
+    }
+
+    ret = EVP_PKEY_verify(ctx, signature, Int32ToSizeT(sigLen), hash, Int32ToSizeT(hashLen));
+
+done:
+    EVP_PKEY_CTX_free(ctx);
+    return ret;
+}
+
+int32_t
 CryptoNative_RsaVerify(int32_t type, const uint8_t* m, int32_t mlen, uint8_t* sigbuf, int32_t siglen, RSA* rsa)
 {
     return RSA_verify(type, m, Int32ToUint32(mlen), sigbuf, Int32ToUint32(siglen), rsa);

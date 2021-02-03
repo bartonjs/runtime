@@ -102,6 +102,16 @@ PALEXPORT int32_t
 CryptoNative_RsaSignHash(EVP_PKEY* pkey, RsaPadding padding, const EVP_MD* digest, const uint8_t* hash, int32_t hashLen, uint8_t* dest, int32_t* sigLen);
 
 /*
+Verifies a hash using the specified padding algorithm (RSASSA-PKCS1_v1.5 or RSASSA-PSS).
+
+For PSS, the salt length is the digest length, and the MGF1 digest is the same as the data digest.
+
+Returns 1 on success, 0 on signature failure, INT_MIN on a usage error, -1 on an OpenSSL error.
+*/
+PALEXPORT int32_t
+CryptoNative_RsaVerifyHash(EVP_PKEY* pkey, RsaPadding padding, const EVP_MD* digest, const uint8_t* hash, int32_t hashLen, uint8_t* signature, int32_t sigLen);
+
+/*
 Shims the RSA_verify method.
 
 Returns 1 upon success, otherwise 0.

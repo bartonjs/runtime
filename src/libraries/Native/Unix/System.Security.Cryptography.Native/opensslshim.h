@@ -386,6 +386,8 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     REQUIRED_FUNCTION(EVP_PKEY_size) \
     REQUIRED_FUNCTION(EVP_PKEY_set1_RSA) \
     FALLBACK_FUNCTION(EVP_PKEY_up_ref) \
+    REQUIRED_FUNCTION(EVP_PKEY_verify) \
+    REQUIRED_FUNCTION(EVP_PKEY_verify_init) \
     REQUIRED_FUNCTION(EVP_rc2_cbc) \
     REQUIRED_FUNCTION(EVP_rc2_ecb) \
     REQUIRED_FUNCTION(EVP_sha1) \
@@ -811,6 +813,8 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_PKEY_sign_init EVP_PKEY_sign_init_ptr
 #define EVP_PKEY_size EVP_PKEY_size_ptr
 #define EVP_PKEY_up_ref EVP_PKEY_up_ref_ptr
+#define EVP_PKEY_verify EVP_PKEY_verify_ptr
+#define EVP_PKEY_verify_init EVP_PKEY_verify_init_ptr
 #define EVP_rc2_cbc EVP_rc2_cbc_ptr
 #define EVP_rc2_ecb EVP_rc2_ecb_ptr
 #define EVP_sha1 EVP_sha1_ptr
