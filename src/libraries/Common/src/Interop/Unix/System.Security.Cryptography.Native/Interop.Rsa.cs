@@ -157,6 +157,47 @@ internal static partial class Interop
             ref byte dest,
             out int sigLen);
 
+        internal static bool RsaVerifyHash(
+            SafeEvpPKeyHandle pkey,
+            RSASignaturePaddingMode paddingMode,
+            IntPtr digest,
+            ReadOnlySpan<byte> hash,
+            ReadOnlySpan<byte> signature)
+        {
+            int ret = CryptoNative_RsaVerifyHash(
+                pkey,
+                paddingMode,
+                digest,
+                ref MemoryMarshal.GetReference(hash),
+                hash.Length,
+                ref MemoryMarshal.GetReference(signature),
+                signature.Length);
+
+            if (ret == int.MinValue)
+            {
+                Debug.Fail("Shim reports API usage error");
+                throw new CryptographicException();
+            }
+
+            if (ret < 0)
+            {
+                throw CreateOpenSslCryptographicException();
+            }
+
+            Debug.Assert(ret < 2);
+            return ret == 1;
+        }
+
+        [DllImport(Libraries.CryptoNative)]
+        private static extern int CryptoNative_RsaVerifyHash(
+            SafeEvpPKeyHandle pkey,
+            RSASignaturePaddingMode paddingMode,
+            IntPtr digest,
+            ref byte hash,
+            int hashLen,
+            ref byte signature,
+            int sigLen);
+
         internal static bool RsaVerify(int type, ReadOnlySpan<byte> m, ReadOnlySpan<byte> sigbuf, SafeRsaHandle rsa)
         {
             bool ret = RsaVerify(

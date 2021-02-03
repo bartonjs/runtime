@@ -660,13 +660,14 @@ namespace System.Security.Cryptography
                 throw new ArgumentNullException(nameof(hash));
             if (string.IsNullOrEmpty(hashAlgorithm.Name))
                 throw HashAlgorithmNameNullOrEmpty();
-            if (padding == null)
-                throw new ArgumentNullException(nameof(padding));
+
+            ValidatePadding(padding);
 
             if (!TrySignHash(
                 hash,
                 Span<byte>.Empty,
-                hashAlgorithm, padding,
+                hashAlgorithm,
+                padding,
                 true,
                 out int bytesWritten,
                 out byte[]? signature))
@@ -690,10 +691,8 @@ namespace System.Security.Cryptography
             {
                 throw HashAlgorithmNameNullOrEmpty();
             }
-            if (padding == null)
-            {
-                throw new ArgumentNullException(nameof(padding));
-            }
+
+            ValidatePadding(padding);
 
             bool ret = TrySignHash(
                 hash,
@@ -721,16 +720,6 @@ namespace System.Security.Cryptography
             Debug.Assert(padding != null);
 
             signature = null;
-
-            switch (padding.Mode)
-            {
-                case RSASignaturePaddingMode.Pkcs1:
-                case RSASignaturePaddingMode.Pss:
-                    break;
-                default:
-                    throw PaddingModeNotSupported();
-            }
-
             SafeEvpPKeyHandle key = GetKey();
 
             int bytesRequired = AsymmetricAlgorithmHelpers.BitsToBytes(KeySize);
@@ -778,85 +767,27 @@ namespace System.Security.Cryptography
             return VerifyHash(new ReadOnlySpan<byte>(hash), new ReadOnlySpan<byte>(signature), hashAlgorithm, padding);
         }
 
-        public override bool VerifyHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
+        public override bool VerifyHash(
+            ReadOnlySpan<byte> hash,
+            ReadOnlySpan<byte> signature,
+            HashAlgorithmName hashAlgorithm,
+            RSASignaturePadding padding)
         {
             if (string.IsNullOrEmpty(hashAlgorithm.Name))
             {
                 throw HashAlgorithmNameNullOrEmpty();
             }
-            if (padding == null)
-            {
-                throw new ArgumentNullException(nameof(padding));
-            }
 
-            if (padding == RSASignaturePadding.Pkcs1)
-            {
-                int algorithmNid = GetAlgorithmNid(hashAlgorithm);
-                SafeEvpPKeyHandle pkey = GetKey();
+            ValidatePadding(padding);
 
-                using (SafeRsaHandle rsa = Interop.Crypto.EvpPkeyGetRsa(pkey))
-                {
-                    return Interop.Crypto.RsaVerify(algorithmNid, hash, signature, rsa);
-                }
-            }
-            else if (padding == RSASignaturePadding.Pss)
-            {
-                RsaPaddingProcessor processor = RsaPaddingProcessor.OpenProcessor(hashAlgorithm);
-                SafeEvpPKeyHandle pkey = GetKey();
-                // Temporary blockless using, pending refactor.
-                using SafeRsaHandle rsa = Interop.Crypto.EvpPkeyGetRsa(pkey);
+            SafeEvpPKeyHandle key = GetKey();
 
-                int requiredBytes = Interop.Crypto.RsaSize(rsa);
-
-                if (signature.Length != requiredBytes)
-                {
-                    return false;
-                }
-
-                if (hash.Length != processor.HashLength)
-                {
-                    return false;
-                }
-
-                byte[] rented = CryptoPool.Rent(requiredBytes);
-                Span<byte> unwrapped = new Span<byte>(rented, 0, requiredBytes);
-
-                try
-                {
-                    int ret = Interop.Crypto.RsaVerificationPrimitive(signature, unwrapped, rsa);
-
-                    CheckReturn(ret);
-
-                    Debug.Assert(
-                        ret == requiredBytes,
-                        $"RSA_private_encrypt returned {ret} when {requiredBytes} was expected");
-
-                    return processor.VerifyPss(hash, unwrapped, KeySize);
-                }
-                finally
-                {
-                    CryptoPool.Return(rented, requiredBytes);
-                }
-            }
-
-            throw PaddingModeNotSupported();
-        }
-
-        private static int GetAlgorithmNid(HashAlgorithmName hashAlgorithmName)
-        {
-            // All of the current HashAlgorithmName values correspond to the SN values in OpenSSL 0.9.8.
-            // If there's ever a new one that doesn't, translate it here.
-            string sn = hashAlgorithmName.Name!;
-
-            int nid = Interop.Crypto.ObjSn2Nid(sn);
-
-            if (nid == Interop.Crypto.NID_undef)
-            {
-                Interop.Crypto.ErrClearError();
-                throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmName.Name);
-            }
-
-            return nid;
+            return Interop.Crypto.RsaVerifyHash(
+                key,
+                padding.Mode,
+                Interop.Crypto.GetDigestAlgorithm(hashAlgorithm.Name),
+                hash,
+                signature);
         }
 
         private static void ValidatePadding(RSAEncryptionPadding padding)
@@ -875,6 +806,34 @@ namespace System.Security.Cryptography
                 }
             }
             else if (padding.Mode != RSAEncryptionPaddingMode.Oaep)
+            {
+                throw PaddingModeNotSupported();
+            }
+        }
+
+        private static void ValidatePadding(RSASignaturePadding padding)
+        {
+            if (padding == null)
+            {
+                throw new ArgumentNullException(nameof(padding));
+            }
+
+            // RSASignaturePadding currently only has the mode property, so
+            // there's no need for a runtime check that PKCS#1 doesn't use
+            // nonsensical options like with RSAEncryptionPadding.
+            //
+            // This would change if we supported PSS with an MGF other than MGF-1,
+            // or with a custom salt size, or with a different MGF digest algorithm
+            // than the data digest algorithm.
+            if (padding.Mode == RSASignaturePaddingMode.Pkcs1)
+            {
+                Debug.Assert(padding == RSASignaturePadding.Pkcs1);
+            }
+            else if (padding.Mode == RSASignaturePaddingMode.Pss)
+            {
+                Debug.Assert(padding == RSASignaturePadding.Pss);
+            }
+            else
             {
                 throw PaddingModeNotSupported();
             }
