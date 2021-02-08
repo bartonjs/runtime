@@ -362,62 +362,20 @@ namespace System.Security.Cryptography
             ValidateParameters(ref parameters);
             ThrowIfDisposed();
 
-            SafeRsaHandle key = Interop.Crypto.RsaCreate();
-            bool imported = false;
-
-            Interop.Crypto.CheckValidOpenSslHandle(key);
-
-            try
-            {
-                if (!Interop.Crypto.SetRsaParameters(
-                    key,
-                    parameters.Modulus,
-                    parameters.Modulus != null ? parameters.Modulus.Length : 0,
-                    parameters.Exponent,
-                    parameters.Exponent != null ? parameters.Exponent.Length : 0,
-                    parameters.D,
-                    parameters.D != null ? parameters.D.Length : 0,
-                    parameters.P,
-                    parameters.P != null ? parameters.P.Length : 0,
-                    parameters.DP,
-                    parameters.DP != null ? parameters.DP.Length : 0,
-                    parameters.Q,
-                    parameters.Q != null ? parameters.Q.Length : 0,
-                    parameters.DQ,
-                    parameters.DQ != null ? parameters.DQ.Length : 0,
-                    parameters.InverseQ,
-                    parameters.InverseQ != null ? parameters.InverseQ.Length : 0))
-                {
-                    throw Interop.Crypto.CreateOpenSslCryptographicException();
-                }
-
-                imported = true;
-            }
-            finally
-            {
-                if (!imported)
-                {
-                    key.Dispose();
-                }
-            }
-
-            SafeEvpPKeyHandle pkey = Interop.Crypto.EvpPkeyCreate();
-
-            if (!Interop.Crypto.EvpPkeySetRsa(pkey, key))
-            {
-                pkey.Dispose();
-                key.Dispose();
-                throw Interop.Crypto.CreateOpenSslCryptographicException();
-            }
+            ArraySegment<byte> rentedPkcs8 = parameters.ToPkcs8();
+            SafeEvpPKeyHandle imported = Interop.Crypto.DecodeRsaPkcs8(rentedPkcs8);
+            CryptoPool.Return(rentedPkcs8);
 
             FreeKey();
 
-            _key = new Lazy<SafeEvpPKeyHandle>(pkey);
+            _key = new Lazy<SafeEvpPKeyHandle>(imported);
+
+            // Temporary blockless using, pending refactor.
+            using SafeRsaHandle key = Interop.Crypto.EvpPkeyGetRsa(imported);
 
             // Use ForceSet instead of the property setter to ensure that LegalKeySizes doesn't interfere
             // with the already loaded key.
             ForceSetKeySize(BitsPerByte * Interop.Crypto.RsaSize(key));
-            key.Dispose();
         }
 
         public override void ImportRSAPublicKey(ReadOnlySpan<byte> source, out int bytesRead)

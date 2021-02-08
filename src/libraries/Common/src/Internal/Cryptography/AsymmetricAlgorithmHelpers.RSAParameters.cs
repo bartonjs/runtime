@@ -127,6 +127,67 @@ namespace Internal.Cryptography
             }
         }
 
+        private static void ToRSAPrivateKey(in RSAParameters rsaParameters, AsnWriter writer)
+        {
+            Debug.Assert(rsaParameters.Modulus != null);
+            Debug.Assert(rsaParameters.Exponent != null);
+            Debug.Assert(rsaParameters.D != null);
+            Debug.Assert(rsaParameters.P != null);
+            Debug.Assert(rsaParameters.Q != null);
+            Debug.Assert(rsaParameters.DP != null);
+            Debug.Assert(rsaParameters.DQ != null);
+            Debug.Assert(rsaParameters.InverseQ != null);
+            Debug.Assert(writer != null);
+
+            // RSAPrivateKey
+            using (writer.PushSequence())
+            {
+                // Version 0 (two-prime RSA)
+                writer.WriteInteger(0);
+
+                // All the parameters (n, e, d, p, q, dp, dq, qInv)
+                writer.WriteKeyParameterInteger(rsaParameters.Modulus);
+                writer.WriteKeyParameterInteger(rsaParameters.Exponent);
+                writer.WriteKeyParameterInteger(rsaParameters.D);
+                writer.WriteKeyParameterInteger(rsaParameters.P);
+                writer.WriteKeyParameterInteger(rsaParameters.Q);
+                writer.WriteKeyParameterInteger(rsaParameters.DP);
+                writer.WriteKeyParameterInteger(rsaParameters.DQ);
+                writer.WriteKeyParameterInteger(rsaParameters.InverseQ);
+            }
+        }
+
+        internal static ArraySegment<byte> ToPkcs8(in this RSAParameters rsaParameters)
+        {
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+
+            // PrivateKeyInfo
+            using (writer.PushSequence())
+            {
+                // Version 0 (no attributes)
+                writer.WriteInteger(0);
+
+                // privateKeyAlgorithm
+                using (writer.PushSequence())
+                {
+                    writer.WriteObjectIdentifier(Oids.Rsa);
+                    writer.WriteNull();
+                }
+
+                // privateKey
+                using (writer.PushOctetString())
+                {
+                    // RSAPrivateKey
+                    ToRSAPrivateKey(rsaParameters, writer);
+                }
+            }
+
+            byte[] rented = CryptoPool.Rent(writer.GetEncodedLength());
+            int written = writer.Encode(rented);
+            writer.Reset();
+            return new ArraySegment<byte>(rented, 0, written);
+        }
+
         private static byte[] ExportInteger(ReadOnlySpan<byte> integerValue, bool pinned, int targetSize = -1)
         {
             // The values are signed, so a leading 0 byte may be present to make the value positive.
