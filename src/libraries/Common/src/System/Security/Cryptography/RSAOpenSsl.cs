@@ -362,9 +362,31 @@ namespace System.Security.Cryptography
             ValidateParameters(ref parameters);
             ThrowIfDisposed();
 
-            ArraySegment<byte> rentedPkcs8 = parameters.ToPkcs8();
-            SafeEvpPKeyHandle imported = Interop.Crypto.DecodeRsaPkcs8(rentedPkcs8);
-            CryptoPool.Return(rentedPkcs8);
+            SafeEvpPKeyHandle imported;
+
+            if (parameters.D != null)
+            {
+                ArraySegment<byte> rentedPkcs8 = parameters.ToPkcs8();
+                imported = Interop.Crypto.DecodeRsaPkcs8(rentedPkcs8);
+                CryptoPool.Return(rentedPkcs8);
+            }
+            else
+            {
+                ArraySegment<byte> rentedRsaPublicKey = parameters.ToRSAPublicKey();
+
+                using (SafeRsaHandle tmp = Interop.Crypto.DecodeRsaPublicKey(rentedRsaPublicKey))
+                {
+                    imported = Interop.Crypto.EvpPkeyCreate();
+
+                    if (!Interop.Crypto.EvpPkeySetRsa(imported, tmp))
+                    {
+                        imported.Dispose();
+                        throw Interop.Crypto.CreateOpenSslCryptographicException();
+                    }
+                }
+
+                CryptoPool.Return(rentedRsaPublicKey);
+            }
 
             FreeKey();
 

@@ -127,6 +127,26 @@ namespace Internal.Cryptography
             }
         }
 
+        internal static ArraySegment<byte> ToRSAPublicKey(in this RSAParameters rsaParameters)
+        {
+            Debug.Assert(rsaParameters.Modulus != null);
+            Debug.Assert(rsaParameters.Exponent != null);
+
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+
+            // RSAPublicKey
+            using (writer.PushSequence())
+            {
+                // n, e
+                writer.WriteKeyParameterInteger(rsaParameters.Modulus);
+                writer.WriteKeyParameterInteger(rsaParameters.Exponent);
+            }
+
+            byte[] rented = CryptoPool.Rent(writer.GetEncodedLength());
+            int written = writer.Encode(rented);
+            return new ArraySegment<byte>(rented, 0, written);
+        }
+
         private static void ToRSAPrivateKey(in RSAParameters rsaParameters, AsnWriter writer)
         {
             Debug.Assert(rsaParameters.Modulus != null);
