@@ -32,6 +32,54 @@ RSA* CryptoNative_DecodeRsaPublicKey(const uint8_t* buf, int32_t len)
     return d2i_RSAPublicKey(NULL, &buf, len);
 }
 
+static int CheckRsaPrivateKey(EVP_PKEY* pkey)
+{
+    if (EVP_PKEY_get0_RSA(pkey) == NULL)
+    {
+        return 0;
+    }
+
+    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new(pkey, NULL);
+
+    if (ctx == NULL)
+    {
+        return 0;
+    }
+
+    int ret = EVP_PKEY_check(ctx);
+    EVP_PKEY_CTX_free(ctx);
+    return ret;
+}
+
+EVP_PKEY* CryptoNative_DecodeRsaPkcs8(const uint8_t* buf, int32_t len)
+{
+    if (buf == NULL || len <= 0)
+    {
+        assert(false);
+        return NULL;
+    }
+
+    PKCS8_PRIV_KEY_INFO* p8info = d2i_PKCS8_PRIV_KEY_INFO(NULL, &buf, len);
+
+    if (p8info == NULL)
+    {
+        return NULL;
+    }
+
+    EVP_PKEY* pkey = EVP_PKCS82PKEY(p8info);
+
+    PKCS8_PRIV_KEY_INFO_free(p8info);
+
+    // Check that it's a valid RSA key
+    if (pkey != NULL && CheckRsaPrivateKey(pkey) != 1)
+    {
+        EVP_PKEY_free(pkey);
+        return NULL;
+    }
+
+    return pkey;
+}
+
 static int GetOpenSslPadding(RsaPadding padding)
 {
     assert(padding == Pkcs1 || padding == OaepOrPss || padding == NoPadding);

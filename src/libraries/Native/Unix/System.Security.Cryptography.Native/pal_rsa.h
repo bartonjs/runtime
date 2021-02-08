@@ -47,6 +47,11 @@ Shims the d2i_RSAPublicKey method and makes it easier to invoke from managed cod
 PALEXPORT RSA* CryptoNative_DecodeRsaPublicKey(const uint8_t* buf, int32_t len);
 
 /*
+Imports a PKCS#8 blob as an RSA-based EVP_PKEY.
+*/
+PALEXPORT EVP_PKEY* CryptoNative_DecodeRsaPkcs8(const uint8_t* buf, int32_t len);
+
+/*
 Shims the RSA_public_encrypt method.
 
 Returns the size of the signature, or -1 on error.

@@ -28,8 +28,18 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DecodeRsaPublicKey")]
         private static extern SafeRsaHandle DecodeRsaPublicKey(ref byte buf, int len);
 
-        internal static SafeEvpPKeyHandle DecodeRsaPkcs8(ReadOnlySpan<byte> buf) =>
-            CryptoNative_DecodeRsaPkcs8(ref MemoryMarshal.GetReference(buf), buf.Length);
+        internal static SafeEvpPKeyHandle DecodeRsaPkcs8(ReadOnlySpan<byte> buf)
+        {
+            SafeEvpPKeyHandle handle = CryptoNative_DecodeRsaPkcs8(ref MemoryMarshal.GetReference(buf), buf.Length);
+
+            if (handle.IsInvalid)
+            {
+                handle.Dispose();
+                throw CreateOpenSslCryptographicException();
+            }
+
+            return handle;
+        }
 
         [DllImport(Libraries.CryptoNative)]
         private static extern SafeEvpPKeyHandle CryptoNative_DecodeRsaPkcs8(ref byte buf, int length);

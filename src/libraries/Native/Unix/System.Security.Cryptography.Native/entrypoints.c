@@ -57,6 +57,7 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_DecodeExtendedKeyUsage)
     DllImportEntry(CryptoNative_DecodeOcspResponse)
     DllImportEntry(CryptoNative_DecodePkcs7)
+    DllImportEntry(CryptoNative_DecodeRsaPkcs8)
     DllImportEntry(CryptoNative_DecodeRsaPublicKey)
     DllImportEntry(CryptoNative_DecodeX509)
     DllImportEntry(CryptoNative_DecodeX509BasicConstraints2Extension)
