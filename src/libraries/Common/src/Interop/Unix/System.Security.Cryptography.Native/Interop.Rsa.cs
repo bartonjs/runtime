@@ -87,9 +87,6 @@ internal static partial class Interop
             IntPtr digestAlgorithm,
             ref byte destination);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_RsaSize")]
-        internal static extern int RsaSize(SafeRsaHandle rsa);
-
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_RsaGenerateKey")]
         private static extern SafeEvpPKeyHandle CryptoNative_RsaGenerateKey(int keySize);
 

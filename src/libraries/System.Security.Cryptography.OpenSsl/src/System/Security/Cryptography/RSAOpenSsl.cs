@@ -41,7 +41,7 @@ namespace System.Security.Cryptography
 
                 // Use ForceSet instead of the property setter to ensure that LegalKeySizes doesn't interfere
                 // with the already loaded key.
-                ForceSetKeySize(BitsPerByte * Interop.Crypto.RsaSize(rsaHandle));
+                ForceSetKeySize(Interop.Crypto.EvpPKeyKeySize(pkey));
                 _key = new Lazy<SafeEvpPKeyHandle>(() => pkey, isThreadSafe: true);
             }
         }
@@ -81,7 +81,7 @@ namespace System.Security.Cryptography
 
                 // Use ForceSet instead of the property setter to ensure that LegalKeySizes doesn't interfere
                 // with the already loaded key.
-                ForceSetKeySize(BitsPerByte * Interop.Crypto.RsaSize(rsa));
+                ForceSetKeySize(Interop.Crypto.EvpPKeyKeySize(pkey));
                 _key = new Lazy<SafeEvpPKeyHandle>(() => pkey, isThreadSafe: true);
             }
         }

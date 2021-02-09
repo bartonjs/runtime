@@ -22,8 +22,6 @@ namespace System.Security.Cryptography
 #endif
     public sealed partial class RSAOpenSsl : RSA
     {
-        private const int BitsPerByte = 8;
-
         private Lazy<SafeEvpPKeyHandle> _key;
 
         public RSAOpenSsl()
@@ -364,12 +362,9 @@ namespace System.Security.Cryptography
 
             _key = new Lazy<SafeEvpPKeyHandle>(imported);
 
-            // Temporary blockless using, pending refactor.
-            using SafeRsaHandle key = Interop.Crypto.EvpPkeyGetRsa(imported);
-
             // Use ForceSet instead of the property setter to ensure that LegalKeySizes doesn't interfere
             // with the already loaded key.
-            ForceSetKeySize(BitsPerByte * Interop.Crypto.RsaSize(key));
+            ForceSetKeySize(Interop.Crypto.EvpPKeyKeySize(imported));
         }
 
         public override void ImportRSAPublicKey(ReadOnlySpan<byte> source, out int bytesRead)
@@ -405,13 +400,14 @@ namespace System.Security.Cryptography
                 throw Interop.Crypto.CreateOpenSslCryptographicException();
             }
 
+            key.Dispose();
+
             FreeKey();
             _key = new Lazy<SafeEvpPKeyHandle>(pkey);
 
             // Use ForceSet instead of the property setter to ensure that LegalKeySizes doesn't interfere
             // with the already loaded key.
-            ForceSetKeySize(BitsPerByte * Interop.Crypto.RsaSize(key));
-            key.Dispose();
+            ForceSetKeySize(Interop.Crypto.EvpPKeyKeySize(pkey));
 
             bytesRead = read;
         }

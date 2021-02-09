@@ -15,6 +15,27 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EvpPkeyDestroy")]
         internal static extern void EvpPkeyDestroy(IntPtr pkey);
 
+        /// <summary>
+        /// Gets the size, in bits, of the asymmetric key object.
+        /// </summary>
+        internal static int EvpPKeyKeySize(SafeEvpPKeyHandle pkey)
+        {
+            int size = CryptoNative_EvpPKeyKeySize(pkey);
+
+            // A null key value was passed in, or something went really wrong.
+            // There's no guarantee an error code was set, so throw vague.
+            // This should be unreachable, but stops nonsense behaviors if it isn't.
+            if (size <= 0)
+            {
+                throw new CryptographicException();
+            }
+
+            return size;
+        }
+
+        [DllImport(Libraries.CryptoNative)]
+        private static extern int CryptoNative_EvpPKeyKeySize(SafeEvpPKeyHandle pkey);
+
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_UpRefEvpPkey")]
         internal static extern int UpRefEvpPkey(SafeEvpPKeyHandle handle);
     }
