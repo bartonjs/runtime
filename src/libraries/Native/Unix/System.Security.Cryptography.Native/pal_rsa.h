@@ -6,22 +6,14 @@
 #include "opensslshim.h"
 
 /*
-Padding options for RsaPublicEncrypt and RsaPrivateDecrypt.
+Padding options for RSA sign/verify and encrypt/decrypt
 These values should be kept in sync with Interop.Crypto.RsaPadding.
 */
 typedef enum
 {
     Pkcs1 = 0,
     OaepOrPss = 1,
-    NoPadding = 2,
 } RsaPadding;
-
-/*
-Shims the RSA_new method.
-
-Returns the new RSA instance.
-*/
-PALEXPORT RSA* CryptoNative_RsaCreate(void);
 
 /*
 Shims the RSA_up_ref method.
@@ -52,14 +44,6 @@ Imports a PKCS#8 blob as an RSA-based EVP_PKEY.
 PALEXPORT EVP_PKEY* CryptoNative_DecodeRsaPkcs8(const uint8_t* buf, int32_t len);
 
 /*
-Shims the RSA_public_encrypt method.
-
-Returns the size of the signature, or -1 on error.
-*/
-PALEXPORT int32_t
-CryptoNative_RsaPublicEncrypt(int32_t flen, const uint8_t* from, uint8_t* to, RSA* rsa, RsaPadding padding);
-
-/*
 Encrypt data with an RSA key.
 
 Returns a negative number on error, otherwise the number of bytes written to destination.
@@ -74,14 +58,6 @@ Returns a negative number on error, otherwise the number of bytes written to des
 */
 PALEXPORT int32_t
 CryptoNative_RsaDecrypt(EVP_PKEY* pkey, const uint8_t* data, int32_t dataLen, RsaPadding padding, const EVP_MD* digest, uint8_t* destination);
-
-/*
-Shims RSA_public_decrypt with a fixed value of RSA_NO_PADDING.
-
-Requires that the input be the size of the key.
-Returns the number of bytes written (which should be flen), or -1 on error.
-*/
-PALEXPORT int32_t CryptoNative_RsaVerificationPrimitive(int32_t flen, const uint8_t* from, uint8_t* to, RSA* rsa);
 
 /*
 Shims the RSA_size method.
@@ -117,14 +93,6 @@ PALEXPORT int32_t
 CryptoNative_RsaVerifyHash(EVP_PKEY* pkey, RsaPadding padding, const EVP_MD* digest, const uint8_t* hash, int32_t hashLen, uint8_t* signature, int32_t sigLen);
 
 /*
-Shims the RSA_verify method.
-
-Returns 1 upon success, otherwise 0.
-*/
-PALEXPORT int32_t
-CryptoNative_RsaVerify(int32_t type, const uint8_t* m, int32_t mlen, uint8_t* sigbuf, int32_t siglen, RSA* rsa);
-
-/*
 Returns a BIO containing the RSAPublicKey format of the provided key, or NULL on error.
 */
 PALEXPORT BIO* CryptoNative_ExportRSAPublicKey(EVP_PKEY* pkey);
@@ -133,24 +101,3 @@ PALEXPORT BIO* CryptoNative_ExportRSAPublicKey(EVP_PKEY* pkey);
 Returns a BIO containing the RSAPublicKey format of the provided key, or NULL on error.
 */
 PALEXPORT BIO* CryptoNative_ExportRSAPrivateKey(EVP_PKEY* pkey);
-
-/*
-Sets all the parameters on the RSA instance.
-*/
-PALEXPORT int32_t CryptoNative_SetRsaParameters(RSA* rsa,
-                                              uint8_t* n,
-                                              int32_t nLength,
-                                              uint8_t* e,
-                                              int32_t eLength,
-                                              uint8_t* d,
-                                              int32_t dLength,
-                                              uint8_t* p,
-                                              int32_t pLength,
-                                              uint8_t* dmp1,
-                                              int32_t dmp1Length,
-                                              uint8_t* q,
-                                              int32_t qLength,
-                                              uint8_t* dmq1,
-                                              int32_t dmq1Length,
-                                              uint8_t* iqmp,
-                                              int32_t iqmpLength);
