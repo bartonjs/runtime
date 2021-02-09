@@ -12,9 +12,6 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_RsaCreate")]
-        internal static extern SafeRsaHandle RsaCreate();
-
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_RsaUpRef")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool RsaUpRef(IntPtr rsa);
@@ -43,22 +40,6 @@ internal static partial class Interop
 
         [DllImport(Libraries.CryptoNative)]
         private static extern SafeEvpPKeyHandle CryptoNative_DecodeRsaPkcs8(ref byte buf, int length);
-
-        internal static int RsaPublicEncrypt(
-            int flen,
-            ReadOnlySpan<byte> from,
-            Span<byte> to,
-            SafeRsaHandle rsa,
-            RsaPadding padding) =>
-            RsaPublicEncrypt(flen, ref MemoryMarshal.GetReference(from), ref MemoryMarshal.GetReference(to), rsa, padding);
-
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_RsaPublicEncrypt")]
-        private static extern int RsaPublicEncrypt(
-            int flen,
-            ref byte from,
-            ref byte to,
-            SafeRsaHandle rsa,
-            RsaPadding padding);
 
         internal static int RsaEncrypt(
             SafeEvpPKeyHandle pkey,
@@ -105,19 +86,6 @@ internal static partial class Interop
             RSAEncryptionPaddingMode paddingMode,
             IntPtr digestAlgorithm,
             ref byte destination);
-
-        internal static int RsaVerificationPrimitive(
-            ReadOnlySpan<byte> from,
-            Span<byte> to,
-            SafeRsaHandle rsa) =>
-            RsaVerificationPrimitive(from.Length, ref MemoryMarshal.GetReference(from), ref MemoryMarshal.GetReference(to), rsa);
-
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_RsaVerificationPrimitive")]
-        private static extern int RsaVerificationPrimitive(
-            int flen,
-            ref byte from,
-            ref byte to,
-            SafeRsaHandle rsa);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_RsaSize")]
         internal static extern int RsaSize(SafeRsaHandle rsa);
@@ -214,29 +182,6 @@ internal static partial class Interop
             ref byte signature,
             int sigLen);
 
-        internal static bool RsaVerify(int type, ReadOnlySpan<byte> m, ReadOnlySpan<byte> sigbuf, SafeRsaHandle rsa)
-        {
-            bool ret = RsaVerify(
-                type,
-                ref MemoryMarshal.GetReference(m),
-                m.Length,
-                ref MemoryMarshal.GetReference(sigbuf),
-                sigbuf.Length,
-                rsa);
-
-            if (!ret)
-            {
-                ErrClearError();
-            }
-
-            return ret;
-        }
-
-
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_RsaVerify")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool RsaVerify(int type, ref byte m, int m_len, ref byte sigbuf, int siglen, SafeRsaHandle rsa);
-
         internal static SafeBioHandle ExportRSAPublicKey(SafeEvpPKeyHandle pkey)
         {
             SafeBioHandle bio = CryptoNative_ExportRSAPublicKey(pkey);
@@ -268,33 +213,5 @@ internal static partial class Interop
 
         [DllImport(Libraries.CryptoNative)]
         private static extern SafeBioHandle CryptoNative_ExportRSAPrivateKey(SafeEvpPKeyHandle pkey);
-
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SetRsaParameters")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool SetRsaParameters(
-            SafeRsaHandle key,
-            byte[]? n,
-            int nLength,
-            byte[]? e,
-            int eLength,
-            byte[]? d,
-            int dLength,
-            byte[]? p,
-            int pLength,
-            byte[]? dmp1,
-            int dmp1Length,
-            byte[]? q,
-            int qLength,
-            byte[]? dmq1,
-            int dmq1Length,
-            byte[]? iqmp,
-            int iqmpLength);
-
-        internal enum RsaPadding : int
-        {
-            Pkcs1 = 0,
-            OaepSHA1 = 1,
-            NoPadding = 2,
-        }
     }
 }

@@ -24,9 +24,6 @@ namespace System.Security.Cryptography
     {
         private const int BitsPerByte = 8;
 
-        // 65537 (0x10001) in big-endian form
-        private static ReadOnlySpan<byte> DefaultExponent => new byte[] { 0x01, 0x00, 0x01 };
-
         private Lazy<SafeEvpPKeyHandle> _key;
 
         public RSAOpenSsl()
@@ -300,31 +297,6 @@ namespace System.Security.Cryptography
 
             bytesWritten = returnValue;
             return true;
-        }
-
-        private static Interop.Crypto.RsaPadding GetInteropPadding(
-            RSAEncryptionPadding padding,
-            out RsaPaddingProcessor? rsaPaddingProcessor)
-        {
-            if (padding == RSAEncryptionPadding.Pkcs1)
-            {
-                rsaPaddingProcessor = null;
-                return Interop.Crypto.RsaPadding.Pkcs1;
-            }
-
-            if (padding == RSAEncryptionPadding.OaepSHA1)
-            {
-                rsaPaddingProcessor = null;
-                return Interop.Crypto.RsaPadding.OaepSHA1;
-            }
-
-            if (padding.Mode == RSAEncryptionPaddingMode.Oaep)
-            {
-                rsaPaddingProcessor = RsaPaddingProcessor.OpenProcessor(padding.OaepHashAlgorithm);
-                return Interop.Crypto.RsaPadding.NoPadding;
-            }
-
-            throw PaddingModeNotSupported();
         }
 
         public override RSAParameters ExportParameters(bool includePrivateParameters)
