@@ -31,3 +31,8 @@ Returns the number (as of this call) of references to the EVP_PKEY. Anything les
 2 is an error, because the key is already in the process of being freed.
 */
 PALEXPORT int32_t CryptoNative_UpRefEvpPkey(EVP_PKEY* pkey);
+
+/*
+Returns the size, in bits, of the key represented by the EVP_PKEY*
+*/
+PALEXPORT int32_t CryptoNative_EvpPKeyKeySize(EVP_PKEY* pkey);
