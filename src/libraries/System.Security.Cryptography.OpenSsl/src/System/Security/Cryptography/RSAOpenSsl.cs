@@ -29,21 +29,18 @@ namespace System.Security.Cryptography
             if (handle == IntPtr.Zero)
                 throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(handle));
 
-            using (SafeRsaHandle rsaHandle = SafeRsaHandle.DuplicateHandle(handle))
+            SafeEvpPKeyHandle pkey = Interop.Crypto.EvpPkeyCreate();
+
+            if (Interop.Crypto.EvpPkeySetRsa(pkey, handle) != 1)
             {
-                SafeEvpPKeyHandle pkey = Interop.Crypto.EvpPkeyCreate();
-
-                if (!Interop.Crypto.EvpPkeySetRsa(pkey, rsaHandle))
-                {
-                    pkey.Dispose();
-                    throw Interop.Crypto.CreateOpenSslCryptographicException();
-                }
-
-                // Use ForceSet instead of the property setter to ensure that LegalKeySizes doesn't interfere
-                // with the already loaded key.
-                ForceSetKeySize(Interop.Crypto.EvpPKeyKeySize(pkey));
-                _key = new Lazy<SafeEvpPKeyHandle>(() => pkey, isThreadSafe: true);
+                pkey.Dispose();
+                throw Interop.Crypto.CreateOpenSslCryptographicException();
             }
+
+            // Use ForceSet instead of the property setter to ensure that LegalKeySizes doesn't interfere
+            // with the already loaded key.
+            ForceSetKeySize(Interop.Crypto.EvpPKeyKeySize(pkey));
+            _key = new Lazy<SafeEvpPKeyHandle>(pkey);
         }
 
         /// <summary>
@@ -63,27 +60,12 @@ namespace System.Security.Cryptography
             if (pkeyHandle.IsInvalid)
                 throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(pkeyHandle));
 
-            // TODO: There's probably an EVP_PKEY_dup.
-            using (SafeRsaHandle rsa = Interop.Crypto.EvpPkeyGetRsa(pkeyHandle))
-            {
-                if (rsa.IsInvalid)
-                {
-                    throw Interop.Crypto.CreateOpenSslCryptographicException();
-                }
+            SafeEvpPKeyHandle pkey = Interop.Crypto.EvpPkeyDuplicate(pkeyHandle);
 
-                SafeEvpPKeyHandle pkey = Interop.Crypto.EvpPkeyCreate();
-
-                if (!Interop.Crypto.EvpPkeySetRsa(pkey, rsa))
-                {
-                    pkey.Dispose();
-                    throw Interop.Crypto.CreateOpenSslCryptographicException();
-                }
-
-                // Use ForceSet instead of the property setter to ensure that LegalKeySizes doesn't interfere
-                // with the already loaded key.
-                ForceSetKeySize(Interop.Crypto.EvpPKeyKeySize(pkey));
-                _key = new Lazy<SafeEvpPKeyHandle>(() => pkey, isThreadSafe: true);
-            }
+            // Use ForceSet instead of the property setter to ensure that LegalKeySizes doesn't interfere
+            // with the already loaded key.
+            ForceSetKeySize(Interop.Crypto.EvpPKeyKeySize(pkey));
+            _key = new Lazy<SafeEvpPKeyHandle>(() => pkey, isThreadSafe: true);
         }
 
         /// <summary>
@@ -93,29 +75,9 @@ namespace System.Security.Cryptography
         /// <returns>A SafeHandle for the RSA key in OpenSSL</returns>
         public SafeEvpPKeyHandle DuplicateKeyHandle()
         {
-            SafeEvpPKeyHandle curPKey = _key.Value;
-            // Temporary blockless using, pending refactor.
-            // TODO: EVP_PKEY_dup?
-            using SafeRsaHandle currentKey = Interop.Crypto.EvpPkeyGetRsa(curPKey);
-            SafeEvpPKeyHandle pkeyHandle = Interop.Crypto.EvpPkeyCreate();
+            SafeEvpPKeyHandle curPKey = GetKey();
 
-            try
-            {
-                // Wrapping our key in an EVP_PKEY will up_ref our key.
-                // When the EVP_PKEY is Disposed it will down_ref the key.
-                // So everything should be copacetic.
-                if (!Interop.Crypto.EvpPkeySetRsa(pkeyHandle, currentKey))
-                {
-                    throw Interop.Crypto.CreateOpenSslCryptographicException();
-                }
-
-                return pkeyHandle;
-            }
-            catch
-            {
-                pkeyHandle.Dispose();
-                throw;
-            }
+            return Interop.Crypto.EvpPkeyDuplicate(curPKey);
         }
     }
 }

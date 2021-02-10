@@ -26,22 +26,5 @@ namespace Microsoft.Win32.SafeHandles
         {
             get { return handle == IntPtr.Zero; }
         }
-
-        internal static SafeRsaHandle DuplicateHandle(IntPtr handle)
-        {
-            Debug.Assert(handle != IntPtr.Zero);
-
-            // Reliability: Allocate the SafeHandle before calling RSA_up_ref so
-            // that we don't lose a tracked reference in low-memory situations.
-            SafeRsaHandle safeHandle = new SafeRsaHandle();
-
-            if (!Interop.Crypto.RsaUpRef(handle))
-            {
-                throw Interop.Crypto.CreateOpenSslCryptographicException();
-            }
-
-            safeHandle.SetHandle(handle);
-            return safeHandle;
-        }
     }
 }

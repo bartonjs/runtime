@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
@@ -38,5 +39,24 @@ internal static partial class Interop
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_UpRefEvpPkey")]
         internal static extern int UpRefEvpPkey(SafeEvpPKeyHandle handle);
+
+        internal static SafeEvpPKeyHandle EvpPkeyDuplicate(SafeEvpPKeyHandle pkey)
+        {
+            int ret = CryptoNative_EvpPkeyDuplicate(pkey, out SafeEvpPKeyHandle pkeyNew);
+
+            if (ret != 1)
+            {
+                Debug.Assert(ret == 0);
+                pkeyNew.Dispose();
+                throw CreateOpenSslCryptographicException();
+            }
+
+            return pkeyNew;
+        }
+
+        [DllImport(Libraries.CryptoNative)]
+        private static extern int CryptoNative_EvpPkeyDuplicate(
+            SafeEvpPKeyHandle pkeyIn,
+            out SafeEvpPKeyHandle pkeyOut);
     }
 }
