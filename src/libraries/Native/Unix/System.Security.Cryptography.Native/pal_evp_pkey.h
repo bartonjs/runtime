@@ -36,3 +36,11 @@ PALEXPORT int32_t CryptoNative_UpRefEvpPkey(EVP_PKEY* pkey);
 Returns the size, in bits, of the key represented by the EVP_PKEY*
 */
 PALEXPORT int32_t CryptoNative_EvpPKeyKeySize(EVP_PKEY* pkey);
+
+/*
+Assigns a new EVP_PKEY object, which uses the same internal key object as pkeyIn,
+to pkeyOut.
+
+Returns 1 on success, 0 on OpenSSL error, other on abnormal behavior.
+*/
+PALEXPORT int32_t CryptoNative_EvpPkeyDuplicate(EVP_PKEY* pkeyIn, EVP_PKEY** pkeyOut);

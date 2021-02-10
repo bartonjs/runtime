@@ -365,6 +365,7 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     REQUIRED_FUNCTION(EVP_PKEY_CTX_free) \
     REQUIRED_FUNCTION(EVP_PKEY_CTX_new) \
     REQUIRED_FUNCTION(EVP_PKEY_CTX_new_id) \
+    REQUIRED_FUNCTION(EVP_PKEY_base_id) \
     REQUIRED_FUNCTION(EVP_PKEY_bits) \
     REQUIRED_FUNCTION(EVP_PKEY_check) \
     REQUIRED_FUNCTION(EVP_PKEY_decrypt) \
@@ -785,6 +786,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_PKEY_CTX_free EVP_PKEY_CTX_free_ptr
 #define EVP_PKEY_CTX_new EVP_PKEY_CTX_new_ptr
 #define EVP_PKEY_CTX_new_id EVP_PKEY_CTX_new_id_ptr
+#define EVP_PKEY_base_id EVP_PKEY_base_id_ptr
 #define EVP_PKEY_bits EVP_PKEY_bits_ptr
 #define EVP_PKEY_check EVP_PKEY_check_ptr
 #define EVP_PKEY_decrypt EVP_PKEY_decrypt_ptr
