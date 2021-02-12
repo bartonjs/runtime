@@ -355,7 +355,7 @@ namespace System.Security.Cryptography
 
             try
             {
-                importer(rented);
+                Import(rented, importer);
             }
             finally
             {
@@ -401,13 +401,24 @@ namespace System.Security.Cryptography
             bytesRead = read;
         }
 
+        public override void ImportSubjectPublicKeyInfo(ReadOnlySpan<byte> source, out int bytesRead)
+        {
+            ThrowIfDisposed();
+
+            // While we could shortcut straight to the native importer here, we'd lose on
+            // standardized exceptions.  So run through the common read, which will rip off the
+            // SPKI envelope, check the algorithm type, then call ImportRSAPublicKey.
+            base.ImportSubjectPublicKeyInfo(source, out bytesRead);
+        }
+
         public override void ImportPkcs8PrivateKey(ReadOnlySpan<byte> source, out int bytesRead)
         {
             ThrowIfDisposed();
 
-            int read = GetImportLength(source);
-            Import(source.Slice(0, read), Interop.Crypto.DecodeRsaPkcs8);
-            bytesRead = read;
+            // While we could shortcut straight to the native importer here, we'd lose on
+            // standardized exceptions.  So run through the common read, which will rip off the
+            // PKCS#8 envelope, check the algorithm type, then call ImportRSAPrivateKey.
+            base.ImportPkcs8PrivateKey(source, out bytesRead);
         }
 
         public override void ImportEncryptedPkcs8PrivateKey(
