@@ -4,27 +4,15 @@
 #include "pal_rsa.h"
 #include "pal_utilities.h"
 
-int32_t CryptoNative_RsaUpRef(RSA* rsa)
+EVP_PKEY* CryptoNative_DecodeRsaSpki(const uint8_t* buf, int32_t len)
 {
-    return RSA_up_ref(rsa);
-}
-
-void CryptoNative_RsaDestroy(RSA* rsa)
-{
-    if (rsa != NULL)
+    if (buf == NULL || len <= 0)
     {
-        RSA_free(rsa);
-    }
-}
-
-RSA* CryptoNative_DecodeRsaPublicKey(const uint8_t* buf, int32_t len)
-{
-    if (!buf || !len)
-    {
+        assert(false);
         return NULL;
     }
 
-    return d2i_RSAPublicKey(NULL, &buf, len);
+    return d2i_PUBKEY(NULL, &buf, len);
 }
 
 static int CheckRsaPrivateKey(EVP_PKEY* pkey)
@@ -289,11 +277,6 @@ CryptoNative_RsaDecrypt(EVP_PKEY* pkey, const uint8_t* data, int32_t dataLen, Rs
 done:
     EVP_PKEY_CTX_free(ctx);
     return ret;
-}
-
-int32_t CryptoNative_RsaSize(RSA* rsa)
-{
-    return RSA_size(rsa);
 }
 
 EVP_PKEY* CryptoNative_RsaGenerateKey(int32_t keySize)

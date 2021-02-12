@@ -16,27 +16,9 @@ typedef enum
 } RsaPadding;
 
 /*
-Shims the RSA_up_ref method.
-
-Returns 1 upon success, otherwise 0.
+Imports a SubjectPublicKeyInfo blob as an RSA-based EVP_PKEY
 */
-PALEXPORT int32_t CryptoNative_RsaUpRef(RSA* rsa);
-
-/*
-Cleans up and deletes a RSA instance.
-
-Implemented by calling RSA_free
-
-No-op if rsa is null.
-The given RSA pointer is invalid after this call.
-Always succeeds.
-*/
-PALEXPORT void CryptoNative_RsaDestroy(RSA* rsa);
-
-/*
-Shims the d2i_RSAPublicKey method and makes it easier to invoke from managed code.
-*/
-PALEXPORT RSA* CryptoNative_DecodeRsaPublicKey(const uint8_t* buf, int32_t len);
+PALEXPORT EVP_PKEY* CryptoNative_DecodeRsaSpki(const uint8_t* buf, int32_t len);
 
 /*
 Imports a PKCS#8 blob as an RSA-based EVP_PKEY.
@@ -58,13 +40,6 @@ Returns a negative number on error, otherwise the number of bytes written to des
 */
 PALEXPORT int32_t
 CryptoNative_RsaDecrypt(EVP_PKEY* pkey, const uint8_t* data, int32_t dataLen, RsaPadding padding, const EVP_MD* digest, uint8_t* destination);
-
-/*
-Shims the RSA_size method.
-
-Returns the RSA modulus size in bytes.
-*/
-PALEXPORT int32_t CryptoNative_RsaSize(RSA* rsa);
 
 /*
 Generates an RSA-based EVP_PKEY public/private pair with a modulus of the specified size (in bits).

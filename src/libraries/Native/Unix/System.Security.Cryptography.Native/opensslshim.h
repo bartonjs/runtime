@@ -249,7 +249,7 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     REQUIRED_FUNCTION(d2i_PKCS7) \
     REQUIRED_FUNCTION(d2i_PKCS7_bio) \
     REQUIRED_FUNCTION(d2i_PKCS8_PRIV_KEY_INFO) \
-    REQUIRED_FUNCTION(d2i_RSAPublicKey) \
+    REQUIRED_FUNCTION(d2i_PUBKEY) \
     REQUIRED_FUNCTION(d2i_X509) \
     REQUIRED_FUNCTION(d2i_X509_bio) \
     REQUIRED_FUNCTION(d2i_X509_CRL) \
@@ -471,7 +471,6 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     FALLBACK_FUNCTION(RSA_get0_key) \
     FALLBACK_FUNCTION(RSA_meth_get_flags) \
     REQUIRED_FUNCTION(RSA_pkey_ctx_ctrl) \
-    REQUIRED_FUNCTION(RSA_size) \
     REQUIRED_FUNCTION(RSA_up_ref) \
     LIGHTUP_FUNCTION(SSL_CIPHER_find) \
     REQUIRED_FUNCTION(SSL_CIPHER_get_bits) \
@@ -670,7 +669,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define d2i_PKCS7 d2i_PKCS7_ptr
 #define d2i_PKCS7_bio d2i_PKCS7_bio_ptr
 #define d2i_PKCS8_PRIV_KEY_INFO d2i_PKCS8_PRIV_KEY_INFO_ptr
-#define d2i_RSAPublicKey d2i_RSAPublicKey_ptr
+#define d2i_PUBKEY d2i_PUBKEY_ptr
 #define d2i_X509 d2i_X509_ptr
 #define d2i_X509_bio d2i_X509_bio_ptr
 #define d2i_X509_CRL d2i_X509_CRL_ptr
@@ -892,7 +891,6 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define RSA_get_method RSA_get_method_ptr
 #define RSA_meth_get_flags RSA_meth_get_flags_ptr
 #define RSA_pkey_ctx_ctrl RSA_pkey_ctx_ctrl_ptr
-#define RSA_size RSA_size_ptr
 #define RSA_up_ref RSA_up_ref_ptr
 #define sk_free OPENSSL_sk_free_ptr
 #define sk_new_null OPENSSL_sk_new_null_ptr
