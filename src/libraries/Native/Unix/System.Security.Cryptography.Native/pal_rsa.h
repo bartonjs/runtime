@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#include "pal_types.h"
-#include "pal_compiler.h"
 #include "opensslshim.h"
+#include "pal_compiler.h"
+#include "pal_types.h"
 
 /*
 Padding options for RSA sign/verify and encrypt/decrypt
@@ -30,16 +30,24 @@ Encrypt data with an RSA key.
 
 Returns a negative number on error, otherwise the number of bytes written to destination.
 */
-PALEXPORT int32_t
-CryptoNative_RsaEncrypt(EVP_PKEY* pkey, const uint8_t* data, int32_t dataLen, RsaPadding padding, const EVP_MD* digest, uint8_t* destination);
+PALEXPORT int32_t CryptoNative_RsaEncrypt(EVP_PKEY* pkey,
+                                          const uint8_t* data,
+                                          int32_t dataLen,
+                                          RsaPadding padding,
+                                          const EVP_MD* digest,
+                                          uint8_t* destination);
 
 /*
 Decrypt data with an RSA key.
 
 Returns a negative number on error, otherwise the number of bytes written to destination.
 */
-PALEXPORT int32_t
-CryptoNative_RsaDecrypt(EVP_PKEY* pkey, const uint8_t* data, int32_t dataLen, RsaPadding padding, const EVP_MD* digest, uint8_t* destination);
+PALEXPORT int32_t CryptoNative_RsaDecrypt(EVP_PKEY* pkey,
+                                          const uint8_t* data,
+                                          int32_t dataLen,
+                                          RsaPadding padding,
+                                          const EVP_MD* digest,
+                                          uint8_t* destination);
 
 /*
 Generates an RSA-based EVP_PKEY public/private pair with a modulus of the specified size (in bits).
@@ -54,8 +62,13 @@ For PSS, the salt length is the digest length, and the MGF1 digest is the same a
 
 Returns 1 upon success, otherwise 0.
 */
-PALEXPORT int32_t
-CryptoNative_RsaSignHash(EVP_PKEY* pkey, RsaPadding padding, const EVP_MD* digest, const uint8_t* hash, int32_t hashLen, uint8_t* dest, int32_t* sigLen);
+PALEXPORT int32_t CryptoNative_RsaSignHash(EVP_PKEY* pkey,
+                                           RsaPadding padding,
+                                           const EVP_MD* digest,
+                                           const uint8_t* hash,
+                                           int32_t hashLen,
+                                           uint8_t* dest,
+                                           int32_t* sigLen);
 
 /*
 Verifies a hash using the specified padding algorithm (RSASSA-PKCS1_v1.5 or RSASSA-PSS).
@@ -64,8 +77,13 @@ For PSS, the salt length is the digest length, and the MGF1 digest is the same a
 
 Returns 1 on success, 0 on signature failure, INT_MIN on a usage error, -1 on an OpenSSL error.
 */
-PALEXPORT int32_t
-CryptoNative_RsaVerifyHash(EVP_PKEY* pkey, RsaPadding padding, const EVP_MD* digest, const uint8_t* hash, int32_t hashLen, uint8_t* signature, int32_t sigLen);
+PALEXPORT int32_t CryptoNative_RsaVerifyHash(EVP_PKEY* pkey,
+                                             RsaPadding padding,
+                                             const EVP_MD* digest,
+                                             const uint8_t* hash,
+                                             int32_t hashLen,
+                                             uint8_t* signature,
+                                             int32_t sigLen);
 
 /*
 Returns a BIO containing the RSAPublicKey format of the provided key, or NULL on error.

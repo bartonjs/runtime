@@ -117,8 +117,12 @@ static int HasNoPrivateKey(RSA* rsa)
     return 0;
 }
 
-int32_t
-CryptoNative_RsaEncrypt(EVP_PKEY* pkey, const uint8_t* data, int32_t dataLen, RsaPadding padding, const EVP_MD* digest, uint8_t* destination)
+int32_t CryptoNative_RsaEncrypt(EVP_PKEY* pkey,
+                                const uint8_t* data,
+                                int32_t dataLen,
+                                RsaPadding padding,
+                                const EVP_MD* digest,
+                                uint8_t* destination)
 {
     const int UsageError = -2;
     const int OpenSslError = -1;
@@ -188,8 +192,12 @@ done:
     return ret;
 }
 
-int32_t
-CryptoNative_RsaDecrypt(EVP_PKEY* pkey, const uint8_t* data, int32_t dataLen, RsaPadding padding, const EVP_MD* digest, uint8_t* destination)
+int32_t CryptoNative_RsaDecrypt(EVP_PKEY* pkey,
+                                const uint8_t* data,
+                                int32_t dataLen,
+                                RsaPadding padding,
+                                const EVP_MD* digest,
+                                uint8_t* destination)
 {
     const int WrongSize = -3;
     const int UsageError = -2;
@@ -304,8 +312,13 @@ EVP_PKEY* CryptoNative_RsaGenerateKey(int32_t keySize)
     return pkey;
 }
 
-int32_t
-CryptoNative_RsaSignHash(EVP_PKEY* pkey, RsaPadding padding, const EVP_MD* digest, const uint8_t* hash, int32_t hashLen, uint8_t* dest, int32_t* sigLen)
+int32_t CryptoNative_RsaSignHash(EVP_PKEY* pkey,
+                                 RsaPadding padding,
+                                 const EVP_MD* digest,
+                                 const uint8_t* hash,
+                                 int32_t hashLen,
+                                 uint8_t* dest,
+                                 int32_t* sigLen)
 {
     if (sigLen == NULL)
     {
@@ -393,8 +406,13 @@ done:
     return ret;
 }
 
-int32_t
-CryptoNative_RsaVerifyHash(EVP_PKEY* pkey, RsaPadding padding, const EVP_MD* digest, const uint8_t* hash, int32_t hashLen, uint8_t* signature, int32_t sigLen)
+int32_t CryptoNative_RsaVerifyHash(EVP_PKEY* pkey,
+                                   RsaPadding padding,
+                                   const EVP_MD* digest,
+                                   const uint8_t* hash,
+                                   int32_t hashLen,
+                                   uint8_t* signature,
+                                   int32_t sigLen)
 {
     const int UsageError = INT_MIN;
 
