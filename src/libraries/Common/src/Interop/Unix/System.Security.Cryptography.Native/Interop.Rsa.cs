@@ -12,18 +12,21 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_RsaUpRef")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool RsaUpRef(IntPtr rsa);
+        internal static SafeEvpPKeyHandle DecodeRsaSpki(ReadOnlySpan<byte> buf)
+        {
+            SafeEvpPKeyHandle handle = CryptoNative_DecodeRsaSpki(ref MemoryMarshal.GetReference(buf), buf.Length);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_RsaDestroy")]
-        internal static extern void RsaDestroy(IntPtr rsa);
+            if (handle.IsInvalid)
+            {
+                handle.Dispose();
+                throw CreateOpenSslCryptographicException();
+            }
 
-        internal static SafeRsaHandle DecodeRsaPublicKey(ReadOnlySpan<byte> buf) =>
-            DecodeRsaPublicKey(ref MemoryMarshal.GetReference(buf), buf.Length);
+            return handle;
+        }
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DecodeRsaPublicKey")]
-        private static extern SafeRsaHandle DecodeRsaPublicKey(ref byte buf, int len);
+        [DllImport(Libraries.CryptoNative)]
+        private static extern SafeEvpPKeyHandle CryptoNative_DecodeRsaSpki(ref byte buf, int length);
 
         internal static SafeEvpPKeyHandle DecodeRsaPkcs8(ReadOnlySpan<byte> buf)
         {

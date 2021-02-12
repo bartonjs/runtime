@@ -22,6 +22,8 @@ namespace System.Security.Cryptography
 #endif
     public sealed partial class RSAOpenSsl : RSA
     {
+        private delegate SafeEvpPKeyHandle Importer(ReadOnlySpan<byte> source);
+
         private Lazy<SafeEvpPKeyHandle> _key;
 
         public RSAOpenSsl()
@@ -332,83 +334,79 @@ namespace System.Security.Cryptography
             ValidateParameters(ref parameters);
             ThrowIfDisposed();
 
-            SafeEvpPKeyHandle imported;
+            Importer importer;
+            ArraySegment<byte> rented;
+            int clearSize;
 
             if (parameters.D != null)
             {
-                ArraySegment<byte> rentedPkcs8 = parameters.ToPkcs8();
-                imported = Interop.Crypto.DecodeRsaPkcs8(rentedPkcs8);
-                CryptoPool.Return(rentedPkcs8);
+                rented = parameters.ToPkcs8();
+                importer = Interop.Crypto.DecodeRsaPkcs8;
+                clearSize = rented.Count;
             }
             else
             {
-                ArraySegment<byte> rentedRsaPublicKey = parameters.ToRSAPublicKey();
+                rented = parameters.ToSubjectPublicKeyInfo();
+                importer = Interop.Crypto.DecodeRsaSpki;
 
-                using (SafeRsaHandle tmp = Interop.Crypto.DecodeRsaPublicKey(rentedRsaPublicKey))
-                {
-                    imported = Interop.Crypto.EvpPkeyCreate();
-
-                    if (!Interop.Crypto.EvpPkeySetRsa(imported, tmp))
-                    {
-                        imported.Dispose();
-                        throw Interop.Crypto.CreateOpenSslCryptographicException();
-                    }
-                }
-
-                CryptoPool.Return(rentedRsaPublicKey);
+                // The public key doesn't need to be cleared.
+                clearSize = 0;
             }
 
-            FreeKey();
-
-            _key = new Lazy<SafeEvpPKeyHandle>(imported);
-
-            // Use ForceSet instead of the property setter to ensure that LegalKeySizes doesn't interfere
-            // with the already loaded key.
-            ForceSetKeySize(Interop.Crypto.EvpPKeyKeySize(imported));
+            try
+            {
+                importer(rented);
+            }
+            finally
+            {
+                CryptoPool.Return(rented.Array!, clearSize);
+            }
         }
 
         public override void ImportRSAPublicKey(ReadOnlySpan<byte> source, out int bytesRead)
         {
             ThrowIfDisposed();
 
-            int read;
+            int read = GetImportLength(source);
+            ArraySegment<byte> rented = AsymmetricAlgorithmHelpers.RSAPublicKeyToSPKI(source.Slice(0, read));
 
             try
             {
-                AsnDecoder.ReadEncodedValue(
-                    source,
-                    AsnEncodingRules.BER,
-                    out _,
-                    out _,
-                    out read);
+                Import(rented, Interop.Crypto.DecodeRsaSpki);
             }
-            catch (AsnContentException e)
+            finally
             {
-                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+                CryptoPool.Return(rented.Array!, clearSize: 0);
             }
 
-            SafeRsaHandle key = Interop.Crypto.DecodeRsaPublicKey(source.Slice(0, read));
+            bytesRead = read;
+        }
 
-            Interop.Crypto.CheckValidOpenSslHandle(key);
+        public override void ImportRSAPrivateKey(ReadOnlySpan<byte> source, out int bytesRead)
+        {
+            ThrowIfDisposed();
 
-            SafeEvpPKeyHandle pkey = Interop.Crypto.EvpPkeyCreate();
+            int read = GetImportLength(source);
+            ArraySegment<byte> rented = AsymmetricAlgorithmHelpers.RSAPrivateKeyToPkcs8(source.Slice(0, read));
 
-            if (!Interop.Crypto.EvpPkeySetRsa(pkey, key))
+            try
             {
-                pkey.Dispose();
-                key.Dispose();
-                throw Interop.Crypto.CreateOpenSslCryptographicException();
+                Import(rented, Interop.Crypto.DecodeRsaPkcs8);
+            }
+            finally
+            {
+                CryptoPool.Return(rented);
             }
 
-            key.Dispose();
+            bytesRead = read;
+        }
 
-            FreeKey();
-            _key = new Lazy<SafeEvpPKeyHandle>(pkey);
+        public override void ImportPkcs8PrivateKey(ReadOnlySpan<byte> source, out int bytesRead)
+        {
+            ThrowIfDisposed();
 
-            // Use ForceSet instead of the property setter to ensure that LegalKeySizes doesn't interfere
-            // with the already loaded key.
-            ForceSetKeySize(Interop.Crypto.EvpPKeyKeySize(pkey));
-
+            int read = GetImportLength(source);
+            Import(source.Slice(0, read), Interop.Crypto.DecodeRsaPkcs8);
             bytesRead = read;
         }
 
@@ -493,6 +491,18 @@ namespace System.Security.Cryptography
             {
                 return Interop.Crypto.RentReadMemoryBio(bio);
             }
+        }
+
+        private void Import(ReadOnlySpan<byte> source, Importer importer)
+        {
+            SafeEvpPKeyHandle pkey = importer(source);
+
+            FreeKey();
+            _key = new Lazy<SafeEvpPKeyHandle>(pkey);
+
+            // Use ForceSet instead of the property setter to ensure that LegalKeySizes doesn't interfere
+            // with the already loaded key.
+            ForceSetKeySize(Interop.Crypto.EvpPKeyKeySize(pkey));
         }
 
         protected override void Dispose(bool disposing)
@@ -784,6 +794,25 @@ namespace System.Security.Cryptography
             else
             {
                 throw PaddingModeNotSupported();
+            }
+        }
+
+        private static int GetImportLength(ReadOnlySpan<byte> source)
+        {
+            try
+            {
+                AsnDecoder.ReadEncodedValue(
+                    source,
+                    AsnEncodingRules.BER,
+                    out _,
+                    out _,
+                    out int read);
+
+                return read;
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
             }
         }
 

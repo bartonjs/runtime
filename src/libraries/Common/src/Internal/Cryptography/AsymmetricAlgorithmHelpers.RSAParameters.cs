@@ -127,7 +127,63 @@ namespace Internal.Cryptography
             }
         }
 
-        internal static ArraySegment<byte> ToRSAPublicKey(in this RSAParameters rsaParameters)
+        internal static ArraySegment<byte> ToSubjectPublicKeyInfo(in this RSAParameters rsaParameters)
+        {
+            AsnWriter writer = ToRSAPublicKey(rsaParameters);
+
+            // The SPKI overhead is
+            // SPKI SEQUENCE, at most 6 bytes (1 for tag, 5 for length)
+            // RSA AlgorithmIdentifier, fixed 15 bytes.
+            // SPKI.publicKey's BIT STRING, at most 7 bytes (1 for tag, 5 for length, 1 for unused bits=0)
+            // 13+15 is 18.  Let's go ahead and round up to 32.
+            const int Overhead = 32;
+
+            byte[] rented = CryptoPool.Rent(writer.GetEncodedLength() + Overhead);
+            int written = writer.Encode(rented);
+
+            writer.Reset();
+
+            // SubjectPublicKeyInfo
+            using (writer.PushSequence())
+            {
+                // algorithm
+                using (writer.PushSequence())
+                {
+                    writer.WriteObjectIdentifier(Oids.Rsa);
+                    writer.WriteNull();
+                }
+
+                writer.WriteBitString(rented.AsSpan(0, written));
+            }
+
+            Debug.Assert(rented.Length > writer.GetEncodedLength());
+            written = writer.Encode(rented);
+            return new ArraySegment<byte>(rented, 0, written);
+        }
+
+        internal static ArraySegment<byte> RSAPublicKeyToSPKI(ReadOnlySpan<byte> rsaPublicKey)
+        {
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+
+            // SubjectPublicKeyInfo
+            using (writer.PushSequence())
+            {
+                // algorithm
+                using (writer.PushSequence())
+                {
+                    writer.WriteObjectIdentifier(Oids.Rsa);
+                    writer.WriteNull();
+                }
+
+                writer.WriteBitString(rsaPublicKey);
+            }
+
+            byte[] rented = CryptoPool.Rent(writer.GetEncodedLength());
+            int written = writer.Encode(rented);
+            return new ArraySegment<byte>(rented, 0, written);
+        }
+
+        private static AsnWriter ToRSAPublicKey(in RSAParameters rsaParameters)
         {
             Debug.Assert(rsaParameters.Modulus != null);
             Debug.Assert(rsaParameters.Exponent != null);
@@ -142,9 +198,7 @@ namespace Internal.Cryptography
                 writer.WriteKeyParameterInteger(rsaParameters.Exponent);
             }
 
-            byte[] rented = CryptoPool.Rent(writer.GetEncodedLength());
-            int written = writer.Encode(rented);
-            return new ArraySegment<byte>(rented, 0, written);
+            return writer;
         }
 
         private static void ToRSAPrivateKey(in RSAParameters rsaParameters, AsnWriter writer)
@@ -200,6 +254,33 @@ namespace Internal.Cryptography
                     // RSAPrivateKey
                     ToRSAPrivateKey(rsaParameters, writer);
                 }
+            }
+
+            byte[] rented = CryptoPool.Rent(writer.GetEncodedLength());
+            int written = writer.Encode(rented);
+            writer.Reset();
+            return new ArraySegment<byte>(rented, 0, written);
+        }
+
+        internal static ArraySegment<byte> RSAPrivateKeyToPkcs8(ReadOnlySpan<byte> rsaPrivateKey)
+        {
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+
+            // PrivateKeyInfo
+            using (writer.PushSequence())
+            {
+                // Version 0 (no attributes)
+                writer.WriteInteger(0);
+
+                // privateKeyAlgorithm
+                using (writer.PushSequence())
+                {
+                    writer.WriteObjectIdentifier(Oids.Rsa);
+                    writer.WriteNull();
+                }
+
+                // privateKey
+                writer.WriteOctetString(rsaPrivateKey);
             }
 
             byte[] rented = CryptoPool.Rent(writer.GetEncodedLength());
