@@ -101,6 +101,8 @@ namespace System.Security.Cryptography
             {
                 CryptographicOperations.ZeroMemory(destination);
                 CryptoPool.Return(buf!, clearSize: 0);
+                // Until EVP_PKEY is what gets stored, free the temporary key handle.
+                key.Dispose();
             }
         }
 
@@ -132,9 +134,11 @@ namespace System.Security.Cryptography
                 }
 
                 int written = Decrypt(key, data, tmp, padding);
+                // Until EVP_PKEY is what gets stored, free the temporary key handle.
+                key.Dispose();
                 bool ret;
 
-                if (written < destination.Length)
+                if (destination.Length < written)
                 {
                     bytesWritten = 0;
                     ret = false;
@@ -158,6 +162,8 @@ namespace System.Security.Cryptography
             }
 
             bytesWritten = Decrypt(key, data, destination, padding);
+            // Until EVP_PKEY is what gets stored, free the temporary key handle.
+            key.Dispose();
             return true;
         }
 

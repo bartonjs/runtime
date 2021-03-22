@@ -28,21 +28,21 @@ internal static partial class Interop
             s_evpSha1 != IntPtr.Zero ? s_evpSha1 : (s_evpSha1 = CryptoNative_EvpSha1());
 
         [DllImport(Libraries.CryptoNative)]
-        internal static extern IntPtr EvpSha256();
+        internal static extern IntPtr CryptoNative_EvpSha256();
 
-        internal static IntPtr CryptoNative_EvpSha256() =>
+        internal static IntPtr EvpSha256() =>
             s_evpSha256 != IntPtr.Zero ? s_evpSha256 : (s_evpSha256 = CryptoNative_EvpSha256());
 
         [DllImport(Libraries.CryptoNative)]
-        internal static extern IntPtr EvpSha384();
+        internal static extern IntPtr CryptoNative_EvpSha384();
 
-        internal static IntPtr CryptoNative_EvpSha384() =>
+        internal static IntPtr EvpSha384() =>
             s_evpSha384 != IntPtr.Zero ? s_evpSha384 : (s_evpSha384 = CryptoNative_EvpSha384());
 
         [DllImport(Libraries.CryptoNative)]
-        internal static extern IntPtr EvpSha512();
+        internal static extern IntPtr CryptoNative_EvpSha512();
 
-        internal static IntPtr CryptoNative_EvpSha512() =>
+        internal static IntPtr EvpSha512() =>
             s_evpSha512 != IntPtr.Zero ? s_evpSha512 : (s_evpSha512 = CryptoNative_EvpSha512());
 
         internal static IntPtr HashAlgorithmToEvp(string hashAlgorithmId) => hashAlgorithmId switch
