@@ -40,7 +40,8 @@ int32_t CryptoNative_RsaDecrypt(EVP_PKEY* pkey,
                                 int32_t sourceLen,
                                 RsaPaddingMode padding,
                                 const EVP_MD* digest,
-                                uint8_t* destination)
+                                uint8_t* destination,
+                                int32_t destinationLen)
 {
     assert(pkey != NULL);
     assert(source != NULL);
@@ -94,7 +95,9 @@ int32_t CryptoNative_RsaDecrypt(EVP_PKEY* pkey,
         }
     }
 
-    size_t written;
+    // EVP_PKEY_decrypt uses the outlen parameter as input to check the destination
+    // is large enough, and set it to the actual amount written when successful.
+    size_t written = Int32ToSizeT(destinationLen);
 
     if (EVP_PKEY_decrypt(ctx, destination, &written, source, Int32ToSizeT(sourceLen)) > 0)
     {

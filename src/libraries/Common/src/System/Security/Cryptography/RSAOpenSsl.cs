@@ -119,8 +119,9 @@ namespace System.Security.Cryptography
             SafeEvpPKeyHandle key = GetPKey();
             int keySizeBytes = Interop.Crypto.EvpPKeySize(key);
 
-            // OpenSSL does not take a length value for the destination, so it can write out of bounds.
-            // To prevent the OOB write, decrypt into a temporary buffer.
+            // OpenSSL requires that the destination buffer be at least as large as EVP_PKEY_size.
+            // If the destination is too small, allocate a temporary buffer that is large enough
+            // since the decrypted contents may actually be smaller than the key size.
             if (destination.Length < keySizeBytes)
             {
                 // RSA up through 4096 use a stackalloc
@@ -202,7 +203,8 @@ namespace System.Security.Cryptography
                 data,
                 padding.Mode,
                 hashAlgorithm,
-                destination);
+                destination,
+                destination.Length);
         }
 
         public override byte[] Encrypt(byte[] data, RSAEncryptionPadding padding)
