@@ -13,7 +13,7 @@
 
 // Define pointers to all the used OpenSSL functions
 #define REQUIRED_FUNCTION(fn) TYPEOF(fn) fn##_ptr;
-#define NEW_REQUIRED_FUNCTION(fn) TYPEOF(fn) fn##_ptr;
+#define REQUIRED_FUNCTION_110(fn) TYPEOF(fn) fn##_ptr;
 #define LIGHTUP_FUNCTION(fn) TYPEOF(fn) fn##_ptr;
 #define FALLBACK_FUNCTION(fn) TYPEOF(fn) fn##_ptr;
 #define RENAMED_FUNCTION(fn,oldfn) TYPEOF(fn) fn##_ptr;
@@ -23,7 +23,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #undef RENAMED_FUNCTION
 #undef FALLBACK_FUNCTION
 #undef LIGHTUP_FUNCTION
-#undef NEW_REQUIRED_FUNCTION
+#undef REQUIRED_FUNCTION_110
 #undef REQUIRED_FUNCTION
 
 // x.x.x, considering the max number of decimal digits for each component
@@ -78,7 +78,12 @@ static bool OpenLibrary()
 
     if (libssl == NULL)
     {
-        // Prefer OpenSSL 1.1.x
+        // Prefer OpenSSL 3.x
+        DlOpen(MAKELIB("3"));
+    }
+
+    if (libssl == NULL)
+    {
         DlOpen(MAKELIB("1.1"));
     }
 
@@ -138,7 +143,7 @@ void InitializeOpenSSLShim(void)
 #define REQUIRED_FUNCTION(fn) \
     if (!(fn##_ptr = (TYPEOF(fn))(dlsym(libssl, #fn)))) { fprintf(stderr, "Cannot get required symbol " #fn " from libssl\n"); abort(); }
 
-#define NEW_REQUIRED_FUNCTION(fn) \
+#define REQUIRED_FUNCTION_110(fn) \
     if (!v1_0_sentinel && !(fn##_ptr = (TYPEOF(fn))(dlsym(libssl, #fn)))) { fprintf(stderr, "Cannot get required symbol " #fn " from libssl\n"); abort(); }
 
 #define LIGHTUP_FUNCTION(fn) \
@@ -159,6 +164,6 @@ void InitializeOpenSSLShim(void)
 #undef RENAMED_FUNCTION
 #undef FALLBACK_FUNCTION
 #undef LIGHTUP_FUNCTION
-#undef NEW_REQUIRED_FUNCTION
+#undef REQUIRED_FUNCTION_110
 #undef REQUIRED_FUNCTION
 }
