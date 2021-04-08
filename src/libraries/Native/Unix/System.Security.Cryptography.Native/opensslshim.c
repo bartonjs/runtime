@@ -153,8 +153,8 @@ void InitializeOpenSSLShim(void)
     if (!(fn##_ptr = (TYPEOF(fn))(dlsym(libssl, #fn)))) { fn##_ptr = (TYPEOF(fn))local_##fn; }
 
 #define RENAMED_FUNCTION(fn,oldfn) \
-    if (!v1_0_sentinel && !(fn##_ptr = (TYPEOF(fn))(dlsym(libssl, #fn)))) { fprintf(stderr, "Cannot get required symbol " #fn " from libssl\n"); abort(); } \
-    if (v1_0_sentinel && !(fn##_ptr = (TYPEOF(fn))(dlsym(libssl, #oldfn)))) { fprintf(stderr, "Cannot get required symbol " #oldfn " from libssl\n"); abort(); }
+    fn##_ptr = (TYPEOF(fn))(dlsym(libssl, #fn));\
+    if (!fn##_ptr && !(fn##_ptr = (TYPEOF(fn))(dlsym(libssl, #oldfn)))) { fprintf(stderr, "Cannot get required symbol " #oldfn " from libssl\n"); abort(); }
 
 #define LEGACY_FUNCTION(fn) \
     if (v1_0_sentinel && !(fn##_ptr = (TYPEOF(fn))(dlsym(libssl, #fn)))) { fprintf(stderr, "Cannot get required symbol " #fn " from libssl\n"); abort(); }

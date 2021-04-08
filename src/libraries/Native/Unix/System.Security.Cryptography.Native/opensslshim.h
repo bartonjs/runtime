@@ -445,11 +445,11 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     REQUIRED_FUNCTION(SSL_get_error) \
     REQUIRED_FUNCTION(SSL_get_finished) \
     REQUIRED_FUNCTION(SSL_get_peer_cert_chain) \
-    REQUIRED_FUNCTION(SSL_get_peer_certificate) \
     REQUIRED_FUNCTION(SSL_get_peer_finished) \
     REQUIRED_FUNCTION(SSL_get_SSL_CTX) \
     REQUIRED_FUNCTION(SSL_get_version) \
     LIGHTUP_FUNCTION(SSL_get0_alpn_selected) \
+    RENAMED_FUNCTION(SSL_get1_peer_certificate, SSL_get_peer_certificate) \
     LEGACY_FUNCTION(SSL_library_init) \
     LEGACY_FUNCTION(SSL_load_error_strings) \
     REQUIRED_FUNCTION(SSL_new) \
@@ -877,11 +877,11 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_get_error SSL_get_error_ptr
 #define SSL_get_finished SSL_get_finished_ptr
 #define SSL_get_peer_cert_chain SSL_get_peer_cert_chain_ptr
-#define SSL_get_peer_certificate SSL_get_peer_certificate_ptr
 #define SSL_get_peer_finished SSL_get_peer_finished_ptr
 #define SSL_get_SSL_CTX SSL_get_SSL_CTX_ptr
 #define SSL_get_version SSL_get_version_ptr
 #define SSL_get0_alpn_selected SSL_get0_alpn_selected_ptr
+#define SSL_get1_peer_certificate SSL_get1_peer_certificate_ptr
 #define SSL_is_init_finished SSL_is_init_finished_ptr
 #define SSL_library_init SSL_library_init_ptr
 #define SSL_load_error_strings SSL_load_error_strings_ptr
@@ -1020,9 +1020,22 @@ FOR_ALL_OPENSSL_FUNCTIONS
 
 #define API_EXISTS(fn) true
 
-#if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_1_0_RTM
-
+#if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_3_0_RTM
+#define NEED_OPENSSL_3_0 true
+#elif OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_1_1_0_RTM
+#define NEED_OPENSSL_1_1 true
+#else
 #define NEED_OPENSSL_1_0 true
+#endif
+
+#if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_3_0_RTM
+
+// Undo renames for renamed-in-3.0
+#define SSL_get1_peer_certificate SSL_get_peer_certificate
+
+#endif
+
+#if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_1_0_RTM
 
 // Alias "future" API to the local_ version.
 #define BIO_up_ref local_BIO_up_ref
@@ -1086,10 +1099,6 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define OPENSSL_sk_push sk_push
 #define OPENSSL_sk_value sk_value
 #define TLS_method SSLv23_method
-
-#else // if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_1_0_RTM
-
-#define NEED_OPENSSL_1_1 true
 
 #endif
 
