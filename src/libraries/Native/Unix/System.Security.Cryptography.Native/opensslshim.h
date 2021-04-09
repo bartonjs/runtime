@@ -247,7 +247,7 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     LIGHTUP_FUNCTION(ERR_new) \
     REQUIRED_FUNCTION(ERR_peek_error) \
     REQUIRED_FUNCTION(ERR_peek_last_error) \
-    LIGHTUP_FUNCTION(ERR_put_error) \
+    FALLBACK_FUNCTION(ERR_put_error) \
     REQUIRED_FUNCTION(ERR_reason_error_string) \
     LIGHTUP_FUNCTION(ERR_set_debug) \
     LIGHTUP_FUNCTION(ERR_set_error) \
