@@ -244,10 +244,13 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     REQUIRED_FUNCTION(ERR_error_string_n) \
     REQUIRED_FUNCTION(ERR_get_error) \
     LEGACY_FUNCTION(ERR_load_crypto_strings) \
-    REQUIRED_FUNCTION(ERR_put_error) \
+    LIGHTUP_FUNCTION(ERR_new) \
     REQUIRED_FUNCTION(ERR_peek_error) \
     REQUIRED_FUNCTION(ERR_peek_last_error) \
+    LIGHTUP_FUNCTION(ERR_put_error) \
     REQUIRED_FUNCTION(ERR_reason_error_string) \
+    LIGHTUP_FUNCTION(ERR_set_debug) \
+    LIGHTUP_FUNCTION(ERR_set_error) \
     REQUIRED_FUNCTION(EVP_aes_128_cbc) \
     REQUIRED_FUNCTION(EVP_aes_128_ccm) \
     REQUIRED_FUNCTION(EVP_aes_128_cfb128) \
@@ -670,10 +673,13 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define ERR_error_string_n ERR_error_string_n_ptr
 #define ERR_get_error ERR_get_error_ptr
 #define ERR_load_crypto_strings ERR_load_crypto_strings_ptr
+#define ERR_new ERR_new_ptr
 #define ERR_peek_error ERR_peek_error_ptr
 #define ERR_peek_last_error ERR_peek_last_error_ptr
 #define ERR_put_error ERR_put_error_ptr
 #define ERR_reason_error_string ERR_reason_error_string_ptr
+#define ERR_set_debug ERR_set_debug_ptr
+#define ERR_set_error ERR_set_error_ptr
 #define EVP_aes_128_cbc EVP_aes_128_cbc_ptr
 #define EVP_aes_128_cfb8 EVP_aes_128_cfb8_ptr
 #define EVP_aes_128_cfb128 EVP_aes_128_cfb128_ptr

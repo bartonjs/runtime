@@ -166,4 +166,14 @@ void InitializeOpenSSLShim(void)
 #undef LIGHTUP_FUNCTION
 #undef REQUIRED_FUNCTION_110
 #undef REQUIRED_FUNCTION
+
+    // Sanity check that we have at least one functioning way of reporting errors.
+    if (ERR_put_error_ptr == NULL)
+    {
+        if (ERR_new_ptr == NULL && ERR_set_debug_ptr == NULL && ERR_set_error_ptr == NULL)
+        {
+            fprintf(stderr, "Cannot determine the error reporting routine from libssl\n");
+            abort();
+        }
+    }
 }

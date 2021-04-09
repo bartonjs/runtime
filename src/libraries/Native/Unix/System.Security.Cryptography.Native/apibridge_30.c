@@ -45,4 +45,25 @@ int local_EVP_PKEY_CTX_set_signature_md(EVP_PKEY_CTX* ctx, const EVP_MD* md)
 #pragma clang diagnostic pop
 }
 
-#endif
+#endif // defined NEED_OPENSSL_1_0 || defined NEED_OPENSSL_1_1
+
+#ifdef NEED_OPENSSL_3_0
+
+void local_ERR_put_error(int32_t lib, int32_t func, int32_t reason, const char* file, int32_t line)
+{
+    // In portable builds, ensure that we found the 3.0 error reporting functions.
+    // In non-portable builds, this is just assert(true), but then we call the functions,
+    // so the compiler ensures they're there anyways.
+    assert(API_EXISTS(ERR_new) && API_EXISTS(ERR_set_debug) && API_EXISTS(ERR_set_error));
+    ERR_new();
+
+    // ERR_set_debug saves only the pointer, not the value, as it expects constants.
+    // So just ignore the legacy numeric code, and use the 3.0 "Uh, I don't know"
+    // function name.
+    (void)func;
+    ERR_set_debug(file, line, "(unknown function)");
+
+    ERR_set_error(lib, reason, NULL);
+}
+
+#endif // defined NEED_OPENSSL_3_0
