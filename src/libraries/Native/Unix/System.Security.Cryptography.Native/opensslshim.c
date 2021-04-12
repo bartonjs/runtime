@@ -170,7 +170,7 @@ void InitializeOpenSSLShim(void)
     // Sanity check that we have at least one functioning way of reporting errors.
     if (ERR_put_error_ptr == &local_ERR_put_error)
     {
-        if (ERR_new_ptr == NULL && ERR_set_debug_ptr == NULL && ERR_set_error_ptr == NULL)
+        if (ERR_new_ptr == NULL || ERR_set_debug_ptr == NULL || ERR_set_error_ptr == NULL)
         {
             fprintf(stderr, "Cannot determine the error reporting routine from libssl\n");
             abort();
