@@ -75,6 +75,9 @@ void ERR_put_error(int32_t lib, int32_t func, int32_t reason, const char* file, 
 #define RSA_PSS_SALTLEN_DIGEST -1
 #endif
 
+#if defined FEATURE_DISTRO_AGNOSTIC_SSL || OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_3_0_RTM
+#include "apibridge_30_rev.h"
+#endif
 #if defined FEATURE_DISTRO_AGNOSTIC_SSL || OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_3_0_RTM
 #include "apibridge_30.h"
 #endif

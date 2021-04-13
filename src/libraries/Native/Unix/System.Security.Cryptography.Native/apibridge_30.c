@@ -82,6 +82,8 @@ int local_EVP_PKEY_CTX_set_signature_md(EVP_PKEY_CTX* ctx, const EVP_MD* md)
 
 #ifdef NEED_OPENSSL_3_0
 
+#include "apibridge_30_rev.h"
+
 void local_ERR_put_error(int32_t lib, int32_t func, int32_t reason, const char* file, int32_t line)
 {
     // In portable builds, ensure that we found the 3.0 error reporting functions.
