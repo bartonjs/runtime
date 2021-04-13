@@ -12,6 +12,39 @@
 
 #include "apibridge_30.h"
 
+// 1.0 and 1.1 agree on the values of the EVP_PKEY_ values, but some of them changed in 3.0.
+// If we're running on 3.0 we already call the real methods, not these fallbacks, so we need to always use
+// the 1.0/1.1 values here.
+
+// These values are in common.
+c_static_assert(EVP_PKEY_CTRL_MD == 1);
+c_static_assert(EVP_PKEY_CTRL_RSA_KEYGEN_BITS == 0x1003);
+c_static_assert(EVP_PKEY_CTRL_RSA_OAEP_MD == 0x1009);
+c_static_assert(EVP_PKEY_CTRL_RSA_PADDING == 0x1001);
+c_static_assert(EVP_PKEY_CTRL_RSA_PSS_SALTLEN == 0x1002);
+c_static_assert(EVP_PKEY_OP_KEYGEN == (1 << 2));
+c_static_assert(EVP_PKEY_RSA == 6);
+
+#if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_3_0_RTM
+
+c_static_assert(EVP_PKEY_OP_SIGN == (1 << 3));
+c_static_assert(EVP_PKEY_OP_VERIFY == (1 << 4));
+c_static_assert(EVP_PKEY_OP_TYPE_CRYPT == ((1 << 8) | (1 << 9)));
+c_static_assert(EVP_PKEY_OP_TYPE_SIG == 0xF8);
+
+#else
+
+#undef EVP_PKEY_OP_SIGN
+#define EVP_PKEY_OP_SIGN (1 << 3)
+#undef EVP_PKEY_OP_VERIFY
+#define EVP_PKEY_OP_VERIFY (1 << 4)
+#undef EVP_PKEY_OP_TYPE_CRYPT
+#define EVP_PKEY_OP_TYPE_CRYPT ((1 << 8) | (1 << 9))
+#undef EVP_PKEY_OP_TYPE_SIG
+#define EVP_PKEY_OP_TYPE_SIG 0xF8 // OP_SIGN | OP_VERIFY | OP_VERIFYRECOVER | OP_SIGNCTX | OP_VERIFYCTX
+
+#endif
+
 int local_EVP_PKEY_CTX_set_rsa_keygen_bits(EVP_PKEY_CTX* ctx, int bits)
 {
     return RSA_pkey_ctx_ctrl(ctx, EVP_PKEY_OP_KEYGEN, EVP_PKEY_CTRL_RSA_KEYGEN_BITS, bits, NULL);

@@ -65,6 +65,16 @@
 #undef SSLv23_method
 #endif
 
+#ifdef ERR_put_error
+#undef ERR_put_error
+void ERR_put_error(int32_t lib, int32_t func, int32_t reason, const char* file, int32_t line);
+#endif
+
+// The value -1 has the correct meaning on 1.0.x, but the constant wasn't named.
+#ifndef RSA_PSS_SALTLEN_DIGEST
+#define RSA_PSS_SALTLEN_DIGEST -1
+#endif
+
 #if defined FEATURE_DISTRO_AGNOSTIC_SSL || OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_3_0_RTM
 #include "apibridge_30.h"
 #endif
@@ -124,11 +134,6 @@ void SSL_CTX_set_alpn_select_cb(SSL_CTX* ctx,
                                           void* arg),
                                 void* arg);
 void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsigned int* len);
-#endif
-
-// The value -1 has the correct meaning on 1.0.x, but the constant wasn't named.
-#ifndef RSA_PSS_SALTLEN_DIGEST
-#define RSA_PSS_SALTLEN_DIGEST -1
 #endif
 
 #define API_EXISTS(fn) (fn != NULL)
@@ -844,13 +849,6 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define RSA_size RSA_size_ptr
 #define RSA_up_ref RSA_up_ref_ptr
 #define RSA_verify RSA_verify_ptr
-#define sk_free OPENSSL_sk_free_ptr
-#define sk_new_null OPENSSL_sk_new_null_ptr
-#define sk_num OPENSSL_sk_num_ptr
-#define sk_pop OPENSSL_sk_pop_ptr
-#define sk_pop_free OPENSSL_sk_pop_free_ptr
-#define sk_push OPENSSL_sk_push_ptr
-#define sk_value OPENSSL_sk_value_ptr
 #define SSL_CIPHER_get_bits SSL_CIPHER_get_bits_ptr
 #define SSL_CIPHER_find SSL_CIPHER_find_ptr
 #define SSL_CIPHER_get_id SSL_CIPHER_get_id_ptr
@@ -990,7 +988,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 // STACK_OF types will have been declared with inline functions to handle the pointer casting.
 // Since these inline functions are strongly bound to the OPENSSL_sk_* functions in 1.1 we need to
 // rebind things here.
-#if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_1_1_0_RTM
+#if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_1_1_0_RTM && OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_3_0_RTM
 // type-safe OPENSSL_sk_free
 #define sk_GENERAL_NAME_free(stack) OPENSSL_sk_free((OPENSSL_STACK*)(1 ? stack : (STACK_OF(GENERAL_NAME)*)0))
 #define sk_X509_free(stack) OPENSSL_sk_free((OPENSSL_STACK*)(1 ? stack : (STACK_OF(X509)*)0))
@@ -1019,6 +1017,17 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define sk_GENERAL_NAME_value(stack, idx) (GENERAL_NAME*)OPENSSL_sk_value((const OPENSSL_STACK*)(1 ? stack : (const STACK_OF(GENERAL_NAME)*)0), idx)
 #define sk_X509_NAME_value(stack, idx) (X509_NAME*)OPENSSL_sk_value((const OPENSSL_STACK*)(1 ? stack : (const STACK_OF(X509_NAME)*)0), idx)
 #define sk_X509_value(stack, idx) (X509*)OPENSSL_sk_value((const OPENSSL_STACK*)(1 ? stack : (const STACK_OF(X509)*)0), idx)
+
+#elif OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_1_0_RTM
+
+#define sk_free OPENSSL_sk_free_ptr
+#define sk_new_null OPENSSL_sk_new_null_ptr
+#define sk_num OPENSSL_sk_num_ptr
+#define sk_pop OPENSSL_sk_pop_ptr
+#define sk_pop_free OPENSSL_sk_pop_free_ptr
+#define sk_push OPENSSL_sk_push_ptr
+#define sk_value OPENSSL_sk_value_ptr
+
 #endif
 
 
@@ -1041,7 +1050,11 @@ FOR_ALL_OPENSSL_FUNCTIONS
 
 #endif
 
-#if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_1_0_RTM
+#if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_3_0_RTM
+
+#define ERR_put_error local_ERR_put_error
+
+#elif OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_1_0_RTM
 
 // Alias "future" API to the local_ version.
 #define BIO_up_ref local_BIO_up_ref
