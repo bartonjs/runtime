@@ -131,7 +131,7 @@ int32_t CryptoNative_EvpCipherReset(EVP_CIPHER_CTX* ctx)
 #ifdef NEED_OPENSSL_3_0
     // OpenSSL 3.0 alpha 13 does not properly reset the IV. Work around that by
     // asking for the original IV, and giving it back.
-    uint8_t tmpIV[16];
+    uint8_t tmpIV[EVP_MAX_IV_LENGTH];
 
     // If we're direct against 3.0, or we're portable and found 3.0
     if (API_EXISTS(EVP_CIPHER_CTX_get_original_iv))
