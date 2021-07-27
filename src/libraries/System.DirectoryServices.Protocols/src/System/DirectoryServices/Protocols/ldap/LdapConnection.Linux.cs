@@ -12,6 +12,16 @@ namespace System.DirectoryServices.Protocols
     {
         // Linux doesn't support setting FQDN so we mark the flag as if it is already set so we don't make a call to set it again.
         private bool _setFQDNDone = true;
+        private LdapControlArray _tlsServerControls;
+        private LdapControlArray _tlsClientControls;
+        private bool _startTls;
+
+        partial void DisposePartial(bool disposing)
+        {
+            // Native resources, free unconditionally.
+            _tlsClientControls.Release();
+            _tlsServerControls.Release();
+        }
 
         private void InternalInitConnectionHandle(string hostname)
         {
@@ -73,7 +83,38 @@ namespace System.DirectoryServices.Protocols
                 uris = $"{scheme}:{directoryIdentifier.PortNumber}";
             }
 
-            return LdapPal.SetStringOption(_ldapHandle, LdapOption.LDAP_OPT_URI, uris);
+            int error =  LdapPal.SetStringOption(_ldapHandle, LdapOption.LDAP_OPT_URI, uris);
+
+            if (error == 0 && _startTls)
+            {
+                int serverReturnValue = 0;
+                IntPtr message = IntPtr.Zero;
+
+                error = LdapPal.StartTls(
+                    _ldapHandle,
+                    ref serverReturnValue,
+                    ref message,
+                    _tlsServerControls.DangerousGetHandle(),
+                    _tlsClientControls.DangerousGetHandle());
+
+                // With OpenLDAP we don't get a message back, so we don't need to free it.
+                Debug.Assert(message == IntPtr.Zero);
+
+                if (error == (int)ResultCode.Other)
+                {
+                    error = serverReturnValue;
+                }
+
+                if (error != 0)
+                {
+                    string errorMessage = OperationErrorMappings.MapResultCode(error);
+                    ExtendedResponse response = new ExtendedResponse(null, null, (ResultCode)error, errorMessage, null);
+                    response.ResponseName = "1.3.6.1.4.1.1466.20037";
+                    throw new TlsOperationException(response);
+                }
+            }
+
+            return error;
         }
 
         private int InternalBind(NetworkCredential tempCredential, SEC_WINNT_AUTH_IDENTITY_EX cred, BindMethod method)
@@ -127,6 +168,25 @@ namespace System.DirectoryServices.Protocols
                 defaults.authzid = Marshal.PtrToStringAnsi(outValue);
             }
             return defaults;
+        }
+
+        internal void StartTransportLayerSecurityCore(DirectoryControlCollection controls)
+        {
+            // https://docs.microsoft.com/en-us/windows/win32/api/winldap/nf-winldap-ldap_start_tls_sw#remarks
+            //
+            // If already bound or already called, say no.
+            if (_startTls || _connected)
+            {
+                const ResultCode Error = ResultCode.UnwillingToPerform;
+                string errorMessage = OperationErrorMappings.MapResultCode((int)Error);
+                ExtendedResponse response = new ExtendedResponse(null, null, Error, errorMessage, null);
+                response.ResponseName = "1.3.6.1.4.1.1466.20037";
+                throw new TlsOperationException(response);
+            }
+
+            _startTls = true;
+            _tlsServerControls = LdapControlArray.Create(controls, serverControl: true);
+            _tlsClientControls = LdapControlArray.Create(controls, serverControl: false);
         }
     }
 }

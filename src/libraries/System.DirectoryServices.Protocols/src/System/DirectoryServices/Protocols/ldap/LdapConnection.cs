@@ -531,10 +531,8 @@ namespace System.DirectoryServices.Protocols
 
         private int SendRequestHelper(DirectoryRequest request, ref int messageID)
         {
-            IntPtr serverControlArray = IntPtr.Zero;
-            LdapControl[] managedServerControls = null;
-            IntPtr clientControlArray = IntPtr.Zero;
-            LdapControl[] managedClientControls = null;
+            LdapControlArray serverControls = default;
+            LdapControlArray clientControls = default;
 
             var ptrToFree = new ArrayList();
             LdapMod[] modifications = null;
@@ -565,48 +563,20 @@ namespace System.DirectoryServices.Protocols
 
             try
             {
-                IntPtr tempPtr = IntPtr.Zero;
+                IntPtr tempPtr;
 
-                // Build server control.
-                managedServerControls = BuildControlArray(request.Controls, true);
-                int structSize = Marshal.SizeOf(typeof(LdapControl));
-
-                if (managedServerControls != null)
-                {
-                    serverControlArray = Utility.AllocHGlobalIntPtrArray(managedServerControls.Length + 1);
-                    for (int i = 0; i < managedServerControls.Length; i++)
-                    {
-                        IntPtr controlPtr = Marshal.AllocHGlobal(structSize);
-                        Marshal.StructureToPtr(managedServerControls[i], controlPtr, false);
-                        tempPtr = (IntPtr)((long)serverControlArray + IntPtr.Size * i);
-                        Marshal.WriteIntPtr(tempPtr, controlPtr);
-                    }
-
-                    tempPtr = (IntPtr)((long)serverControlArray + IntPtr.Size * managedServerControls.Length);
-                    Marshal.WriteIntPtr(tempPtr, IntPtr.Zero);
-                }
-
-                // build client control
-                managedClientControls = BuildControlArray(request.Controls, false);
-                if (managedClientControls != null)
-                {
-                    clientControlArray = Utility.AllocHGlobalIntPtrArray(managedClientControls.Length + 1);
-                    for (int i = 0; i < managedClientControls.Length; i++)
-                    {
-                        IntPtr controlPtr = Marshal.AllocHGlobal(structSize);
-                        Marshal.StructureToPtr(managedClientControls[i], controlPtr, false);
-                        tempPtr = (IntPtr)((long)clientControlArray + IntPtr.Size * i);
-                        Marshal.WriteIntPtr(tempPtr, controlPtr);
-                    }
-
-                    tempPtr = (IntPtr)((long)clientControlArray + IntPtr.Size * managedClientControls.Length);
-                    Marshal.WriteIntPtr(tempPtr, IntPtr.Zero);
-                }
+                serverControls = LdapControlArray.Create(request.Controls, serverControl: true);
+                clientControls = LdapControlArray.Create(request.Controls, serverControl: false);
 
                 if (request is DeleteRequest)
                 {
                     // It is an delete operation.
-                    error = LdapPal.DeleteDirectoryEntry(_ldapHandle, ((DeleteRequest)request).DistinguishedName, serverControlArray, clientControlArray, ref messageID);
+                    error = LdapPal.DeleteDirectoryEntry(
+                        _ldapHandle,
+                        ((DeleteRequest)request).DistinguishedName,
+                        serverControls.DangerousGetHandle(),
+                        clientControls.DangerousGetHandle(),
+                        ref messageID);
                 }
                 else if (request is ModifyDNRequest)
                 {
@@ -617,7 +587,9 @@ namespace System.DirectoryServices.Protocols
                         ((ModifyDNRequest)request).NewName,
                         ((ModifyDNRequest)request).NewParentDistinguishedName,
                         ((ModifyDNRequest)request).DeleteOldRdn ? 1 : 0,
-                        serverControlArray, clientControlArray, ref messageID);
+                        serverControls.DangerousGetHandle(),
+                        clientControls.DangerousGetHandle(),
+                        ref messageID);
                 }
                 else if (request is CompareRequest compareRequest)
                 {
@@ -659,7 +631,9 @@ namespace System.DirectoryServices.Protocols
                         assertion.Name,
                         stringValue,
                         berValuePtr,
-                        serverControlArray, clientControlArray, ref messageID);
+                        serverControls.DangerousGetHandle(),
+                        clientControls.DangerousGetHandle(),
+                        ref messageID);
                 }
                 else if (request is AddRequest || request is ModifyRequest)
                 {
@@ -693,7 +667,9 @@ namespace System.DirectoryServices.Protocols
                             _ldapHandle,
                             ((AddRequest)request).DistinguishedName,
                             modArray,
-                            serverControlArray, clientControlArray, ref messageID);
+                            serverControls.DangerousGetHandle(),
+                            clientControls.DangerousGetHandle(),
+                            ref messageID);
                     }
                     else
                     {
@@ -701,7 +677,9 @@ namespace System.DirectoryServices.Protocols
                             _ldapHandle,
                             ((ModifyRequest)request).DistinguishedName,
                             modArray,
-                            serverControlArray, clientControlArray, ref messageID);
+                            serverControls.DangerousGetHandle(),
+                            clientControls.DangerousGetHandle(),
+                            ref messageID);
                     }
                 }
                 else if (request is ExtendedRequest extendedRequest)
@@ -724,7 +702,9 @@ namespace System.DirectoryServices.Protocols
                         _ldapHandle,
                         name,
                         berValuePtr,
-                        serverControlArray, clientControlArray, ref messageID);
+                        serverControls.DangerousGetHandle(),
+                        clientControls.DangerousGetHandle(),
+                        ref messageID);
                 }
                 else if (request is SearchRequest searchRequest)
                 {
@@ -777,8 +757,8 @@ namespace System.DirectoryServices.Protocols
                             searchRequestFilter,
                             searchAttributes,
                             searchRequest.TypesOnly,
-                            serverControlArray,
-                            clientControlArray,
+                            serverControls.DangerousGetHandle(),
+                            clientControls.DangerousGetHandle(),
                             searchTimeLimit,
                             searchRequest.SizeLimit,
                             ref messageID);
@@ -809,72 +789,8 @@ namespace System.DirectoryServices.Protocols
             {
                 GC.KeepAlive(modifications);
 
-                if (serverControlArray != IntPtr.Zero)
-                {
-                    // Release the memory from the heap.
-                    for (int i = 0; i < managedServerControls.Length; i++)
-                    {
-                        IntPtr tempPtr = Marshal.ReadIntPtr(serverControlArray, IntPtr.Size * i);
-                        if (tempPtr != IntPtr.Zero)
-                        {
-                            Marshal.FreeHGlobal(tempPtr);
-                        }
-                    }
-                    Marshal.FreeHGlobal(serverControlArray);
-                }
-
-                if (managedServerControls != null)
-                {
-                    for (int i = 0; i < managedServerControls.Length; i++)
-                    {
-                        if (managedServerControls[i].ldctl_oid != IntPtr.Zero)
-                        {
-                            Marshal.FreeHGlobal(managedServerControls[i].ldctl_oid);
-                        }
-
-                        if (managedServerControls[i].ldctl_value != null)
-                        {
-                            if (managedServerControls[i].ldctl_value.bv_val != IntPtr.Zero)
-                            {
-                                Marshal.FreeHGlobal(managedServerControls[i].ldctl_value.bv_val);
-                            }
-                        }
-                    }
-                }
-
-                if (clientControlArray != IntPtr.Zero)
-                {
-                    // Release the memory from the heap.
-                    for (int i = 0; i < managedClientControls.Length; i++)
-                    {
-                        IntPtr tempPtr = Marshal.ReadIntPtr(clientControlArray, IntPtr.Size * i);
-                        if (tempPtr != IntPtr.Zero)
-                        {
-                            Marshal.FreeHGlobal(tempPtr);
-                        }
-                    }
-
-                    Marshal.FreeHGlobal(clientControlArray);
-                }
-
-                if (managedClientControls != null)
-                {
-                    for (int i = 0; i < managedClientControls.Length; i++)
-                    {
-                        if (managedClientControls[i].ldctl_oid != IntPtr.Zero)
-                        {
-                            Marshal.FreeHGlobal(managedClientControls[i].ldctl_oid);
-                        }
-
-                        if (managedClientControls[i].ldctl_value != null)
-                        {
-                            if (managedClientControls[i].ldctl_value.bv_val != IntPtr.Zero)
-                            {
-                                Marshal.FreeHGlobal(managedClientControls[i].ldctl_value.bv_val);
-                            }
-                        }
-                    }
-                }
+                serverControls.Release();
+                clientControls.Release();
 
                 if (modArray != IntPtr.Zero)
                 {
@@ -1184,8 +1100,12 @@ namespace System.DirectoryServices.Protocols
             GC.SuppressFinalize(this);
         }
 
+        partial void DisposePartial(bool disposing);
+
         protected virtual void Dispose(bool disposing)
         {
+            DisposePartial(disposing);
+
             if (disposing)
             {
                 // We need to remove the handle from the handle table.
@@ -1206,72 +1126,6 @@ namespace System.DirectoryServices.Protocols
 
             _ldapHandle = null;
             _disposed = true;
-        }
-
-        internal LdapControl[] BuildControlArray(DirectoryControlCollection controls, bool serverControl)
-        {
-            LdapControl[] managedControls = null;
-
-            if (controls != null && controls.Count != 0)
-            {
-                var controlList = new ArrayList();
-                foreach (DirectoryControl col in controls)
-                {
-                    if (serverControl == true)
-                    {
-                        if (col.ServerSide)
-                        {
-                            controlList.Add(col);
-                        }
-                    }
-                    else if (!col.ServerSide)
-                    {
-                        controlList.Add(col);
-                    }
-                }
-
-                if (controlList.Count != 0)
-                {
-                    int count = controlList.Count;
-                    managedControls = new LdapControl[count];
-
-                    for (int i = 0; i < count; i++)
-                    {
-                        managedControls[i] = new LdapControl()
-                        {
-                            // Get the control type.
-                            ldctl_oid = LdapPal.StringToPtr(((DirectoryControl)controlList[i]).Type),
-
-                            // Get the control cricality.
-                            ldctl_iscritical = ((DirectoryControl)controlList[i]).IsCritical
-                        };
-
-                        // Get the control value.
-                        DirectoryControl tempControl = (DirectoryControl)controlList[i];
-                        byte[] byteControlValue = tempControl.GetValue();
-                        if (byteControlValue == null || byteControlValue.Length == 0)
-                        {
-                            // Treat the control value as null.
-                            managedControls[i].ldctl_value = new berval
-                            {
-                                bv_len = 0,
-                                bv_val = IntPtr.Zero
-                            };
-                        }
-                        else
-                        {
-                            managedControls[i].ldctl_value = new berval
-                            {
-                                bv_len = byteControlValue.Length,
-                                bv_val = Marshal.AllocHGlobal(sizeof(byte) * byteControlValue.Length)
-                            };
-                            Marshal.Copy(byteControlValue, 0, managedControls[i].ldctl_value.bv_val, managedControls[i].ldctl_value.bv_len);
-                        }
-                    }
-                }
-            }
-
-            return managedControls;
         }
 
         internal LdapMod[] BuildAttributes(CollectionBase directoryAttributes, ArrayList ptrToFree)

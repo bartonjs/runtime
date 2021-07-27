@@ -77,5 +77,15 @@ namespace System.DirectoryServices.Protocols
 
             ErrorChecking.CheckAndSetLdapError(error);
         }
+
+        public void StartTransportLayerSecurity(DirectoryControlCollection controls)
+        {
+            if (_connection._disposed)
+            {
+                throw new ObjectDisposedException(GetType().Name);
+            }
+
+            _connection.StartTransportLayerSecurityCore(controls);
+        }
     }
 }

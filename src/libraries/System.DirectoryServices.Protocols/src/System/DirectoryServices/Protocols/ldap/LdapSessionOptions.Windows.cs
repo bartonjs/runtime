@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
 using System.ComponentModel;
 using System.Runtime.Versioning;
 
@@ -45,6 +46,111 @@ namespace System.DirectoryServices.Protocols
                 }
 
                 SetIntValueHelper(LdapOption.LDAP_OPT_REFERRALS, (int)value);
+            }
+        }
+
+        public unsafe void StartTransportLayerSecurity(DirectoryControlCollection controls)
+        {
+            LdapControlArray serverControls = default;
+            LdapControlArray clientControls = default;
+
+            IntPtr ldapResult = IntPtr.Zero;
+            IntPtr referral = IntPtr.Zero;
+
+            int serverError = 0;
+            Uri[] responseReferral = null;
+
+            if (_connection._disposed)
+            {
+                throw new ObjectDisposedException(GetType().Name);
+            }
+
+            try
+            {
+                IntPtr tempPtr = IntPtr.Zero;
+
+                // build server control
+                serverControls = LdapControlArray.Create(controls, serverControl: true);
+
+                // Build client control.
+                clientControls = LdapControlArray.Create(controls, serverControl: false);
+
+                int error = LdapPal.StartTls(
+                    _connection._ldapHandle,
+                    ref serverError,
+                    ref ldapResult,
+                    serverControls.DangerousGetHandle(),
+                    clientControls.DangerousGetHandle());
+
+                if (ldapResult != IntPtr.Zero)
+                {
+                    // Parse the referral.
+                    int resultError = LdapPal.ParseResultReferral(_connection._ldapHandle, ldapResult, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, ref referral, IntPtr.Zero, 0 /* not free it */);
+                    if (resultError == 0 && referral != IntPtr.Zero)
+                    {
+                        char** referralPtr = (char**)referral;
+                        char* singleReferral = referralPtr[0];
+                        int i = 0;
+                        ArrayList referralList = new ArrayList();
+                        while (singleReferral != null)
+                        {
+                            string s = LdapPal.PtrToString((IntPtr)singleReferral);
+                            referralList.Add(s);
+
+                            i++;
+                            singleReferral = referralPtr[i];
+                        }
+
+                        // Free heap memory.
+                        if (referral != IntPtr.Zero)
+                        {
+                            LdapPal.FreeValue(referral);
+                            referral = IntPtr.Zero;
+                        }
+
+                        if (referralList.Count > 0)
+                        {
+                            responseReferral = new Uri[referralList.Count];
+                            for (int j = 0; j < referralList.Count; j++)
+                            {
+                                responseReferral[j] = new Uri((string)referralList[j]);
+                            }
+                        }
+                    }
+                }
+
+                if (error != (int)ResultCode.Success)
+                {
+                    if (Utility.IsResultCode((ResultCode)error))
+                    {
+                        // If the server failed request for whatever reason, the ldap_start_tls returns LDAP_OTHER
+                        // and the ServerReturnValue will contain the error code from the server.
+                        if (error == (int)ResultCode.Other)
+                        {
+                            error = serverError;
+                        }
+
+                        string errorMessage = OperationErrorMappings.MapResultCode(error);
+                        ExtendedResponse response = new ExtendedResponse(null, null, (ResultCode)error, errorMessage, responseReferral);
+                        response.ResponseName = "1.3.6.1.4.1.1466.20037";
+                        throw new TlsOperationException(response);
+                    }
+                    else if (LdapErrorMappings.IsLdapError(error))
+                    {
+                        string errorMessage = LdapErrorMappings.MapResultCode(error);
+                        throw new LdapException(error, errorMessage);
+                    }
+                }
+            }
+            finally
+            {
+                serverControls.Release();
+                clientControls.Release();
+
+                if (referral != IntPtr.Zero)
+                {
+                    LdapPal.FreeValue(referral);
+                }
             }
         }
     }

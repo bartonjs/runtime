@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
@@ -178,6 +180,137 @@ namespace System.DirectoryServices.Protocols
             if (values != IntPtr.Zero)
             {
                 Marshal.FreeHGlobal(values);
+            }
+        }
+    }
+
+    internal struct LdapControlArray
+    {
+        private List<LdapControl> _managedItems;
+        private IntPtr _nativeBuf;
+
+        internal IntPtr DangerousGetHandle() => _nativeBuf;
+
+        internal static LdapControlArray Create(DirectoryControlCollection controls, bool serverControl)
+        {
+            if (controls == null || controls.Count == 0)
+            {
+                return default;
+            }
+
+            List<LdapControl> list = null;
+
+            foreach (DirectoryControl col in controls)
+            {
+                if (col.ServerSide == serverControl)
+                {
+                    LdapControl control = new LdapControl
+                    {
+                        // Get the control type.
+                        ldctl_oid = LdapPal.StringToPtr(col.Type),
+
+                        // Get the control cricality.
+                        ldctl_iscritical = col.IsCritical,
+                    };
+
+                    // Get the control value.
+                    byte[] byteControlValue = col.GetValue();
+
+                    if (byteControlValue == null || byteControlValue.Length == 0)
+                    {
+                        // Treat the control value as null.
+                        control.ldctl_value = new berval
+                        {
+                            bv_len = 0,
+                            bv_val = IntPtr.Zero
+                        };
+                    }
+                    else
+                    {
+                        control.ldctl_value = new berval
+                        {
+                            bv_len = byteControlValue.Length,
+                            bv_val = Marshal.AllocHGlobal(sizeof(byte) * byteControlValue.Length)
+                        };
+
+                        Marshal.Copy(byteControlValue, 0, control.ldctl_value.bv_val, control.ldctl_value.bv_len);
+                    }
+
+                    list ??= new List<LdapControl>();
+                    list.Add(control);
+                }
+            }
+
+            // None of the controls matched the requested client/server role.
+            if (list is null)
+            {
+                return default;
+            }
+
+            Debug.Assert(list.Count > 0);
+
+            int structSize = Marshal.SizeOf(typeof(LdapControl));
+            IntPtr buf = Utility.AllocHGlobalIntPtrArray(list.Count + 1);
+            IntPtr tempPtr;
+
+            for (int i = 0; i < list.Count; i++)
+            {
+                IntPtr controlPtr = Marshal.AllocHGlobal(structSize);
+                Marshal.StructureToPtr(list[i], controlPtr, false);
+                tempPtr = (IntPtr)((long)buf + IntPtr.Size * i);
+                Marshal.WriteIntPtr(tempPtr, controlPtr);
+            }
+
+            tempPtr = (IntPtr)((long)buf + IntPtr.Size * list.Count);
+            Marshal.WriteIntPtr(tempPtr, IntPtr.Zero);
+
+            return new LdapControlArray
+            {
+                _managedItems = list,
+                _nativeBuf = buf,
+            };
+        }
+
+        internal void Release()
+        {
+            if (_nativeBuf != IntPtr.Zero)
+            {
+                Debug.Assert(_managedItems != null);
+
+                // Release the memory from the heap.
+                for (int i = 0; i < _managedItems.Count; i++)
+                {
+                    IntPtr tempPtr = Marshal.ReadIntPtr(_nativeBuf, IntPtr.Size * i);
+
+                    if (tempPtr != IntPtr.Zero)
+                    {
+                        Marshal.FreeHGlobal(tempPtr);
+                    }
+                }
+
+                Marshal.FreeHGlobal(_nativeBuf);
+                _nativeBuf = IntPtr.Zero;
+            }
+
+            if (_managedItems != null)
+            {
+                for (int i = 0; i < _managedItems.Count; i++)
+                {
+                    if (_managedItems[i].ldctl_oid != IntPtr.Zero)
+                    {
+                        Marshal.FreeHGlobal(_managedItems[i].ldctl_oid);
+                    }
+
+                    if (_managedItems[i].ldctl_value != null)
+                    {
+                        if (_managedItems[i].ldctl_value.bv_val != IntPtr.Zero)
+                        {
+                            Marshal.FreeHGlobal(_managedItems[i].ldctl_value.bv_val);
+                        }
+                    }
+                }
+
+                _managedItems = null;
             }
         }
     }
