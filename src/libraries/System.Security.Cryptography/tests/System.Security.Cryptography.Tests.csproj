@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Android;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NoWarn>$(NoWarn);SYSLIB0021</NoWarn>
+    <NoWarn>$(NoWarn);SYSLIB0021;CA2252</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <EnableDllImportGenerator>true</EnableDllImportGenerator>
   </PropertyGroup>
@@ -188,6 +188,12 @@
     <Compile Include="AesManagedTests.cs" />
     <Compile Include="AesProvider.cs" />
     <Compile Include="AesTests.cs" />
+    <Compile Include="AlgorithmImplementations\Symmetric\AesImplementationTests.cs" />
+    <Compile Include="AlgorithmImplementations\Symmetric\ISymmetricAlgorithmCapabilities.cs" />
+    <Compile Include="AlgorithmImplementations\Symmetric\SymmetricAlgorithmTestDriver.cs" />
+    <Compile Include="AlgorithmImplementations\Symmetric\SymmetricAlgorithmTestDriver.Tests.cs" />
+    <Compile Include="AlgorithmImplementations\Symmetric\SymmetricKnownValueTestCase.cs" />
+    <Compile Include="AlgorithmImplementations\Symmetric\SymmetricTestModes.cs" />
     <Compile Include="AsnEncodedDataTests.cs" />
     <Compile Include="AsnEncodedDataCollectionTests.cs" />
     <Compile Include="AsymmetricAlgorithm\Trivial.cs" />
