@@ -189,11 +189,15 @@
     <Compile Include="AesProvider.cs" />
     <Compile Include="AesTests.cs" />
     <Compile Include="AlgorithmImplementations\Symmetric\AesImplementationTests.cs" />
+    <Compile Include="AlgorithmImplementations\Symmetric\DesImplementationTests.cs" />
     <Compile Include="AlgorithmImplementations\Symmetric\ISymmetricAlgorithmCapabilities.cs" />
+    <Compile Include="AlgorithmImplementations\Symmetric\RC2ImplementationTests.cs" />
+    <Compile Include="AlgorithmImplementations\Symmetric\RijndaelImplementationTests.cs" />
     <Compile Include="AlgorithmImplementations\Symmetric\SymmetricAlgorithmTestDriver.cs" />
     <Compile Include="AlgorithmImplementations\Symmetric\SymmetricAlgorithmTestDriver.Tests.cs" />
     <Compile Include="AlgorithmImplementations\Symmetric\SymmetricKnownValueTestCase.cs" />
     <Compile Include="AlgorithmImplementations\Symmetric\SymmetricTestModes.cs" />
+    <Compile Include="AlgorithmImplementations\Symmetric\TripleDesImplementationTests.cs" />
     <Compile Include="AsnEncodedDataTests.cs" />
     <Compile Include="AsnEncodedDataCollectionTests.cs" />
     <Compile Include="AsymmetricAlgorithm\Trivial.cs" />
