@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Security.Cryptography;
 
 namespace Test.Cryptography
@@ -49,6 +48,22 @@ namespace Test.Cryptography
             }
 
             return output.ToArray();
+        }
+
+        internal static byte[] HashData(HashAlgorithmName hash, ReadOnlySpan<byte> data)
+        {
+            return hash.Name switch
+            {
+                "MD5" => MD5.HashData(data),
+                "SHA1" => SHA1.HashData(data),
+                "SHA256" => SHA256.HashData(data),
+                "SHA384" => SHA384.HashData(data),
+                "SHA512" => SHA512.HashData(data),
+                _ => throw new ArgumentOutOfRangeException(
+                    nameof(HashAlgorithm),
+                    hash.Name,
+                    "Unknown hash algorithm"),
+            };
         }
     }
 }

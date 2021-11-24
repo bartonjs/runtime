@@ -188,6 +188,14 @@
     <Compile Include="AesManagedTests.cs" />
     <Compile Include="AesProvider.cs" />
     <Compile Include="AesTests.cs" />
+    <Compile Include="AlgorithmImplementations\Asymmetric\AsymmetricTestKey.cs" />
+    <Compile Include="AlgorithmImplementations\Asymmetric\ISignatureAlgorithmCapabilities.cs" />
+    <Compile Include="AlgorithmImplementations\Asymmetric\RsaPkcs1SignatureTests.cs" />
+    <Compile Include="AlgorithmImplementations\Asymmetric\RsaTestKey.cs" />
+    <Compile Include="AlgorithmImplementations\Asymmetric\RsaTestKeys.cs" />
+    <Compile Include="AlgorithmImplementations\Asymmetric\SignatureKnownValueTestCase.cs" />
+    <Compile Include="AlgorithmImplementations\Asymmetric\SignatureTestDriver.cs" />
+    <Compile Include="AlgorithmImplementations\Asymmetric\SignatureTestDriver.Tests.cs" />
     <Compile Include="AlgorithmImplementations\Symmetric\AesImplementationTests.cs" />
     <Compile Include="AlgorithmImplementations\Symmetric\DesImplementationTests.cs" />
     <Compile Include="AlgorithmImplementations\Symmetric\ISymmetricAlgorithmCapabilities.cs" />
