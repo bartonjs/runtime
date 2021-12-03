@@ -703,6 +703,24 @@ namespace System.Security.Cryptography.Pkcs.Tests
                 includeOption: includeOption);
         }
 
+        [Fact]
+        public static void ReadAuthenticodeTimestamp()
+        {
+            SignedCms authenticodeSignature = new SignedCms();
+            authenticodeSignature.Decode(SignedDocuments.NtDllAuthenticodeSignature);
+            AsnEncodedData timestampAttr = authenticodeSignature.SignerInfos[0].UnsignedAttributes[0].Values[0];
+
+            // TODO: Finish writing this test.
+            System.Diagnostics.Debugger.Launch();
+
+            bool decoded = Rfc3161TimestampToken.TryDecode(
+                timestampAttr.RawData,
+                out Rfc3161TimestampToken token,
+                out int bytesConsumed);
+
+            Assert.True(decoded, "Authenticode signature timestamp decoded successfully.");
+        }
+
         private static void CustomBuild_CertMatch(
             CertLoader loader,
             DateTimeOffset referenceTime,
