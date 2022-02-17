@@ -39,6 +39,44 @@ namespace System.Security.Cryptography.X509Certificates
             TimeSpan timeout,
             bool disableAia)
         {
+            OpenSslX509ChainEventSource.Log.ChainStart();
+
+            try
+            {
+                return BuildChainCore(
+                    useMachineContext,
+                    cert,
+                    extraStore,
+                    applicationPolicy,
+                    certificatePolicy,
+                    revocationMode,
+                    revocationFlag,
+                    customTrustStore,
+                    trustMode,
+                    verificationTime,
+                    timeout,
+                    disableAia);
+            }
+            finally
+            {
+                OpenSslX509ChainEventSource.Log.ChainStop();
+            }
+        }
+
+        private static IChainPal? BuildChainCore(
+            bool useMachineContext,
+            ICertificatePal cert,
+            X509Certificate2Collection? extraStore,
+            OidCollection? applicationPolicy,
+            OidCollection? certificatePolicy,
+            X509RevocationMode revocationMode,
+            X509RevocationFlag revocationFlag,
+            X509Certificate2Collection? customTrustStore,
+            X509ChainTrustMode trustMode,
+            DateTime verificationTime,
+            TimeSpan timeout,
+            bool disableAia)
+        {
             if (timeout == TimeSpan.Zero)
             {
                 // An input value of 0 on the timeout is treated as 15 seconds, to match Windows.
