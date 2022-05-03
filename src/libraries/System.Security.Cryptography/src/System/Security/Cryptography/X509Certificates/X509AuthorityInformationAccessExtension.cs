@@ -1,0 +1,182 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.Collections.Generic;
+using System.Formats.Asn1;
+using System.Security.Cryptography.X509Certificates.Asn1;
+
+namespace System.Security.Cryptography.X509Certificates
+{
+    /// <summary>
+    ///   Represents the Authority Information Access X.509 Extension (1.3.6.1.5.5.7.1.1).
+    /// </summary>
+    public sealed class X509AuthorityInformationAccessExtension : X509Extension
+    {
+        private AccessDescriptionAsn[]? _decoded;
+
+        /// <summary>
+        ///   Initializes a new instance of the <see cref="X509AuthorityInformationAccessExtension" />
+        ///   class.
+        /// </summary>
+        public X509AuthorityInformationAccessExtension()
+            : base(Oids.AuthorityInformationAccess)
+        {
+            _decoded = Array.Empty<AccessDescriptionAsn>();
+        }
+
+        /// <summary>
+        ///   Initializes a new instance of the <see cref="X509AuthorityInformationAccessExtension" />
+        ///   class from an encoded representation of the extension and an optional critical marker.
+        /// </summary>
+        /// <param name="encoded">
+        ///   The encoded data used to create the extension.
+        /// </param>
+        /// <param name="critical">
+        ///   <see langword="true" /> if the extension is critical;
+        ///   otherwise, <see langword="false" />.
+        /// </param>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="encoded" /> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <paramref name="encoded" /> did not decode as an Authority Information Access extension.
+        /// </exception>
+        public X509AuthorityInformationAccessExtension(ReadOnlySpan<byte> encoded, bool critical = false)
+            : base(Oids.AuthorityInformationAccess, encoded, critical)
+        {
+            _decoded = Decode(RawData);
+        }
+
+        /// <inheritdoc />
+        public override void CopyFrom(AsnEncodedData asnEncodedData)
+        {
+            base.CopyFrom(asnEncodedData);
+            _decoded = null;
+        }
+
+        /// <summary>
+        ///   Enumerates the AccessDescription values described in this extension,
+        ///   filtering the results to include only items using the specified accessMethod
+        ///   and having a content data type of URI.
+        /// </summary>
+        /// <param name="accessMethodOid">
+        ///   The dotted-decimal form of the access method for filtering.
+        /// </param>
+        /// <remarks>
+        ///   This method does not validate or ensure that the produced values are valid URIs,
+        ///   merely that they were encoded as a URI.
+        /// </remarks>
+        /// <returns>
+        ///   The URI-typed access location values that correspond to the requested access method.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="accessMethodOid"/> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   The contents of the extension could not be decoded successfully.
+        /// </exception>
+        /// <seealso cref="EnumerateCAIssuersUris"/>
+        /// <seealso cref="EnumerateOcspUris"/>
+        public IEnumerable<string> EnumerateUris(string accessMethodOid)
+        {
+            ArgumentNullException.ThrowIfNull(accessMethodOid);
+
+            if (_decoded is null)
+            {
+                _decoded = Decode(RawData);
+            }
+
+            for (int i = 0; i < _decoded.Length; i++)
+            {
+                string? uri = GetUri(accessMethodOid, ref _decoded[i]);
+
+                if (uri is not null)
+                {
+                    yield return uri;
+                }
+            }
+
+            static string? GetUri(string accessMethodOid, ref AccessDescriptionAsn desc)
+            {
+                if (string.Equals(accessMethodOid, desc.AccessMethod))
+                {
+                    return desc.AccessLocation.Uri;
+                }
+
+                return null;
+            }
+        }
+
+        /// <summary>
+        ///   Enumerates the AccessDescription values whose AccessMethod is CAIssuers
+        ///   (1.3.6.1.5.5.7.48.2) and content data type is URI.
+        /// </summary>
+        /// <returns>
+        ///   The URIs corresponding to the locations for the issuing Certificate Authority
+        ///   certificate.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   The contents of the extension could not be decoded successfully.
+        /// </exception>
+        /// <seealso cref="EnumerateUris" />
+        public IEnumerable<string> EnumerateCAIssuersUris()
+        {
+            return EnumerateUris(Oids.CertificateAuthorityIssuers);
+        }
+
+        /// <summary>
+        ///   Enumerates the AccessDescription values whose AccessMethod is OCSP
+        ///   (1.3.6.1.5.5.7.48.1) and content data type is URI.
+        /// </summary>
+        /// <returns>
+        ///   The URIs corresponding to the locations for the issuing Certificate Authority
+        ///   certificate.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   The contents of the extension could not be decoded successfully.
+        /// </exception>
+        /// <seealso cref="EnumerateUris" />
+        public IEnumerable<string> EnumerateOcspUris()
+        {
+            return EnumerateUris(Oids.OcspEndpoint);
+        }
+
+        private static AccessDescriptionAsn[] Decode(byte[] authorityInfoAccessSyntax)
+        {
+            try
+            {
+                AsnValueReader reader = new AsnValueReader(authorityInfoAccessSyntax, AsnEncodingRules.DER);
+                AsnValueReader descriptions = reader.ReadSequence();
+                reader.ThrowIfNotEmpty();
+
+                int count = 0;
+                AsnValueReader counter = descriptions;
+
+                while (counter.HasData)
+                {
+                    count++;
+                    counter.ReadEncodedValue();
+                }
+
+                AccessDescriptionAsn[] decoded = new AccessDescriptionAsn[count];
+                count = 0;
+
+                while (descriptions.HasData)
+                {
+                    AccessDescriptionAsn.Decode(
+                        ref descriptions,
+                        authorityInfoAccessSyntax,
+                        out decoded[count]);
+
+                    count++;
+                }
+
+                return decoded;
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+    }
+}
