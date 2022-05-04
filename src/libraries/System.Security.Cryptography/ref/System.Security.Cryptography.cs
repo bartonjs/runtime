@@ -2571,7 +2571,9 @@ namespace System.Security.Cryptography.X509Certificates
     public sealed partial class X509AuthorityInformationAccessExtension : System.Security.Cryptography.X509Certificates.X509Extension
     {
         public X509AuthorityInformationAccessExtension() { }
-        public X509AuthorityInformationAccessExtension(System.ReadOnlySpan<byte> encoded, bool critical = false) { }
+        public X509AuthorityInformationAccessExtension(byte[] rawData, bool critical = false) { }
+        public X509AuthorityInformationAccessExtension(System.Collections.Generic.IEnumerable<string> ocspEndpointUris, System.Collections.Generic.IEnumerable<string> caIssuersUris, bool critical = false) { }
+        public X509AuthorityInformationAccessExtension(System.ReadOnlySpan<byte> rawData, bool critical = false) { }
         public override void CopyFrom(System.Security.Cryptography.AsnEncodedData asnEncodedData) { }
         public System.Collections.Generic.IEnumerable<string> EnumerateCAIssuersUris() { throw null; }
         public System.Collections.Generic.IEnumerable<string> EnumerateOcspUris() { throw null; }

@@ -582,6 +582,120 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        [Fact]
+        public static void AiaExtension_BuildEmpty()
+        {
+            X509AuthorityInformationAccessExtension aia = new X509AuthorityInformationAccessExtension(
+                Enumerable.Empty<string>(),
+                Enumerable.Empty<string>());
+
+            Assert.False(aia.Critical, "aia.Critical");
+            Assert.NotNull(aia.Oid);
+            Assert.Equal("1.3.6.1.5.5.7.1.1", aia.Oid.Value);
+            Assert.NotNull(aia.RawData);
+
+            AssertExtensions.SequenceEqual(new byte[] { 0x30, 0x00 }, aia.RawData);
+        }
+
+        [Fact]
+        public static void AiaExtension_BuildOcspOnly()
+        {
+            X509AuthorityInformationAccessExtension aia = new X509AuthorityInformationAccessExtension(
+                new[]
+                {
+                    "ocsp1",
+                    "ocsp2",
+                },
+                Enumerable.Empty<string>());
+
+            Assert.False(aia.Critical, "aia.Critical");
+            Assert.NotNull(aia.Oid);
+            Assert.Equal("1.3.6.1.5.5.7.1.1", aia.Oid.Value);
+            Assert.NotNull(aia.RawData);
+
+            Assert.Equal(
+                "3026301106082B0601050507300186056F63737031301106082B060105050730" +
+                "0186056F63737032",
+                aia.RawData.ByteArrayToHex());
+        }
+
+        [Fact]
+        public static void AiaExtension_BuildCAIssuersOnly()
+        {
+            X509AuthorityInformationAccessExtension aia = new X509AuthorityInformationAccessExtension(
+                Enumerable.Empty<string>(),
+                new[]
+                {
+                    "ca1",
+                    "ca2",
+                    "ca3",
+                },
+                true);
+
+            Assert.True(aia.Critical, "aia.Critical");
+            Assert.NotNull(aia.Oid);
+            Assert.Equal("1.3.6.1.5.5.7.1.1", aia.Oid.Value);
+            Assert.NotNull(aia.RawData);
+
+            Assert.Equal(
+                "3033300F06082B060105050730028603636131300F06082B0601050507300286" +
+                "03636132300F06082B060105050730028603636133",
+                aia.RawData.ByteArrayToHex());
+        }
+
+        [Fact]
+        public static void AiaExtension_BuildBothMethods()
+        {
+            X509AuthorityInformationAccessExtension aia = new X509AuthorityInformationAccessExtension(
+                new[]
+                {
+                    "A",
+                    "B",
+                    "C",
+                },
+                new[]
+                {
+                    "D",
+                },
+                false);
+
+            Assert.False(aia.Critical, "aia.Critical");
+            Assert.NotNull(aia.Oid);
+            Assert.Equal("1.3.6.1.5.5.7.1.1", aia.Oid.Value);
+            Assert.NotNull(aia.RawData);
+
+            Assert.Equal(
+                "303C300D06082B06010505073001860141300D06082B06010505073001860142" +
+                "300D06082B06010505073001860143300D06082B06010505073002860144",
+                aia.RawData.ByteArrayToHex());
+        }
+
+        [Fact]
+        public static void AiaExtension_BuildBadOcsp()
+        {
+            const string BadEntry = "\u212C is not a B";
+
+            CryptographicException ex = Assert.Throws<CryptographicException>(
+                () => new X509AuthorityInformationAccessExtension(
+                    new[] { "A", BadEntry, "C" },
+                    new[] { "D" }));
+
+            Assert.Contains($"'{BadEntry}'", ex.Message);
+        }
+
+        [Fact]
+        public static void AiaExtension_BuildBadCaIssuer()
+        {
+            const string BadEntry = "\u212B is not an A";
+
+            CryptographicException ex = Assert.Throws<CryptographicException>(
+                () => new X509AuthorityInformationAccessExtension(
+                    new[] { "D" },
+                    new[] { "C", "B", BadEntry }));
+
+            Assert.Contains($"'{BadEntry}'", ex.Message);
+        }
+
         private static void TestKeyUsageExtension(X509KeyUsageFlags flags, bool critical, byte[] expectedDer)
         {
             X509KeyUsageExtension ext = new X509KeyUsageExtension(flags, critical);

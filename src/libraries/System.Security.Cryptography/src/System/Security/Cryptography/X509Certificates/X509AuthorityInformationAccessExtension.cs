@@ -28,7 +28,7 @@ namespace System.Security.Cryptography.X509Certificates
         ///   Initializes a new instance of the <see cref="X509AuthorityInformationAccessExtension" />
         ///   class from an encoded representation of the extension and an optional critical marker.
         /// </summary>
-        /// <param name="encoded">
+        /// <param name="rawData">
         ///   The encoded data used to create the extension.
         /// </param>
         /// <param name="critical">
@@ -36,13 +36,56 @@ namespace System.Security.Cryptography.X509Certificates
         ///   otherwise, <see langword="false" />.
         /// </param>
         /// <exception cref="ArgumentNullException">
-        ///   <paramref name="encoded" /> is <see langword="null"/>.
+        ///   <paramref name="rawData" /> is <see langword="null"/>.
         /// </exception>
         /// <exception cref="CryptographicException">
-        ///   <paramref name="encoded" /> did not decode as an Authority Information Access extension.
+        ///   <paramref name="rawData" /> did not decode as an Authority Information Access extension.
         /// </exception>
-        public X509AuthorityInformationAccessExtension(ReadOnlySpan<byte> encoded, bool critical = false)
-            : base(Oids.AuthorityInformationAccess, encoded, critical)
+        public X509AuthorityInformationAccessExtension(byte[] rawData, bool critical = false)
+            : base(Oids.AuthorityInformationAccess, rawData, critical)
+        {
+            _decoded = Decode(RawData);
+        }
+
+        /// <summary>
+        ///   Initializes a new instance of the <see cref="X509AuthorityInformationAccessExtension" />
+        ///   class from an encoded representation of the extension and an optional critical marker.
+        /// </summary>
+        /// <param name="rawData">
+        ///   The encoded data used to create the extension.
+        /// </param>
+        /// <param name="critical">
+        ///   <see langword="true" /> if the extension is critical;
+        ///   otherwise, <see langword="false" />.
+        /// </param>
+        /// <exception cref="CryptographicException">
+        ///   <paramref name="rawData" /> did not decode as an Authority Information Access extension.
+        /// </exception>
+        public X509AuthorityInformationAccessExtension(ReadOnlySpan<byte> rawData, bool critical = false)
+            : base(Oids.AuthorityInformationAccess, rawData, critical)
+        {
+            _decoded = Decode(RawData);
+        }
+
+        /// <summary>
+        ///   Initializes a new instance of the <see cref="X509AuthorityInformationAccessExtension" />
+        ///   class from a collection of OCSP endpoint and CAIssuer values.
+        /// </summary>
+        /// <param name="ocspEndpointUris">
+        ///   A collection of OCSP endpoints to embed in the extension.
+        /// </param>
+        /// <param name="caIssuersUris">
+        ///   A collection of CAIssuers values to embed in the extension.
+        /// </param>
+        /// <param name="critical">
+        ///   <see langword="true" /> if the extension is critical;
+        ///   otherwise, <see langword="false" />.
+        /// </param>
+        public X509AuthorityInformationAccessExtension(
+            IEnumerable<string>? ocspEndpointUris,
+            IEnumerable<string>? caIssuersUris,
+            bool critical = false)
+            : base(Oids.AuthorityInformationAccess, Encode(ocspEndpointUris, caIssuersUris), critical)
         {
             _decoded = Decode(RawData);
         }
@@ -177,6 +220,54 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
             }
+        }
+
+        private static byte[] Encode(
+            IEnumerable<string>? ocspEndpointUris,
+            IEnumerable<string>? caIssuersUris)
+        {
+            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+
+            static void WriteAccessMethod(AsnWriter writer, string oid, string value)
+            {
+                writer.PushSequence();
+                writer.WriteObjectIdentifier(oid);
+
+                try
+                {
+                    writer.WriteCharacterString(
+                        UniversalTagNumber.IA5String,
+                        value,
+                        new Asn1Tag(TagClass.ContextSpecific, 6));
+                }
+                catch (System.Text.EncoderFallbackException e)
+                {
+                    throw new CryptographicException(SR.Cryptography_Invalid_IA5String, e);
+                }
+
+                writer.PopSequence();
+            }
+
+            writer.PushSequence();
+
+            if (ocspEndpointUris is not null)
+            {
+                foreach (string endpoint in ocspEndpointUris)
+                {
+                    WriteAccessMethod(writer, Oids.OcspEndpoint, endpoint);
+                }
+            }
+
+            if (caIssuersUris is not null)
+            {
+                foreach (string endpoint in caIssuersUris)
+                {
+                    WriteAccessMethod(writer, Oids.CertificateAuthorityIssuers, endpoint);
+                }
+            }
+
+            writer.PopSequence();
+            return writer.Encode();
         }
     }
 }
