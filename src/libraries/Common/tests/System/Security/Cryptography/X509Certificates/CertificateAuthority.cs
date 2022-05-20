@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Formats.Asn1;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates.Tests.CertificateCreation;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests.Common
@@ -297,6 +298,49 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
         }
 
         internal byte[] GetCrl()
+        {
+            CertificateRevocationListBuilder builder = new CertificateRevocationListBuilder();
+            builder.RSASignaturePadding = RSASignaturePadding.Pkcs1;
+
+            if (_revocationList is not null)
+            {
+                foreach ((byte[] serial, DateTimeOffset when) in _revocationList)
+                {
+                    builder.AddEntry(serial, when);
+                }
+            }
+
+            byte[] crl;
+
+            DateTimeOffset thisUpdate;
+            DateTimeOffset nextUpdate;
+
+            if (RevocationExpiration.HasValue)
+            {
+                nextUpdate = RevocationExpiration.GetValueOrDefault();
+                thisUpdate = _cert.NotBefore;
+            }
+            else
+            {
+                thisUpdate = DateTimeOffset.UtcNow;
+                nextUpdate = thisUpdate.AddSeconds(2);
+            }
+
+            using (RSA key = _cert.GetRSAPrivateKey())
+            {
+                crl = builder.Build(
+                    CorruptRevocationIssuerName ? s_nonParticipatingName : _cert.SubjectName,
+                    X509SignatureGenerator.CreateForRSA(key, builder.RSASignaturePadding),
+                    _crlNumber,
+                    nextUpdate,
+                    thisUpdate,
+                    _akidExtension ??= CreateAkidExtension());
+            }
+
+            return crl;
+        }
+
+        internal byte[] OldGetCrl()
         {
             byte[] crl = _crl;
             DateTimeOffset now = DateTimeOffset.UtcNow;

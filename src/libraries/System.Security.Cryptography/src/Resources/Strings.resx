@@ -219,6 +219,9 @@
   <data name="Cryptography_CertReq_DatesReversed" xml:space="preserve">
     <value>The provided notBefore value is later than the notAfter value.</value>
   </data>
+  <data name="Cryptography_CertReq_DatesReversed_CRL" xml:space="preserve">
+    <value>The provided thisUpdate value is later than the nextUpdate value.</value>
+  </data>
   <data name="Cryptography_CertReq_DuplicateExtension" xml:space="preserve">
     <value>An X509Extension with OID '{0}' has already been specified.</value>
   </data>

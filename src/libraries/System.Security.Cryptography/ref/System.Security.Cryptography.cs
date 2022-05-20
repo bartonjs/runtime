@@ -2439,6 +2439,27 @@ namespace System.Security.Cryptography.X509Certificates
         public byte[] CreateSigningRequest() { throw null; }
         public byte[] CreateSigningRequest(System.Security.Cryptography.X509Certificates.X509SignatureGenerator signatureGenerator) { throw null; }
     }
+    public sealed partial class CertificateRevocationListBuilder
+    {
+        public CertificateRevocationListBuilder() { }
+        public System.Security.Cryptography.HashAlgorithmName? HashAlgorithm { get { throw null; } set { } }
+        public System.Security.Cryptography.RSASignaturePadding? RSASignaturePadding { get { throw null; } set { } }
+        public void AddEntry(byte[] serialNumber) { }
+        public void AddEntry(byte[] serialNumber, System.DateTimeOffset revocationTime) { }
+        public void AddEntry(System.ReadOnlySpan<byte> serialNumber) { }
+        public void AddEntry(System.ReadOnlySpan<byte> serialNumber, System.DateTimeOffset revocationTime) { }
+        public void AddEntry(System.Security.Cryptography.X509Certificates.X509Certificate2 certificate) { }
+        public void AddEntry(System.Security.Cryptography.X509Certificates.X509Certificate2 certificate, System.DateTimeOffset revocationTime) { }
+        public byte[] Build(System.Security.Cryptography.X509Certificates.X500DistinguishedName issuerName, System.Security.Cryptography.X509Certificates.X509SignatureGenerator generator, int crlNumber, System.DateTimeOffset nextUpdate, System.DateTimeOffset thisUpdate, System.Security.Cryptography.X509Certificates.X509Extension akid) { throw null; }
+        public byte[] Build(System.Security.Cryptography.X509Certificates.X500DistinguishedName issuerName, System.Security.Cryptography.X509Certificates.X509SignatureGenerator generator, int crlNumber, System.DateTimeOffset nextUpdate, System.Security.Cryptography.X509Certificates.X509Extension akid) { throw null; }
+        public byte[] Build(System.Security.Cryptography.X509Certificates.X509Certificate2 issuerCertificate, int crlNumber, System.DateTimeOffset nextUpdate) { throw null; }
+        public byte[] Build(System.Security.Cryptography.X509Certificates.X509Certificate2 issuerCertificate, int crlNumber, System.DateTimeOffset nextUpdate, System.DateTimeOffset thisUpdate) { throw null; }
+        public void ExpireEntries(System.DateTimeOffset oldestRevocationTimeToKeep) { }
+        public static System.Security.Cryptography.X509Certificates.CertificateRevocationListBuilder Load(byte[] currentCrl, out int currentCrlNumber) { throw null; }
+        public static System.Security.Cryptography.X509Certificates.CertificateRevocationListBuilder Load(System.ReadOnlySpan<byte> currentCrl, out int currentCrlNumber, out int bytesConsumed) { throw null; }
+        public static System.Security.Cryptography.X509Certificates.CertificateRevocationListBuilder LoadPem(System.ReadOnlySpan<char> currentCrl, out int currentCrlNumber) { throw null; }
+        public static System.Security.Cryptography.X509Certificates.CertificateRevocationListBuilder LoadPem(string currentCrl, out int currentCrlNumber) { throw null; }
+    }
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
     public static partial class DSACertificateExtensions
