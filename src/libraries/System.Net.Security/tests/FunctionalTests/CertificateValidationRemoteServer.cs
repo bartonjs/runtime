@@ -98,10 +98,12 @@ namespace System.Net.Security.Tests
             return ConnectWithRevocation_WithCallback_Core(mode);
         }
 
-        [Fact]
-        [OuterLoop("Subject to system load race conditions")]
         [PlatformSpecific(TestPlatforms.Linux)]
-        public Task ConnectWithRevocation_StapledOcsp()
+        [Theory]
+        [OuterLoop("Subject to system load race conditions")]
+        [InlineData(false)]
+        [InlineData(true)]
+        public Task ConnectWithRevocation_StapledOcsp(bool offlineContext)
         {
             // Offline will only work if
             // a) the revocation has been checked recently enough that it is cached, or
@@ -109,12 +111,12 @@ namespace System.Net.Security.Tests
             //
             // At high load, the server's background fetch might not have completed before
             // this test runs.
-            return ConnectWithRevocation_WithCallback_Core(X509RevocationMode.Offline);
+            return ConnectWithRevocation_WithCallback_Core(X509RevocationMode.Offline, offlineContext);
         }
 
-        private async Task ConnectWithRevocation_WithCallback_Core(X509RevocationMode revocationMode)
+        private async Task ConnectWithRevocation_WithCallback_Core(X509RevocationMode revocationMode, bool offlineContext = false)
         {
-            string serverName = $"{revocationMode.ToString().ToLower()}.server.example";
+            string serverName = $"{revocationMode.ToString().ToLower()}.{offlineContext.ToString().ToLower()}.server.example";
 
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
 
@@ -204,6 +206,17 @@ namespace System.Net.Security.Tests
 
                     // The call didn't request revocation, so the chain should have been trusted.
                     Assert.Equal(SslPolicyErrors.None, sslPolicyErrors);
+                }
+                else if (certificate.Subject.Contains(".true.server.") &&
+                    chain.ChainPolicy.RevocationMode == X509RevocationMode.Offline)
+                {
+                    // In an Offline chain with an offline context the revocation still shouldn't
+                    // process, because there's no OCSP data.
+                    Assert.Equal(SslPolicyErrors.RemoteCertificateChainErrors, sslPolicyErrors);
+
+                    Assert.Contains(
+                        chain.ChainElements[0].ChainElementStatus,
+                        cs => cs.Status == X509ChainStatusFlags.RevocationStatusUnknown);
                 }
                 else
                 {

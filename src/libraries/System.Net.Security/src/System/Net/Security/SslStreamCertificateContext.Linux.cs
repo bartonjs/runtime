@@ -18,6 +18,7 @@ namespace System.Net.Security
         private const bool TrimRootCertificate = true;
         internal readonly ConcurrentDictionary<SslProtocols, SafeSslContextHandle> SslContexts;
 
+        private bool _staplingForbidden;
         private byte[]? _ocspResponse;
         private DateTimeOffset _ocspExpiration;
         private DateTimeOffset _nextDownload;
@@ -37,6 +38,11 @@ namespace System.Net.Security
 
         internal bool OcspStaplingAvailable => _ocspUrls is not null;
 
+        partial void SetOfflineStatus(bool offline)
+        {
+            _staplingForbidden = offline;
+        }
+
         partial void AddRootCertificate(X509Certificate2? rootCertificate)
         {
             if (IntermediateCertificates.Length == 0)
@@ -48,8 +54,11 @@ namespace System.Net.Security
                 _ca = IntermediateCertificates[0];
             }
 
-            // Create the task, let the download finish in the background.
-            GetOcspResponseAsync().AsTask();
+            if (!_staplingForbidden)
+            {
+                // Create the task, let the download finish in the background.
+                GetOcspResponseAsync().AsTask();
+            }
         }
 
         internal byte[]? GetOcspResponseNoWaiting()
@@ -72,6 +81,11 @@ namespace System.Net.Security
 
         internal ValueTask<byte[]?> GetOcspResponseAsync()
         {
+            if (_staplingForbidden)
+            {
+                return ValueTask.FromResult((byte[]?)null);
+            }
+
             DateTimeOffset now = DateTimeOffset.UtcNow;
 
             if (now > _ocspExpiration)
@@ -81,6 +95,11 @@ namespace System.Net.Security
 
             if (now > _nextDownload)
             {
+                // Calling DownloadOcsp will activate a Task to initiate
+                // in the background.  Further calls will attach to the
+                // same Task if it's still running.
+                //
+                // We don't want the result here, just the task to background.
 #pragma warning disable CA2012 // Use ValueTasks correctly
                 DownloadOcsp();
 #pragma warning restore CA2012 // Use ValueTasks correctly
@@ -126,7 +145,16 @@ namespace System.Net.Security
                 return new ValueTask<byte[]?>((byte[]?)null);
             }
 
-            _pendingDownload = pending = FetchOcsp();
+            lock (SslContexts)
+            {
+                pending = _pendingDownload;
+
+                if (pending is null || pending.IsFaulted)
+                {
+                    _pendingDownload = pending = FetchOcsp();
+                }
+            }
+
             return new ValueTask<byte[]?>(pending);
         }
 

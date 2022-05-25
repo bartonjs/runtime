@@ -95,11 +95,17 @@ namespace System.Net.Security
             }
 
             SslStreamCertificateContext ctx = new SslStreamCertificateContext(target, intermediates, trust);
+
+            // On Linux, AddRootCertificate will start a background download of an OCSP response,
+            // unless this context was built "offline".
+            ctx.SetOfflineStatus(offline);
             ctx.AddRootCertificate(root);
+
             return ctx;
         }
 
         partial void AddRootCertificate(X509Certificate2? rootCertificate);
+        partial void SetOfflineStatus(bool offline);
 
         internal SslStreamCertificateContext Duplicate()
         {
