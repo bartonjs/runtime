@@ -173,8 +173,6 @@ namespace System.Net.Security.Tests
 
                 SslServerAuthenticationOptions serverOpts = new SslServerAuthenticationOptions();
 
-                const int OcspDownloadDelay = 200;
-
                 if (offlineContext.HasValue)
                 {
                     serverOpts.ServerCertificateContext = SslStreamCertificateContext.Create(
@@ -185,15 +183,12 @@ namespace System.Net.Security.Tests
                     if (revocationMode == X509RevocationMode.Offline)
                     {
                         // Give the OCSP response a better chance to finish.
-                        await Task.Delay(OcspDownloadDelay);
+                        await Task.Delay(200);
                     }
                 }
                 else
                 {
                     serverOpts.ServerCertificate = serverCert;
-
-                    // Better ensure the RevocationStatusUnknown is genuine by waiting for the download that isn't happening.
-                    await Task.Delay(OcspDownloadDelay);
                 }
 
                 Task serverTask = tlsServer.AuthenticateAsServerAsync(serverOpts);
