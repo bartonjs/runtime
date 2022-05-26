@@ -114,7 +114,22 @@ namespace System.Net.Security.Tests
             return ConnectWithRevocation_WithCallback_Core(X509RevocationMode.Offline, offlineContext);
         }
 
-        private async Task ConnectWithRevocation_WithCallback_Core(X509RevocationMode revocationMode, bool offlineContext = false)
+        [PlatformSpecific(TestPlatforms.Linux)]
+        [Fact]
+        public Task ConnectWithRevocation_ServerCertWithoutContext_NoStapledOcsp()
+        {
+            // Offline will only work if
+            // a) the revocation has been checked recently enough that it is cached, or
+            // b) the server stapled the response
+            //
+            // At high load, the server's background fetch might not have completed before
+            // this test runs.
+            return ConnectWithRevocation_WithCallback_Core(X509RevocationMode.Offline, offlineContext: null);
+        }
+
+        private async Task ConnectWithRevocation_WithCallback_Core(
+            X509RevocationMode revocationMode,
+            bool? offlineContext = false)
         {
             string serverName = $"{revocationMode.ToString().ToLower()}.{offlineContext.ToString().ToLower()}.server.example";
 
@@ -150,19 +165,24 @@ namespace System.Net.Security.Tests
             using (intermediateAuthority)
             using (serverCert)
             using (X509Certificate2 issuerCert = intermediateAuthority.CloneIssuerCert())
-            using (X509Certificate2 rootCert = rootAuthority.CloneIssuerCert())
             await using (SslStream tlsClient = new SslStream(clientStream))
             await using (SslStream tlsServer = new SslStream(serverStream))
             {
                 intermediateAuthority.Revoke(serverCert, serverCert.NotBefore);
 
-                SslServerAuthenticationOptions serverOpts = new SslServerAuthenticationOptions
+                SslServerAuthenticationOptions serverOpts = new SslServerAuthenticationOptions();
+
+                if (offlineContext.HasValue)
                 {
-                    ServerCertificateContext = SslStreamCertificateContext.Create(
+                    serverOpts.ServerCertificateContext = SslStreamCertificateContext.Create(
                         serverCert,
                         new X509Certificate2Collection(issuerCert),
-                        trust: SslCertificateTrust.CreateForX509Collection(new X509Certificate2Collection(rootCert))),
-                };
+                        offlineContext.GetValueOrDefault());
+                }
+                else
+                {
+                    serverOpts.ServerCertificate = serverCert;
+                }
 
                 Task serverTask = tlsServer.AuthenticateAsServerAsync(serverOpts);
                 Task clientTask = tlsClient.AuthenticateAsClientAsync(clientOpts);
