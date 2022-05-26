@@ -299,8 +299,18 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
 
         internal byte[] GetCrl()
         {
+            byte[] crl = _crl;
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            DateTimeOffset newExpiry = now.AddSeconds(2);
+
+            if (crl != null && now < _crlExpiry)
+            {
+                return crl;
+            }
+
             CertificateRevocationListBuilder builder = new CertificateRevocationListBuilder();
             builder.RSASignaturePadding = RSASignaturePadding.Pkcs1;
+            builder.HashAlgorithm = HashAlgorithmName.SHA256;
 
             if (_revocationList is not null)
             {
@@ -309,8 +319,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
                     builder.AddEntry(serial, when);
                 }
             }
-
-            byte[] crl;
 
             DateTimeOffset thisUpdate;
             DateTimeOffset nextUpdate;
@@ -337,159 +345,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
                     _akidExtension ??= CreateAkidExtension());
             }
 
-            return crl;
-        }
-
-        internal byte[] OldGetCrl()
-        {
-            byte[] crl = _crl;
-            DateTimeOffset now = DateTimeOffset.UtcNow;
-
-            if (crl != null && now < _crlExpiry)
-            {
-                return crl;
-            }
-
-            DateTimeOffset newExpiry = now.AddSeconds(2);
-
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-
-            using (writer.PushSequence())
-            {
-                writer.WriteObjectIdentifier("1.2.840.113549.1.1.11");
-                writer.WriteNull();
-            }
-
-            byte[] signatureAlgId = writer.Encode();
-            writer.Reset();
-
-            // TBSCertList
-            using (writer.PushSequence())
-            {
-                // version v2(1)
-                writer.WriteInteger(1);
-
-                // signature (AlgorithmIdentifier)
-                writer.WriteEncodedValue(signatureAlgId);
-
-                // issuer
-                if (CorruptRevocationIssuerName)
-                {
-                    writer.WriteEncodedValue(s_nonParticipatingName.RawData);
-                }
-                else
-                {
-                    writer.WriteEncodedValue(_cert.SubjectName.RawData);
-                }
-
-                if (RevocationExpiration.HasValue)
-                {
-                    // thisUpdate
-                    writer.WriteUtcTime(_cert.NotBefore);
-
-                    // nextUpdate
-                    if (!OmitNextUpdateInCrl)
-                    {
-                        writer.WriteUtcTime(RevocationExpiration.Value);
-                    }
-                }
-                else
-                {
-                    // thisUpdate
-                    writer.WriteUtcTime(now);
-
-                    // nextUpdate
-                    if (!OmitNextUpdateInCrl)
-                    {
-                        writer.WriteUtcTime(newExpiry);
-                    }
-                }
-
-                // revokedCertificates (don't write down if empty)
-                if (_revocationList?.Count > 0)
-                {
-                    // SEQUENCE OF
-                    using (writer.PushSequence())
-                    {
-                        foreach ((byte[] serial, DateTimeOffset when) in _revocationList)
-                        {
-                            // Anonymous CRL Entry type
-                            using (writer.PushSequence())
-                            {
-                                writer.WriteInteger(serial);
-                                writer.WriteUtcTime(when);
-                            }
-                        }
-                    }
-                }
-
-                // extensions [0] EXPLICIT Extensions
-                using (writer.PushSequence(s_context0))
-                {
-                    // Extensions (SEQUENCE OF)
-                    using (writer.PushSequence())
-                    {
-                        if (_akidExtension == null)
-                        {
-                            _akidExtension = CreateAkidExtension();
-                        }
-
-                        // Authority Key Identifier Extension
-                        using (writer.PushSequence())
-                        {
-                            writer.WriteObjectIdentifier(_akidExtension.Oid.Value);
-
-                            if (_akidExtension.Critical)
-                            {
-                                writer.WriteBoolean(true);
-                            }
-
-                            writer.WriteOctetString(_akidExtension.RawData);
-                        }
-
-                        // CRL Number Extension
-                        using (writer.PushSequence())
-                        {
-                            writer.WriteObjectIdentifier("2.5.29.20");
-
-                            using (writer.PushOctetString())
-                            {
-                                writer.WriteInteger(_crlNumber);
-                            }
-                        }
-                    }
-                }
-            }
-
-            byte[] tbsCertList = writer.Encode();
-            writer.Reset();
-
-            byte[] signature;
-
-            using (RSA key = _cert.GetRSAPrivateKey())
-            {
-                signature =
-                    key.SignData(tbsCertList, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
-
-                if (CorruptRevocationSignature)
-                {
-                    signature[5] ^= 0xFF;
-                }
-            }
-
-            // CertificateList
-            using (writer.PushSequence())
-            {
-                writer.WriteEncodedValue(tbsCertList);
-                writer.WriteEncodedValue(signatureAlgId);
-                writer.WriteBitString(signature);
-            }
-
-            _crl = writer.Encode();
-
+            _crl = crl;
             _crlExpiry = newExpiry;
             _crlNumber++;
-            return _crl;
+            return crl;
         }
 
         internal void DesignateOcspResponder(X509Certificate2 responder)
