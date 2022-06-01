@@ -271,6 +271,9 @@ namespace System.Security.Cryptography.X509Certificates
 
         public void AddEntry(ReadOnlySpan<byte> serialNumber, DateTimeOffset revocationTime)
         {
+            if (serialNumber.IsEmpty)
+                throw new ArgumentException(SR.Arg_EmptyOrNullArray, nameof(serialNumber));
+
             _revoked.Add(
                 new RevokedCertificate
                 {
@@ -304,7 +307,7 @@ namespace System.Security.Cryptography.X509Certificates
             if (crlNumber < 0)
                 throw new ArgumentOutOfRangeException(nameof(crlNumber), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (nextUpdate <= thisUpdate)
-                throw new ArgumentException(SR.Cryptography_CertReq_DatesReversed_CRL);
+                throw new ArgumentException(SR.Cryptography_CRLBuilder_DatesReversed);
 
             // Check the Basic Constraints and Key Usage extensions to help identify inappropriate certificates.
             // Note that this is not a security check. The system library backing X509Chain will use these same criteria
@@ -313,7 +316,7 @@ namespace System.Security.Cryptography.X509Certificates
             // chosen the wrong cert.
             var basicConstraints = (X509BasicConstraintsExtension?)issuerCertificate.Extensions[Oids.BasicConstraints2];
             var keyUsage = (X509KeyUsageExtension?)issuerCertificate.Extensions[Oids.KeyUsage];
-            var akid = issuerCertificate.Extensions["Oids.Autho"];
+            //var akid = issuerCertificate.Extensions["Oids.Autho"];
 
             if (basicConstraints == null)
                 throw new ArgumentException(
@@ -324,9 +327,9 @@ namespace System.Security.Cryptography.X509Certificates
                     SR.Cryptography_CertReq_IssuerBasicConstraintsInvalid,
                     nameof(issuerCertificate));
             if (keyUsage != null && (keyUsage.KeyUsages & X509KeyUsageFlags.CrlSign) == 0)
-                throw new ArgumentException(SR.Cryptography_CertReq_IssuerKeyUsageInvalid, nameof(issuerCertificate));
-            if (akid is null)
-                throw new ArgumentException("AKID needed", nameof(issuerCertificate));
+                throw new ArgumentException(SR.Cryptography_CRLBuilder_IssuerKeyUsageInvalid, nameof(issuerCertificate));
+            //if (akid is null)
+            //    throw new ArgumentException("AKID needed", nameof(issuerCertificate));
 
             AsymmetricAlgorithm? key = null;
             string keyAlgorithm = issuerCertificate.GetKeyAlgorithm();
@@ -358,7 +361,7 @@ namespace System.Security.Cryptography.X509Certificates
                             nameof(issuerCertificate));
                 }
 
-                return Build(issuerCertificate.SubjectName, generator, crlNumber, nextUpdate, thisUpdate, akid);
+                return Build(issuerCertificate.SubjectName, generator, crlNumber, nextUpdate, thisUpdate, null!);
             }
             finally
             {
@@ -390,7 +393,7 @@ namespace System.Security.Cryptography.X509Certificates
             if (crlNumber < 0)
                 throw new ArgumentOutOfRangeException(nameof(crlNumber), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (nextUpdate <= thisUpdate)
-                throw new ArgumentException(SR.Cryptography_CertReq_DatesReversed_CRL);
+                throw new ArgumentException(SR.Cryptography_CRLBuilder_DatesReversed);
 
             ArgumentNullException.ThrowIfNull(akid);
 
