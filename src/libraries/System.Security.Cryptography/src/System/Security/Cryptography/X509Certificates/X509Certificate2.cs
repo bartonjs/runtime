@@ -1240,6 +1240,7 @@ namespace System.Security.Cryptography.X509Certificates
                 Oids.EnhancedKeyUsage => new X509EnhancedKeyUsageExtension(),
                 Oids.SubjectKeyIdentifier => new X509SubjectKeyIdentifierExtension(),
                 Oids.AuthorityInformationAccess => new X509AuthorityInformationAccessExtension(),
+                Oids.AuthorityKeyIdentifier => new X509AuthorityKeyIdentifierExtension(),
                 _ => null,
             };
 

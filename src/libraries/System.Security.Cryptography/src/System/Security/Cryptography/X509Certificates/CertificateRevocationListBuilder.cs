@@ -245,11 +245,7 @@ namespace System.Security.Cryptography.X509Certificates
         public void AddEntry(X509Certificate2 certificate, DateTimeOffset revocationTime)
         {
             ArgumentNullException.ThrowIfNull(certificate);
-
-            byte[] serial = certificate.GetSerialNumber();
-            Array.Reverse(serial);
-
-            AddEntry(new ReadOnlySpan<byte>(serial), revocationTime);
+            AddEntry(certificate.SerialNumberBytes.Span, revocationTime);
         }
 
         public void AddEntry(byte[] serialNumber)
@@ -374,7 +370,7 @@ namespace System.Security.Cryptography.X509Certificates
             X509SignatureGenerator generator,
             int crlNumber,
             DateTimeOffset nextUpdate,
-            X509Extension akid)
+            X509AuthorityKeyIdentifierExtension akid)
         {
             return Build(issuerName, generator, crlNumber, nextUpdate, DateTimeOffset.UtcNow, akid);
         }
@@ -385,7 +381,7 @@ namespace System.Security.Cryptography.X509Certificates
             int crlNumber,
             DateTimeOffset nextUpdate,
             DateTimeOffset thisUpdate,
-            X509Extension akid)
+            X509AuthorityKeyIdentifierExtension akid)
         {
             ArgumentNullException.ThrowIfNull(issuerName);
             ArgumentNullException.ThrowIfNull(generator);

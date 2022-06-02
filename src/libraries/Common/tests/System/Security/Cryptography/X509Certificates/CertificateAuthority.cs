@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Formats.Asn1;
 using System.Linq;
-using System.Security.Cryptography.X509Certificates.Tests.CertificateCreation;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests.Common
@@ -81,7 +80,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
         private byte[] _certData;
         private X509Extension _cdpExtension;
         private X509Extension _aiaExtension;
-        private X509Extension _akidExtension;
+        private X509AuthorityKeyIdentifierExtension _akidExtension;
 
         private List<(byte[], DateTimeOffset)> _revocationList;
         private byte[] _crl;
@@ -343,6 +342,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
                     nextUpdate,
                     thisUpdate,
                     _akidExtension ??= CreateAkidExtension());
+
+                if (CorruptRevocationSignature)
+                {
+                    crl[^1] ^= 0xFF;
+                }
             }
 
             _crl = crl;
@@ -637,54 +641,17 @@ SingleResponse ::= SEQUENCE {
             return new X509Extension("2.5.29.31", writer.Encode(), false);
         }
 
-        private X509Extension CreateAkidExtension()
+        private X509AuthorityKeyIdentifierExtension CreateAkidExtension()
         {
             X509SubjectKeyIdentifierExtension skid =
                 _cert.Extensions.OfType<X509SubjectKeyIdentifierExtension>().SingleOrDefault();
 
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-
-            // AuthorityKeyIdentifier
-            using (writer.PushSequence())
+            if (skid is null)
             {
-                if (skid == null)
-                {
-                    // authorityCertIssuer [1] GeneralNames (SEQUENCE OF)
-                    using (writer.PushSequence(s_context1))
-                    {
-                        // directoryName [4] Name
-                        byte[] dn = _cert.SubjectName.RawData;
-
-                        if (s_context4.Encode(dn) != 1)
-                        {
-                            throw new InvalidOperationException();
-                        }
-
-                        writer.WriteEncodedValue(dn);
-                    }
-
-                    // authorityCertSerialNumber [2] CertificateSerialNumber (INTEGER)
-                    byte[] serial = _cert.GetSerialNumber();
-                    Array.Reverse(serial);
-                    writer.WriteInteger(serial, s_context2);
-                }
-                else
-                {
-                    // keyIdentifier [0] KeyIdentifier (OCTET STRING)
-                    AsnReader reader = new AsnReader(skid.RawData, AsnEncodingRules.BER);
-                    ReadOnlyMemory<byte> contents;
-
-                    if (!reader.TryReadPrimitiveOctetString(out contents))
-                    {
-                        throw new InvalidOperationException();
-                    }
-
-                    reader.ThrowIfNotEmpty();
-                    writer.WriteOctetString(contents.Span, s_context0);
-                }
+                return X509AuthorityKeyIdentifierExtension.CreateFromCertificate(_cert, false, true);
             }
 
-            return new X509Extension("2.5.29.35", writer.Encode(), false);
+            return X509AuthorityKeyIdentifierExtension.CreateFromSubjectKeyIdentifier(skid);
         }
 
         private enum OcspResponseStatus

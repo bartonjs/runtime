@@ -7,10 +7,14 @@ namespace System.Security.Cryptography.X509Certificates
 {
     public sealed class X509SubjectKeyIdentifierExtension : X509Extension
     {
+        private byte[]? _subjectKeyIdentifier;
+        private string? _subjectKeyIdentifierString;
+        private bool _decoded;
+
         public X509SubjectKeyIdentifierExtension()
             : base(Oids.SubjectKeyIdentifierOid)
         {
-            _subjectKeyIdentifier = null;
+            _subjectKeyIdentifierString = null;
             _decoded = true;
         }
 
@@ -50,11 +54,22 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 if (!_decoded)
                 {
-                    byte[] subjectKeyIdentifierValue;
-                    X509Pal.Instance.DecodeX509SubjectKeyIdentifierExtension(RawData, out subjectKeyIdentifierValue);
-                    _subjectKeyIdentifier = subjectKeyIdentifierValue.ToHexStringUpper();
-                    _decoded = true;
+                    Decode(RawData);
                 }
+
+                return _subjectKeyIdentifierString;
+            }
+        }
+
+        public ReadOnlyMemory<byte> SubjectKeyIdentifierBytes
+        {
+            get
+            {
+                if (!_decoded)
+                {
+                    Decode(RawData);
+                }
+
                 return _subjectKeyIdentifier;
             }
         }
@@ -120,7 +135,11 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        private string? _subjectKeyIdentifier;
-        private bool _decoded;
+        private void Decode(byte[] rawData)
+        {
+            X509Pal.Instance.DecodeX509SubjectKeyIdentifierExtension(rawData, out _subjectKeyIdentifier);
+            _subjectKeyIdentifierString = _subjectKeyIdentifier.ToHexStringUpper();
+            _decoded = true;
+        }
     }
 }
