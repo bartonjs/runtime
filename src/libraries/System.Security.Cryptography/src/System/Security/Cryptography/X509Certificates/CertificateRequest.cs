@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -33,6 +34,16 @@ namespace System.Security.Cryptography.X509Certificates
         /// The X.509 Certificate Extensions to include in the certificate or certificate request.
         /// </summary>
         public Collection<X509Extension> CertificateExtensions { get; } = new Collection<X509Extension>();
+
+        /// <summary>
+        ///   Gets a collection representing attributes, other than the extension request attribute, to include
+        ///   in a certificate request.
+        /// </summary>
+        /// <value>
+        ///   A collection representing attributes, other than the extension request attribute, to include
+        ///   in a certificate request
+        /// </value>
+        public Collection<AsnEncodedData> OtherRequestAttributes { get; } = new Collection<AsnEncodedData>();
 
         /// <summary>
         /// A <see cref="PublicKey" /> representation of the public key for the certificate or certificate request.
@@ -192,6 +203,38 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         /// <summary>
+        ///   Create a CertificateRequest for the specified subject name, encoded public key, hash algorithm,
+        ///   and RSA signature padding.
+        /// </summary>
+        /// <param name="subjectName">
+        ///   The parsed representation of the subject name for the certificate or certificate request.
+        /// </param>
+        /// <param name="publicKey">
+        ///   The encoded representation of the public key to include in the certificate or certificate request.
+        /// </param>
+        /// <param name="hashAlgorithm">
+        ///   The hash algorithm to use when signing the certificate or certificate request.
+        /// </param>
+        /// <param name="rsaSignaturePadding">
+        ///   The RSA signature padding to use when signing this request with an RSA certificate.
+        /// </param>
+        public CertificateRequest(
+            X500DistinguishedName subjectName,
+            PublicKey publicKey,
+            HashAlgorithmName hashAlgorithm,
+            RSASignaturePadding? rsaSignaturePadding)
+        {
+            ArgumentNullException.ThrowIfNull(subjectName);
+            ArgumentNullException.ThrowIfNull(publicKey);
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
+
+            SubjectName = subjectName;
+            PublicKey = publicKey;
+            HashAlgorithm = hashAlgorithm;
+            _rsaPadding = rsaSignaturePadding;
+        }
+
+        /// <summary>
         /// Create an ASN.1 DER-encoded PKCS#10 CertificationRequest object representing the current state
         /// of this object.
         /// </summary>
@@ -249,10 +292,40 @@ namespace System.Security.Cryptography.X509Certificates
             ArgumentNullException.ThrowIfNull(signatureGenerator);
 
             X501Attribute[] attributes = Array.Empty<X501Attribute>();
+            bool hasExtensions = CertificateExtensions.Count > 0;
 
-            if (CertificateExtensions.Count > 0)
+            if (OtherRequestAttributes.Count > 0 || hasExtensions)
             {
-                attributes = new X501Attribute[] { new Pkcs9ExtensionRequest(CertificateExtensions) };
+                attributes = new X501Attribute[OtherRequestAttributes.Count + (hasExtensions ? 1 : 0)];
+            }
+
+            int attrCount = 0;
+
+            foreach (AsnEncodedData attr in OtherRequestAttributes)
+            {
+                if (attr is null)
+                {
+                    throw new InvalidOperationException("Something about a null attribute");
+                }
+
+                if (attr.Oid is null || attr.Oid.Value is null)
+                {
+                    throw new InvalidOperationException("Something about a null attr OID");
+                }
+
+                if (attr.Oid.Value == Oids.Pkcs9ExtensionRequest)
+                {
+                    throw new InvalidOperationException("Something about can't redefine the extensions attr");
+                }
+
+                Helpers.ValidateDer(attr.RawData);
+                attributes[attrCount] = new X501Attribute(attr.Oid.Value, attr.RawData);
+                attrCount++;
+            }
+
+            if (hasExtensions)
+            {
+                attributes[attrCount] = new Pkcs9ExtensionRequest(CertificateExtensions);
             }
 
             var requestInfo = new Pkcs10CertificationRequestInfo(SubjectName, PublicKey, attributes);
@@ -685,6 +758,139 @@ namespace System.Security.Cryptography.X509Certificates
             return ret;
         }
 
+        public static unsafe CertificateRequest LoadCertificateRequest(
+            ReadOnlySpan<byte> pkcs10,
+            HashAlgorithmName signerHashAlgorithm,
+            out int bytesConsumed,
+            bool skipSignatureValidation = false,
+            RSASignaturePadding? signerSignaturePadding = null)
+        {
+            try
+            {
+                AsnValueReader outer = new AsnValueReader(pkcs10, AsnEncodingRules.DER);
+                int encodedLength = outer.PeekEncodedValue().Length;
+
+                AsnValueReader pkcs10Asn = outer.ReadSequence();
+                CertificateRequest req;
+
+                fixed (byte* p10ptr = pkcs10)
+                {
+                    using (PointerMemoryManager<byte> manager = new PointerMemoryManager<byte>(p10ptr, encodedLength))
+                    {
+                        ReadOnlyMemory<byte> rebind = manager.Memory;
+                        ReadOnlySpan<byte> encodedRequestInfo = pkcs10Asn.PeekEncodedValue();
+                        CertificationRequestInfoAsn requestInfo;
+                        AlgorithmIdentifierAsn algorithmIdentifier;
+                        ReadOnlySpan<byte> signature;
+                        int signatureUnusedBitCount;
+
+                        CertificationRequestInfoAsn.Decode(ref pkcs10Asn, rebind, out requestInfo);
+                        AlgorithmIdentifierAsn.Decode(ref pkcs10Asn, rebind, out algorithmIdentifier);
+
+                        if (!pkcs10Asn.TryReadPrimitiveBitString(out signatureUnusedBitCount, out signature))
+                        {
+                            throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                        }
+
+                        pkcs10Asn.ThrowIfNotEmpty();
+
+                        if (requestInfo.Version != 0)
+                        {
+                            throw new CryptographicException("Something about a request from the future");
+                        }
+
+                        PublicKey publicKey = PublicKey.DecodeSubjectPublicKeyInfo(ref requestInfo.SubjectPublicKeyInfo);
+
+                        if (!skipSignatureValidation)
+                        {
+                            // None of the supported signature algorithms support signatures that are not full bytes.
+                            // So, shortcut the verification on the bit length
+                            if (signatureUnusedBitCount != 0 ||
+                                !VerifyX509Signature(encodedRequestInfo, signature, publicKey, algorithmIdentifier))
+                            {
+                                throw new CryptographicException("Signature didn't work");
+                            }
+                        }
+
+                        X500DistinguishedName subject = new X500DistinguishedName(requestInfo.Subject.Span);
+
+                        req = new CertificateRequest(
+                            subject,
+                            publicKey,
+                            signerHashAlgorithm,
+                            signerSignaturePadding);
+
+                        if (requestInfo.Attributes is not null)
+                        {
+                            bool foundCertExt = false;
+
+                            foreach (AttributeAsn attr in requestInfo.Attributes)
+                            {
+                                if (attr.AttrType == Oids.Pkcs9ExtensionRequest)
+                                {
+                                    if (foundCertExt)
+                                    {
+                                        throw new CryptographicException("Too many certificate extension requests");
+                                    }
+
+                                    foundCertExt = true;
+
+                                    if (attr.AttrValues.Length != 1)
+                                    {
+                                        throw new CryptographicException("Invalid certificate extensions request");
+                                    }
+
+                                    AsnValueReader extsReader = new AsnValueReader(
+                                        attr.AttrValues[0].Span,
+                                        AsnEncodingRules.DER);
+
+                                    AsnValueReader exts = extsReader.ReadSequence();
+                                    extsReader.ThrowIfNotEmpty();
+
+                                    while (exts.HasData)
+                                    {
+                                        X509ExtensionAsn.Decode(ref exts, rebind, out X509ExtensionAsn extAsn);
+
+                                        X509Extension ext = new X509Extension(
+                                            extAsn.ExtnId,
+                                            extAsn.ExtnValue.Span,
+                                            extAsn.Critical);
+
+                                        X509Extension? rich = X509Certificate2.CreateCustomExtensionIfAny(extAsn.ExtnId);
+
+                                        if (rich is not null)
+                                        {
+                                            rich.CopyFrom(ext);
+                                            req.CertificateExtensions.Add(rich);
+                                        }
+                                        else
+                                        {
+                                            req.CertificateExtensions.Add(ext);
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    foreach (ReadOnlyMemory<byte> val in attr.AttrValues)
+                                    {
+                                        req.OtherRequestAttributes.Add(
+                                            new AsnEncodedData(attr.AttrType, val.Span));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                bytesConsumed = encodedLength;
+                return req;
+            }
+            catch (AsnContentException e)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
+            }
+        }
+
         private static ArraySegment<byte> NormalizeSerialNumber(ReadOnlySpan<byte> serialNumber)
         {
             byte[] newSerialNumber;
@@ -709,6 +915,159 @@ namespace System.Security.Cryptography.X509Certificates
             newSerialNumber = CryptoPool.Rent(contentLength);
             serialNumber.Slice(leadingZeros).CopyTo(newSerialNumber);
             return new ArraySegment<byte>(newSerialNumber, 0, contentLength);
+        }
+
+        private static bool VerifyX509Signature(
+            ReadOnlySpan<byte> toBeSigned,
+            ReadOnlySpan<byte> signature,
+            PublicKey publicKey,
+            AlgorithmIdentifierAsn algorithmIdentifier)
+        {
+            RSA? rsa = publicKey.GetRSAPublicKey();
+            ECDsa? ecdsa = publicKey.GetECDsaPublicKey();
+
+            try
+            {
+                HashAlgorithmName hashAlg;
+
+                if (algorithmIdentifier.Algorithm == Oids.RsaPss)
+                {
+                    if (rsa is null || !algorithmIdentifier.Parameters.HasValue)
+                    {
+                        return false;
+                    }
+
+                    PssParamsAsn pssParams = PssParamsAsn.Decode(
+                        algorithmIdentifier.Parameters.GetValueOrDefault(),
+                        AsnEncodingRules.DER);
+
+                    if (pssParams.TrailerField != 1 ||
+                        !pssParams.HashAlgorithm.HasNullEquivalentParameters() ||
+                        pssParams.MaskGenAlgorithm.Algorithm != Oids.Mgf1 ||
+                        !pssParams.MaskGenAlgorithm.Parameters.HasValue)
+                    {
+                        return false;
+                    }
+
+                    AlgorithmIdentifierAsn mgfParams = AlgorithmIdentifierAsn.Decode(
+                        pssParams.MaskGenAlgorithm.Parameters.GetValueOrDefault(),
+                        AsnEncodingRules.DER);
+
+                    if (mgfParams.Algorithm != pssParams.HashAlgorithm.Algorithm ||
+                        !mgfParams.HasNullEquivalentParameters())
+                    {
+                        return false;
+                    }
+
+                    switch (pssParams.HashAlgorithm.Algorithm)
+                    {
+                        case Oids.Sha256:
+                            if (pssParams.SaltLength != SHA256.HashSizeInBytes)
+                            {
+                                return false;
+                            }
+
+                            hashAlg = HashAlgorithmName.SHA256;
+                            break;
+                        case Oids.Sha384:
+                            if (pssParams.SaltLength != SHA384.HashSizeInBytes)
+                            {
+                                return false;
+                            }
+
+                            hashAlg = HashAlgorithmName.SHA384;
+                            break;
+                        case Oids.Sha512:
+                            if (pssParams.SaltLength != SHA512.HashSizeInBytes)
+                            {
+                                return false;
+                            }
+
+                            hashAlg = HashAlgorithmName.SHA512;
+                            break;
+                        case Oids.Sha1:
+                            if (pssParams.SaltLength != SHA1.HashSizeInBytes)
+                            {
+                                return false;
+                            }
+
+                            hashAlg = HashAlgorithmName.SHA1;
+                            break;
+                        default:
+                            return false;
+                    }
+
+                    return rsa.VerifyData(
+                        toBeSigned,
+                        signature,
+                        hashAlg,
+                        RSASignaturePadding.Pss);
+                }
+
+                // All remaining algorithms have no defined parameters
+                if (!algorithmIdentifier.HasNullEquivalentParameters())
+                {
+                    return false;
+                }
+
+                switch (algorithmIdentifier.Algorithm)
+                {
+                    case Oids.RsaPkcs1Sha256:
+                    case Oids.ECDsaWithSha256:
+                        hashAlg = HashAlgorithmName.SHA256;
+                        break;
+                    case Oids.RsaPkcs1Sha384:
+                    case Oids.ECDsaWithSha384:
+                        hashAlg = HashAlgorithmName.SHA384;
+                        break;
+                    case Oids.RsaPkcs1Sha512:
+                    case Oids.ECDsaWithSha512:
+                        hashAlg = HashAlgorithmName.SHA512;
+                        break;
+                    case Oids.RsaPkcs1Sha1:
+                    case Oids.ECDsaWithSha1:
+                        hashAlg = HashAlgorithmName.SHA1;
+                        break;
+                    default:
+                        return false;
+                }
+
+                switch (algorithmIdentifier.Algorithm)
+                {
+                    case Oids.RsaPkcs1Sha256:
+                    case Oids.RsaPkcs1Sha384:
+                    case Oids.RsaPkcs1Sha512:
+                    case Oids.RsaPkcs1Sha1:
+                        if (rsa is null)
+                        {
+                            return false;
+                        }
+
+                        return rsa.VerifyData(toBeSigned, signature, hashAlg, RSASignaturePadding.Pkcs1);
+                    case Oids.ECDsaWithSha256:
+                    case Oids.ECDsaWithSha384:
+                    case Oids.ECDsaWithSha512:
+                    case Oids.ECDsaWithSha1:
+                        if (ecdsa is null)
+                        {
+                            return false;
+                        }
+
+                        return ecdsa.VerifyData(toBeSigned, signature, hashAlg);
+                    default:
+                        Debug.Fail($"Algorithm ID {algorithmIdentifier.Algorithm} was in the first switch, but not the second");
+                        return false;
+                }
+            }
+            catch (AsnContentException)
+            {
+                return false;
+            }
+            finally
+            {
+                rsa?.Dispose();
+                ecdsa?.Dispose();
+            }
         }
     }
 }

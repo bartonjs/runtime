@@ -1231,8 +1231,10 @@ namespace System.Security.Cryptography.X509Certificates
             throw new CryptographicException(SR.Cryptography_X509_NoOrMismatchedPemKey);
         }
 
-        private static X509Extension? CreateCustomExtensionIfAny(Oid oid) =>
-            oid.Value switch
+        private static X509Extension? CreateCustomExtensionIfAny(Oid oid) => CreateCustomExtensionIfAny(oid.Value);
+
+        internal static X509Extension? CreateCustomExtensionIfAny(string? oidValue) =>
+            oidValue switch
             {
                 Oids.BasicConstraints => X509Pal.Instance.SupportsLegacyBasicConstraintsExtension ? new X509BasicConstraintsExtension() : null,
                 Oids.BasicConstraints2 => new X509BasicConstraintsExtension(),
