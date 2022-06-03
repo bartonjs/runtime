@@ -1241,6 +1241,7 @@ namespace System.Security.Cryptography.X509Certificates
                 Oids.SubjectKeyIdentifier => new X509SubjectKeyIdentifierExtension(),
                 Oids.AuthorityInformationAccess => new X509AuthorityInformationAccessExtension(),
                 Oids.AuthorityKeyIdentifier => new X509AuthorityKeyIdentifierExtension(),
+                Oids.SubjectAltName => new X509SubjectAlternativeNameExtension(),
                 _ => null,
             };
 

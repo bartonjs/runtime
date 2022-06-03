@@ -3162,6 +3162,16 @@ namespace System.Security.Cryptography.X509Certificates
         public void Remove(System.Security.Cryptography.X509Certificates.X509Certificate2 certificate) { }
         public void RemoveRange(System.Security.Cryptography.X509Certificates.X509Certificate2Collection certificates) { }
     }
+    public partial class X509SubjectAlternativeNameExtension : System.Security.Cryptography.X509Certificates.X509Extension
+    {
+        public X509SubjectAlternativeNameExtension() { }
+        public X509SubjectAlternativeNameExtension(byte[] rawData, bool critical = false) { }
+        public X509SubjectAlternativeNameExtension(System.ReadOnlySpan<byte> rawData, bool critical = false) { }
+        public override void CopyFrom(System.Security.Cryptography.AsnEncodedData asnEncodedData) { }
+        public System.Collections.Generic.IEnumerable<string> EnumerateDnsNames() { throw null; }
+        public System.Collections.Generic.IEnumerable<System.Net.IPAddress> EnumerateIPAddresses() { throw null; }
+        public bool MatchesHostname(string hostname) { throw null; }
+    }
     public sealed partial class X509SubjectKeyIdentifierExtension : System.Security.Cryptography.X509Certificates.X509Extension
     {
         public X509SubjectKeyIdentifierExtension() { }

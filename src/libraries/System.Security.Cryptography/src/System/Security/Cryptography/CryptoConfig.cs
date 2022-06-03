@@ -259,6 +259,7 @@ namespace System.Security.Cryptography
                 ht.Add("2.5.29.37", typeof(X509Certificates.X509EnhancedKeyUsageExtension));
                 ht.Add(Oids.AuthorityInformationAccess, typeof(X509Certificates.X509AuthorityInformationAccessExtension));
                 ht.Add(Oids.AuthorityKeyIdentifier, typeof(X509Certificates.X509AuthorityKeyIdentifierExtension));
+                ht.Add(Oids.SubjectAltName, typeof(X509Certificates.X509SubjectAlternativeNameExtension));
 
                 // X509Chain class can be overridden to use a different chain engine.
                 ht.Add("X509Chain", typeof(X509Certificates.X509Chain));
