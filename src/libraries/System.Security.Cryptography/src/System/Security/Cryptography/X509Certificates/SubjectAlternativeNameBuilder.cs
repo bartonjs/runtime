@@ -16,6 +16,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         // Because GeneralNames is a SEQUENCE, just make a rolling list, it doesn't need to be re-sorted.
         private readonly List<byte[]> _encodedNames = new List<byte[]>();
+        private readonly AsnWriter _writer = new AsnWriter(AsnEncodingRules.DER);
 
         public void AddEmailAddress(string emailAddress)
         {
@@ -52,9 +53,10 @@ namespace System.Security.Cryptography.X509Certificates
             if (string.IsNullOrEmpty(upn))
                 throw new ArgumentOutOfRangeException(nameof(upn), SR.Arg_EmptyOrNullString);
 
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-            writer.WriteCharacterString(UniversalTagNumber.UTF8String, upn);
-            byte[] otherNameValue = writer.Encode();
+            _writer.Reset();
+            _writer.WriteCharacterString(UniversalTagNumber.UTF8String, upn);
+            byte[] otherNameValue = _writer.Encode();
+            _writer.Reset();
 
             OtherNameAsn otherName = new OtherNameAsn
             {
@@ -67,20 +69,20 @@ namespace System.Security.Cryptography.X509Certificates
 
         public X509Extension Build(bool critical = false)
         {
-            AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
+            _writer.Reset();
 
-            using (writer.PushSequence())
+            using (_writer.PushSequence())
             {
                 foreach (byte[] encodedName in _encodedNames)
                 {
-                    writer.WriteEncodedValue(encodedName);
+                    _writer.WriteEncodedValue(encodedName);
                 }
             }
 
-            return new X509Extension(
-                Oids.SubjectAltName,
-                writer.Encode(),
-                critical);
+            byte[] encoded = _writer.Encode();
+            _writer.Reset();
+
+            return new X509Extension(Oids.SubjectAltName, encoded, critical);
         }
 
         private void AddGeneralName(GeneralNameAsn generalName)
@@ -88,9 +90,10 @@ namespace System.Security.Cryptography.X509Certificates
             try
             {
                 // Verify that the general name can be serialized and store it.
-                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-                generalName.Encode(writer);
-                _encodedNames.Add(writer.Encode());
+                _writer.Reset();
+                generalName.Encode(_writer);
+                _encodedNames.Add(_writer.Encode());
+                _writer.Reset();
             }
             catch (EncoderFallbackException)
             {
