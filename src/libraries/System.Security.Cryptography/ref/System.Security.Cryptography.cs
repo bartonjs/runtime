@@ -2454,6 +2454,7 @@ namespace System.Security.Cryptography.X509Certificates
         public byte[] Build(System.Security.Cryptography.X509Certificates.X500DistinguishedName issuerName, System.Security.Cryptography.X509Certificates.X509SignatureGenerator generator, int crlNumber, System.DateTimeOffset nextUpdate, System.Security.Cryptography.X509Certificates.X509AuthorityKeyIdentifierExtension akid) { throw null; }
         public byte[] Build(System.Security.Cryptography.X509Certificates.X509Certificate2 issuerCertificate, int crlNumber, System.DateTimeOffset nextUpdate) { throw null; }
         public byte[] Build(System.Security.Cryptography.X509Certificates.X509Certificate2 issuerCertificate, int crlNumber, System.DateTimeOffset nextUpdate, System.DateTimeOffset thisUpdate) { throw null; }
+        public static System.Security.Cryptography.X509Certificates.X509Extension BuildCrlDistributionPointExtension(System.Collections.Generic.IEnumerable<string> uris, bool critical = false) { throw null; }
         public void ExpireEntries(System.DateTimeOffset oldestRevocationTimeToKeep) { }
         public static System.Security.Cryptography.X509Certificates.CertificateRevocationListBuilder Load(byte[] currentCrl, out int currentCrlNumber) { throw null; }
         public static System.Security.Cryptography.X509Certificates.CertificateRevocationListBuilder Load(System.ReadOnlySpan<byte> currentCrl, out int currentCrlNumber, out int bytesConsumed) { throw null; }

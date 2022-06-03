@@ -1,6 +1,7 @@
 // Licensed to the.NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreation
@@ -169,6 +170,20 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 Assert.Contains("thisUpdate", ex.Message);
                 Assert.Contains("nextUpdate", ex.Message);
             }
+        }
+
+        [Fact]
+        public static void BuildSimpleCdp()
+        {
+            X509Extension ext = CertificateRevocationListBuilder.BuildCrlDistributionPointExtension(
+                new[] { "http://crl.microsoft.com/pki/crl/products/MicCodSigPCA_08-31-2010.crl" });
+
+            byte[] expected = (
+                "304d304ba049a0478645687474703a2f2f63726c2e6d6963726f736f" +
+                "66742e636f6d2f706b692f63726c2f70726f64756374732f4d696343" +
+                "6f645369675043415f30382d33312d323031302e63726c").HexToByteArray();
+
+            Assert.Equal(expected, ext.RawData);
         }
     }
 }

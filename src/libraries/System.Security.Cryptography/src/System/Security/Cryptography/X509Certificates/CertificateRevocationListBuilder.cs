@@ -5,14 +5,11 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Formats.Asn1;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography.Asn1;
 
 namespace System.Security.Cryptography.X509Certificates
 {
-    /// <summary>
-    /// </summary>
-    public sealed class CertificateRevocationListBuilder
+    public sealed partial class CertificateRevocationListBuilder
     {
         private struct RevokedCertificate
         {
