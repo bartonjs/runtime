@@ -5,6 +5,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Formats.Asn1;
+using System.Numerics;
 using System.Security.Cryptography.Asn1;
 
 namespace System.Security.Cryptography.X509Certificates
@@ -59,13 +60,13 @@ namespace System.Security.Cryptography.X509Certificates
             _revoked = revoked;
         }
 
-        public static CertificateRevocationListBuilder Load(byte[] currentCrl, out int currentCrlNumber)
+        public static CertificateRevocationListBuilder Load(byte[] currentCrl, out BigInteger currentCrlNumber)
         {
             ArgumentNullException.ThrowIfNull(currentCrl);
 
             CertificateRevocationListBuilder ret = Load(
                 new ReadOnlySpan<byte>(currentCrl),
-                out int crlNumber,
+                out BigInteger crlNumber,
                 out int bytesConsumed);
 
             if (bytesConsumed != currentCrl.Length)
@@ -79,11 +80,11 @@ namespace System.Security.Cryptography.X509Certificates
 
         public static CertificateRevocationListBuilder Load(
             ReadOnlySpan<byte> currentCrl,
-            out int currentCrlNumber,
+            out BigInteger currentCrlNumber,
             out int bytesConsumed)
         {
             List<RevokedCertificate> list = new();
-            int crlNumber = 0;
+            BigInteger crlNumber = 0;
             int payloadLength;
 
             try
@@ -155,12 +156,7 @@ namespace System.Security.Cryptography.X509Certificates
                                     extnValue,
                                     AsnEncodingRules.DER);
 
-                                // The CRL Number is out of range for this method.
-                                if (!crlNumberReader.TryReadInt32(out crlNumber))
-                                {
-                                    throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-                                }
-
+                                crlNumber = crlNumberReader.ReadInteger();
                                 crlNumberReader.ThrowIfNotEmpty();
 
                                 break;
@@ -195,14 +191,14 @@ namespace System.Security.Cryptography.X509Certificates
             return new CertificateRevocationListBuilder(list);
         }
 
-        public static CertificateRevocationListBuilder LoadPem(string currentCrl, out int currentCrlNumber)
+        public static CertificateRevocationListBuilder LoadPem(string currentCrl, out BigInteger currentCrlNumber)
         {
             ArgumentNullException.ThrowIfNull(currentCrl);
 
             return LoadPem(currentCrl.AsSpan(), out currentCrlNumber);
         }
 
-        public static CertificateRevocationListBuilder LoadPem(ReadOnlySpan<char> currentCrl, out int currentCrlNumber)
+        public static CertificateRevocationListBuilder LoadPem(ReadOnlySpan<char> currentCrl, out BigInteger currentCrlNumber)
         {
             ReadOnlySpan<char> source = currentCrl;
 
@@ -280,14 +276,14 @@ namespace System.Security.Cryptography.X509Certificates
             _revoked.RemoveAll(rc => rc.RevocationTime < oldestRevocationTimeToKeep);
         }
 
-        public byte[] Build(X509Certificate2 issuerCertificate, int crlNumber, DateTimeOffset nextUpdate)
+        public byte[] Build(X509Certificate2 issuerCertificate, BigInteger crlNumber, DateTimeOffset nextUpdate)
         {
             return Build(issuerCertificate, crlNumber, nextUpdate, DateTimeOffset.UtcNow);
         }
 
         public byte[] Build(
             X509Certificate2 issuerCertificate,
-            int crlNumber,
+            BigInteger crlNumber,
             DateTimeOffset nextUpdate,
             DateTimeOffset thisUpdate)
         {
@@ -365,7 +361,7 @@ namespace System.Security.Cryptography.X509Certificates
         public byte[] Build(
             X500DistinguishedName issuerName,
             X509SignatureGenerator generator,
-            int crlNumber,
+            BigInteger crlNumber,
             DateTimeOffset nextUpdate,
             X509AuthorityKeyIdentifierExtension akid)
         {
@@ -375,7 +371,7 @@ namespace System.Security.Cryptography.X509Certificates
         public byte[] Build(
             X500DistinguishedName issuerName,
             X509SignatureGenerator generator,
-            int crlNumber,
+            BigInteger crlNumber,
             DateTimeOffset nextUpdate,
             DateTimeOffset thisUpdate,
             X509AuthorityKeyIdentifierExtension akid)

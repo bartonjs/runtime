@@ -2453,16 +2453,16 @@ namespace System.Security.Cryptography.X509Certificates
         public void AddEntry(System.ReadOnlySpan<byte> serialNumber, System.DateTimeOffset revocationTime) { }
         public void AddEntry(System.Security.Cryptography.X509Certificates.X509Certificate2 certificate) { }
         public void AddEntry(System.Security.Cryptography.X509Certificates.X509Certificate2 certificate, System.DateTimeOffset revocationTime) { }
-        public byte[] Build(System.Security.Cryptography.X509Certificates.X500DistinguishedName issuerName, System.Security.Cryptography.X509Certificates.X509SignatureGenerator generator, int crlNumber, System.DateTimeOffset nextUpdate, System.DateTimeOffset thisUpdate, System.Security.Cryptography.X509Certificates.X509AuthorityKeyIdentifierExtension akid) { throw null; }
-        public byte[] Build(System.Security.Cryptography.X509Certificates.X500DistinguishedName issuerName, System.Security.Cryptography.X509Certificates.X509SignatureGenerator generator, int crlNumber, System.DateTimeOffset nextUpdate, System.Security.Cryptography.X509Certificates.X509AuthorityKeyIdentifierExtension akid) { throw null; }
-        public byte[] Build(System.Security.Cryptography.X509Certificates.X509Certificate2 issuerCertificate, int crlNumber, System.DateTimeOffset nextUpdate) { throw null; }
-        public byte[] Build(System.Security.Cryptography.X509Certificates.X509Certificate2 issuerCertificate, int crlNumber, System.DateTimeOffset nextUpdate, System.DateTimeOffset thisUpdate) { throw null; }
+        public byte[] Build(System.Security.Cryptography.X509Certificates.X500DistinguishedName issuerName, System.Security.Cryptography.X509Certificates.X509SignatureGenerator generator, System.Numerics.BigInteger crlNumber, System.DateTimeOffset nextUpdate, System.DateTimeOffset thisUpdate, System.Security.Cryptography.X509Certificates.X509AuthorityKeyIdentifierExtension akid) { throw null; }
+        public byte[] Build(System.Security.Cryptography.X509Certificates.X500DistinguishedName issuerName, System.Security.Cryptography.X509Certificates.X509SignatureGenerator generator, System.Numerics.BigInteger crlNumber, System.DateTimeOffset nextUpdate, System.Security.Cryptography.X509Certificates.X509AuthorityKeyIdentifierExtension akid) { throw null; }
+        public byte[] Build(System.Security.Cryptography.X509Certificates.X509Certificate2 issuerCertificate, System.Numerics.BigInteger crlNumber, System.DateTimeOffset nextUpdate) { throw null; }
+        public byte[] Build(System.Security.Cryptography.X509Certificates.X509Certificate2 issuerCertificate, System.Numerics.BigInteger crlNumber, System.DateTimeOffset nextUpdate, System.DateTimeOffset thisUpdate) { throw null; }
         public static System.Security.Cryptography.X509Certificates.X509Extension BuildCrlDistributionPointExtension(System.Collections.Generic.IEnumerable<string> uris, bool critical = false) { throw null; }
         public void ExpireEntries(System.DateTimeOffset oldestRevocationTimeToKeep) { }
-        public static System.Security.Cryptography.X509Certificates.CertificateRevocationListBuilder Load(byte[] currentCrl, out int currentCrlNumber) { throw null; }
-        public static System.Security.Cryptography.X509Certificates.CertificateRevocationListBuilder Load(System.ReadOnlySpan<byte> currentCrl, out int currentCrlNumber, out int bytesConsumed) { throw null; }
-        public static System.Security.Cryptography.X509Certificates.CertificateRevocationListBuilder LoadPem(System.ReadOnlySpan<char> currentCrl, out int currentCrlNumber) { throw null; }
-        public static System.Security.Cryptography.X509Certificates.CertificateRevocationListBuilder LoadPem(string currentCrl, out int currentCrlNumber) { throw null; }
+        public static System.Security.Cryptography.X509Certificates.CertificateRevocationListBuilder Load(byte[] currentCrl, out System.Numerics.BigInteger currentCrlNumber) { throw null; }
+        public static System.Security.Cryptography.X509Certificates.CertificateRevocationListBuilder Load(System.ReadOnlySpan<byte> currentCrl, out System.Numerics.BigInteger currentCrlNumber, out int bytesConsumed) { throw null; }
+        public static System.Security.Cryptography.X509Certificates.CertificateRevocationListBuilder LoadPem(System.ReadOnlySpan<char> currentCrl, out System.Numerics.BigInteger currentCrlNumber) { throw null; }
+        public static System.Security.Cryptography.X509Certificates.CertificateRevocationListBuilder LoadPem(string currentCrl, out System.Numerics.BigInteger currentCrlNumber) { throw null; }
     }
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
