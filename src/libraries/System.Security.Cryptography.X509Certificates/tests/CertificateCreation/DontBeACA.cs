@@ -1,6 +1,7 @@
 // Licensed to the.NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Formats.Asn1;
 using System.Net;
 using System.Net.Sockets;
@@ -57,8 +58,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     out int bytesConsumed,
                     skipSignatureValidation: true,
                     signerSignaturePadding: RSASignaturePadding.Pss);
-
-                // TODO: How to validate the Subject?
 
                 AsnEncodedData? challengePassword = null;
 
@@ -396,9 +395,67 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                         new[] { "http://ocsp.issuer.ca.example/ocsp/" },
                         new[] { "http://issuer.ca.example/issuer.cer" });
 
-                // Because of the above validation we technically know we only need to remove the SAN extension,
-                // but let's just build clean, for safety.
-                req.CertificateExtensions.Clear();
+
+                bool acceptSubject = true;
+                string? cn = null;
+
+                if (san is not null)
+                {
+                    if (req.SubjectName.RawData.Length == 2)
+                    {
+                        throw new InvalidOperationException("A name is required when no SAN extension is present");
+                    }
+                }
+                else
+                {
+                    foreach ((Oid typeId, string value) in req.SubjectName.EnumerateSimpleAttributes())
+                    {
+                        switch (typeId.Value)
+                        {
+                            case "2.5.4.3":
+                                if (cn is not null)
+                                {
+                                    throw new InvalidOperationException("CN was specified more than once");
+                                }
+
+                                if (value.Length == 0 || value.IndexOfAny(new[] { ' ', '*' }) > -1 ||
+                                    !value.EndsWith(".fruit.example"))
+                                {
+                                    throw new InvalidOperationException("CN is unauthorized");
+                                }
+
+                                cn = value;
+                                break;
+                            default:
+                                acceptSubject = false;
+                                break;
+                        }
+                    }
+                }
+
+                if (!acceptSubject)
+                {
+                    if (cn is null)
+                    {
+                        throw new InvalidOperationException("No CN provided");
+                    }
+
+                    // Rewrite the subject name.
+                    X500DistinguishedNameBuilder nameBuilder = new X500DistinguishedNameBuilder();
+                    nameBuilder.AddCommonName(cn);
+
+                    req = new CertificateRequest(
+                        nameBuilder.Build(),
+                        req.PublicKey,
+                        HashAlgorithmName.SHA256,
+                        RSASignaturePadding.Pss);
+                }
+                else
+                {
+                    // Because of the above validation we technically know we only need to remove the SAN extension,
+                    // but let's just build clean, for safety.
+                    req.CertificateExtensions.Clear();
+                }
 
                 // There may be a standard order these get written in.
                 // This order is mostly arbitrary, except the conditional ones went last.

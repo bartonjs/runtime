@@ -2552,6 +2552,7 @@ namespace System.Security.Cryptography.X509Certificates
         public X500DistinguishedName(string distinguishedName, System.Security.Cryptography.X509Certificates.X500DistinguishedNameFlags flag) { }
         public string Name { get { throw null; } }
         public string Decode(System.Security.Cryptography.X509Certificates.X500DistinguishedNameFlags flag) { throw null; }
+        public System.Collections.Generic.IEnumerable<(System.Security.Cryptography.Oid AttributeType, string Value)> EnumerateSimpleAttributes(bool reversed = true) { throw null; }
         public override string Format(bool multiLine) { throw null; }
     }
     public sealed partial class X500DistinguishedNameBuilder
