@@ -163,6 +163,11 @@ namespace System.Security.Cryptography.X509Certificates
                     {
                         yield return new IPAddress(value);
                     }
+                    else
+                    {
+                        throw new CryptographicException(
+                            "Subject Alternative Name has an IP Address that is neither IPv4 nor IPv6");
+                    }
                 }
             }
         }

@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Formats.Asn1;
+using Internal.Cryptography;
 
 namespace System.Security.Cryptography.X509Certificates
 {
@@ -63,7 +64,10 @@ namespace System.Security.Cryptography.X509Certificates
 
             // CRLDistributionPoints
             writer.PopSequence();
-            return new X509Extension(Oids.CrlDistributionPoints, writer.Encode(), critical);
+
+            return writer.EncodeToResult(
+                static (span, crit) => new X509Extension(Oids.CrlDistributionPoints, span, crit),
+                critical);
         }
     }
 }

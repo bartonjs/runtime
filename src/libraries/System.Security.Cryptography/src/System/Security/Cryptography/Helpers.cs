@@ -320,5 +320,68 @@ namespace Internal.Cryptography
         {
             return (mode == CipherMode.CFB ? feedbackSizeInBits : algorithm.BlockSize) / 8;
         }
+
+        internal static TReturn EncodeToResult<TReturn>(this AsnWriter writer, LocalReadOnlySpanFunc<byte, TReturn> func)
+        {
+            const int MaxStackAlloc = 64;
+
+            Span<byte> stackTemp = stackalloc byte[MaxStackAlloc];
+            Span<byte> temp = stackTemp;
+            byte[]? rentTemp = null;
+
+            if (writer.GetEncodedLength() > MaxStackAlloc)
+            {
+                rentTemp = CryptoPool.Rent(writer.GetEncodedLength());
+                temp = rentTemp;
+            }
+
+            int written = 0;
+
+            try
+            {
+                written = writer.Encode(temp);
+                return func(temp.Slice(0, written));
+            }
+            finally
+            {
+                if (rentTemp is not null)
+                {
+                    CryptoPool.Return(rentTemp, written);
+                }
+            }
+        }
+
+        internal static TReturn EncodeToResult<TArg1, TReturn>(this AsnWriter writer, LocalReadOnlySpanFunc<byte, TArg1, TReturn> func, TArg1 arg1)
+        {
+            const int MaxStackAlloc = 64;
+
+            Span<byte> stackTemp = stackalloc byte[MaxStackAlloc];
+            Span<byte> temp = stackTemp;
+            byte[]? rentTemp = null;
+
+            if (writer.GetEncodedLength() > MaxStackAlloc)
+            {
+                rentTemp = CryptoPool.Rent(writer.GetEncodedLength());
+                temp = rentTemp;
+            }
+
+            int written = 0;
+
+            try
+            {
+                written = writer.Encode(temp);
+                return func(temp.Slice(0, written), arg1);
+            }
+            finally
+            {
+                if (rentTemp is not null)
+                {
+                    CryptoPool.Return(rentTemp, written);
+                }
+            }
+        }
+
+        internal delegate TReturn LocalReadOnlySpanFunc<TSpan, TReturn>(ReadOnlySpan<TSpan> source);
+        internal delegate TReturn LocalReadOnlySpanFunc<TSpan, TArg1, TReturn>(ReadOnlySpan<TSpan> source, TArg1 arg1);
     }
 }

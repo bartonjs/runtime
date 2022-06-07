@@ -7,6 +7,7 @@ using System.Globalization;
 using System.Net;
 using System.Security.Cryptography.Asn1;
 using System.Text;
+using Internal.Cryptography;
 
 namespace System.Security.Cryptography.X509Certificates
 {
@@ -56,7 +57,6 @@ namespace System.Security.Cryptography.X509Certificates
             _writer.Reset();
             _writer.WriteCharacterString(UniversalTagNumber.UTF8String, upn);
             byte[] otherNameValue = _writer.Encode();
-            _writer.Reset();
 
             OtherNameAsn otherName = new OtherNameAsn
             {
@@ -79,10 +79,9 @@ namespace System.Security.Cryptography.X509Certificates
                 }
             }
 
-            byte[] encoded = _writer.Encode();
-            _writer.Reset();
-
-            return new X509Extension(Oids.SubjectAltName, encoded, critical);
+            return _writer.EncodeToResult(
+                static (span, crit) => new X509Extension(Oids.SubjectAltName, span, crit),
+                critical);
         }
 
         private void AddGeneralName(GeneralNameAsn generalName)
@@ -93,7 +92,6 @@ namespace System.Security.Cryptography.X509Certificates
                 _writer.Reset();
                 generalName.Encode(_writer);
                 _encodedNames.Add(_writer.Encode());
-                _writer.Reset();
             }
             catch (EncoderFallbackException)
             {

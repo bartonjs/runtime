@@ -312,7 +312,6 @@ namespace System.Security.Cryptography.X509Certificates
                 out AsnEncodedData parameters,
                 out AsnEncodedData keyValue);
 
-
             return new PublicKey(oid, keyValue, parameters);
         }
 

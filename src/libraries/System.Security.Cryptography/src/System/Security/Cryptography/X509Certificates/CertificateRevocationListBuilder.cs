@@ -51,7 +51,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         public CertificateRevocationListBuilder()
         {
-            _revoked = new();
+            _revoked = new List<RevokedCertificate>();
         }
 
         private CertificateRevocationListBuilder(List<RevokedCertificate> revoked)
@@ -200,15 +200,13 @@ namespace System.Security.Cryptography.X509Certificates
 
         public static CertificateRevocationListBuilder LoadPem(ReadOnlySpan<char> currentCrl, out BigInteger currentCrlNumber)
         {
-            ReadOnlySpan<char> source = currentCrl;
-
-            while (PemEncoding.TryFind(source, out PemFields fields))
+            foreach ((ReadOnlySpan<char> contents, PemFields fields) in new PemEnumerator(currentCrl))
             {
-                if (source[fields.Label].SequenceEqual("CRL"))
+                if (contents[fields.Label].SequenceEqual("CRL"))
                 {
                     byte[] rented = ArrayPool<byte>.Shared.Rent(fields.DecodedDataLength);
 
-                    if (!Convert.TryFromBase64Chars(source[fields.Base64Data], rented, out int bytesWritten))
+                    if (!Convert.TryFromBase64Chars(contents[fields.Base64Data], rented, out int bytesWritten))
                     {
                         Debug.Fail("Base64Decode failed, but PemEncoding said it was legal");
                         throw new UnreachableException();
@@ -223,8 +221,6 @@ namespace System.Security.Cryptography.X509Certificates
                     ArrayPool<byte>.Shared.Return(rented);
                     return ret;
                 }
-
-                source = source.Slice(fields.Location.End.GetOffset(source.Length));
             }
 
             throw new CryptographicException("No PEM-encoded CRL was found");
@@ -396,6 +392,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             byte[] signatureAlgId = generator.GetSignatureAlgorithmIdentifier(hashAlgorithm);
             AsnWriter writer = (_writer ??= new AsnWriter(AsnEncodingRules.DER));
+            writer.Reset();
 
             // TBSCertList
             using (writer.PushSequence())
@@ -488,7 +485,6 @@ namespace System.Security.Cryptography.X509Certificates
             }
 
             byte[] crl = writer.Encode();
-            writer.Reset();
             return crl;
         }
 
