@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Formats.Asn1;
+using System.Runtime.CompilerServices;
 
 namespace System.Security.Cryptography
 {
@@ -91,8 +92,15 @@ namespace System.Security.Cryptography
                 return null;
             }
 
+            Asn1Tag expected = expectedTag.GetValueOrDefault(Asn1Tag.ObjectIdentifier);
+
+            Debug.Assert(
+                expected.TagClass != TagClass.Universal ||
+                expected.TagValue == (int)UniversalTagNumber.ObjectIdentifier,
+                $"{nameof(GetSharedOrNullOid)} was called with the wrong Universal class tag: {expectedTag}");
+
             // Not the tag we're expecting, so don't match.
-            if (!tag.HasSameClassAndValue(expectedTag.GetValueOrDefault(Asn1Tag.ObjectIdentifier)))
+            if (!tag.HasSameClassAndValue(expected))
             {
                 return null;
             }
