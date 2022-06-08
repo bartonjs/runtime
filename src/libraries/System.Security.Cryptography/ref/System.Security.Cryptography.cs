@@ -2552,8 +2552,16 @@ namespace System.Security.Cryptography.X509Certificates
         public X500DistinguishedName(string distinguishedName, System.Security.Cryptography.X509Certificates.X500DistinguishedNameFlags flag) { }
         public string Name { get { throw null; } }
         public string Decode(System.Security.Cryptography.X509Certificates.X500DistinguishedNameFlags flag) { throw null; }
-        public System.Collections.Generic.IEnumerable<(System.Security.Cryptography.Oid AttributeType, string Value)> EnumerateSimpleAttributes(bool reversed = true) { throw null; }
+        public System.Collections.Generic.IEnumerable<System.Security.Cryptography.X509Certificates.X500DistinguishedName.RelativeDistinguishedName> EnumerateRelativeDistinguishedNames(bool reversed = true) { throw null; }
         public override string Format(bool multiLine) { throw null; }
+        public sealed partial class RelativeDistinguishedName
+        {
+            internal RelativeDistinguishedName() { }
+            public bool HasMultipleValues { get { throw null; } }
+            public System.ReadOnlyMemory<byte> RawData { get { throw null; } }
+            public System.Security.Cryptography.Oid? SingleValueType { get { throw null; } }
+            public string? SingleValueValue { get { throw null; } }
+        }
     }
     public sealed partial class X500DistinguishedNameBuilder
     {
@@ -2812,6 +2820,7 @@ namespace System.Security.Cryptography.X509Certificates
         public override void Import(string fileName, System.Security.SecureString? password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
         [System.ObsoleteAttribute("X509Certificate and X509Certificate2 are immutable. Use the appropriate constructor to create a new certificate.", DiagnosticId="SYSLIB0026", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public override void Import(string fileName, string? password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
+        public bool MatchesTlsHostname(string hostname, bool allowWildcards = true, bool allowCommonName = true) { throw null; }
         public override void Reset() { }
         public override string ToString() { throw null; }
         public override string ToString(bool verbose) { throw null; }

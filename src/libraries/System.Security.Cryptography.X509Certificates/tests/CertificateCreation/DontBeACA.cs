@@ -408,9 +408,15 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 }
                 else
                 {
-                    foreach ((Oid typeId, string value) in req.SubjectName.EnumerateSimpleAttributes())
+                    foreach (X500DistinguishedName.RelativeDistinguishedName rdn in
+                        req.SubjectName.EnumerateRelativeDistinguishedNames())
                     {
-                        switch (typeId.Value)
+                        if (rdn.HasMultipleValues)
+                        {
+                            throw new InvalidOperationException("Multi-value RDNs are not accepted");
+                        }
+
+                        switch (rdn.SingleValueType.Value)
                         {
                             case "2.5.4.3":
                                 if (cn is not null)
@@ -418,13 +424,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                                     throw new InvalidOperationException("CN was specified more than once");
                                 }
 
-                                if (value.Length == 0 || value.IndexOfAny(new[] { ' ', '*' }) > -1 ||
-                                    !value.EndsWith(".fruit.example"))
+                                if (rdn.SingleValueValue.Length == 0 || rdn.SingleValueValue.IndexOfAny(new[] { ' ', '*' }) > -1 ||
+                                    !rdn.SingleValueValue.EndsWith(".fruit.example"))
                                 {
                                     throw new InvalidOperationException("CN is unauthorized");
                                 }
 
-                                cn = value;
+                                cn = rdn.SingleValueValue;
                                 break;
                             default:
                                 acceptSubject = false;
