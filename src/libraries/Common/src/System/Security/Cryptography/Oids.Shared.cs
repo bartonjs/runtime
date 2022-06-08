@@ -81,53 +81,37 @@ namespace System.Security.Cryptography
             return new Oid(oidValue, null);
         }
 
-        internal static Oid? GetSharedOrNullOid(ref AsnValueReader asnValueReader)
+        internal static Oid? GetSharedOrNullOid(ref AsnValueReader asnValueReader, Asn1Tag? expectedTag = null)
         {
             Asn1Tag tag = asnValueReader.PeekTag();
 
-            // Any of these cases are going to be an invalid OID.  We'll let that get thrown naturally, the same as if
-            // it wasn't a match.
-            if (!tag.IsConstructed &&
-                (tag.TagClass != TagClass.Universal || tag.TagValue == (int)UniversalTagNumber.ObjectIdentifier))
+            // This isn't a valid OID, so return null and let whatever's going to happen happen.
+            if (tag.IsConstructed)
             {
-                ReadOnlySpan<byte> contentBytes = asnValueReader.PeekContentBytes();
-                Oid? ret = null;
-
-                switch (contentBytes.Length)
-                {
-                    case 3:
-                        switch (contentBytes[0])
-                        {
-                            case 0x55:
-                                switch (contentBytes[1])
-                                {
-                                    case 0x04:
-                                        switch (contentBytes[2])
-                                        {
-                                            case 0x03:
-                                                ret = CommonNameOid;
-                                                break;
-                                        }
-
-                                        break;
-                                }
-
-                                break;
-                        }
-
-                        break;
-                }
-
-                if (ret is not null)
-                {
-                    // Move to the next item.
-                    asnValueReader.ReadEncodedValue();
-                }
-
-                return ret;
+                return null;
             }
 
-            return null;
+            // Not the tag we're expecting, so don't match.
+            if (!tag.HasSameClassAndValue(expectedTag.GetValueOrDefault(Asn1Tag.ObjectIdentifier)))
+            {
+                return null;
+            }
+
+            ReadOnlySpan<byte> contentBytes = asnValueReader.PeekContentBytes();
+
+            Oid? ret = contentBytes switch
+            {
+                [0x55, 0x04, 0x03] => CommonNameOid,
+                _ => null,
+            };
+
+            if (ret is not null)
+            {
+                // Move to the next item.
+                asnValueReader.ReadEncodedValue();
+            }
+
+            return ret;
         }
     }
 }
