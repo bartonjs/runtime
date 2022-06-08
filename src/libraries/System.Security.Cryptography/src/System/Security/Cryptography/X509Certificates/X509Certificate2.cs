@@ -1242,7 +1242,7 @@ namespace System.Security.Cryptography.X509Certificates
         ///     extended key usage.
         ///   </para>
         /// </remarks>
-        public bool MatchesTlsHostname(string hostname, bool allowWildcards = true, bool allowCommonName = true)
+        public bool MatchesHostname(string hostname, bool allowWildcards = true, bool allowCommonName = true)
         {
             ArgumentNullException.ThrowIfNull(hostname);
 
@@ -1255,7 +1255,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             foreach (X509Extension extension in Pal.Extensions)
             {
-                if (extension.Oid!.Value == Oids.CommonName)
+                if (extension.Oid!.Value == Oids.SubjectAltName)
                 {
                     if (rawSAN is null)
                     {

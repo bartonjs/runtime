@@ -2820,7 +2820,7 @@ namespace System.Security.Cryptography.X509Certificates
         public override void Import(string fileName, System.Security.SecureString? password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
         [System.ObsoleteAttribute("X509Certificate and X509Certificate2 are immutable. Use the appropriate constructor to create a new certificate.", DiagnosticId="SYSLIB0026", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public override void Import(string fileName, string? password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
-        public bool MatchesTlsHostname(string hostname, bool allowWildcards = true, bool allowCommonName = true) { throw null; }
+        public bool MatchesHostname(string hostname, bool allowWildcards = true, bool allowCommonName = true) { throw null; }
         public override void Reset() { }
         public override string ToString() { throw null; }
         public override string ToString(bool verbose) { throw null; }
@@ -3186,7 +3186,6 @@ namespace System.Security.Cryptography.X509Certificates
         public override void CopyFrom(System.Security.Cryptography.AsnEncodedData asnEncodedData) { }
         public System.Collections.Generic.IEnumerable<string> EnumerateDnsNames() { throw null; }
         public System.Collections.Generic.IEnumerable<System.Net.IPAddress> EnumerateIPAddresses() { throw null; }
-        public bool MatchesHostname(string hostname) { throw null; }
     }
     public sealed partial class X509SubjectKeyIdentifierExtension : System.Security.Cryptography.X509Certificates.X509Extension
     {
