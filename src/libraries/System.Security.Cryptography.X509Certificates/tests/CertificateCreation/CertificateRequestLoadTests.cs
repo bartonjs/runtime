@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Globalization;
+using System.Net;
 using Test.Cryptography;
 using Xunit;
 
@@ -9,6 +9,66 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 {
     public static class CertificateRequestLoadTests
     {
+        [Theory]
+        [InlineData(true, false)]
+        [InlineData(false, false)]
+        [InlineData(true, true)]
+        [InlineData(false, true)]
+        public static void LoadBigExponentRequest(bool loadExtensions, bool oversizedRequest)
+        {
+            byte[] pkcs10 = TestData.BigExponentPkcs10Bytes;
+
+            if (oversizedRequest)
+            {
+                byte[] temp = new byte[pkcs10.Length + 22];
+                pkcs10.AsSpan().CopyTo(temp);
+                pkcs10 = temp;
+            }
+
+            CertificateRequest req = CertificateRequest.LoadCertificateRequest(
+                pkcs10,
+                HashAlgorithmName.SHA256,
+                out int bytesConsumed,
+                unsafeLoadCertificateExtensions: loadExtensions);
+
+            Assert.Equal(TestData.BigExponentPkcs10Bytes.Length, bytesConsumed);
+            Assert.Equal("1.2.840.113549.1.1.1", req.PublicKey.Oid.Value);
+            Assert.Equal("0500", req.PublicKey.EncodedParameters.RawData.ByteArrayToHex());
+            Assert.Null(req.PublicKey.EncodedParameters.Oid);
+            Assert.Null(req.PublicKey.EncodedKeyValue.Oid);
+
+            Assert.Equal(
+                "3082010C0282010100AF81C1CBD8203F624A539ED6608175372393A2837D4890" +
+                    "E48A19DED36973115620968D6BE0D3DAA38AA777BE02EE0B6B93B724E8DCC12B" +
+                    "632B4FA80BBC925BCE624F4CA7CC606306B39403E28C932D24DD546FFE4EF6A3" +
+                    "7F10770B2215EA8CBB5BF427E8C4D89B79EB338375100C5F83E55DE9B4466DDF" +
+                    "BEEE42539AEF33EF187B7760C3B1A1B2103C2D8144564A0C1039A09C85CF6B59" +
+                    "74EB516FC8D6623C94AE3A5A0BB3B4C792957D432391566CF3E2A52AFB0C142B" +
+                    "9E0681B8972671AF2B82DD390A39B939CF719568687E4990A63050CA7768DCD6" +
+                    "B378842F18FDB1F6D9FF096BAF7BEB98DCF930D66FCFD503F58D41BFF46212E2" +
+                    "4E3AFC45EA42BD884702050200000441",
+                req.PublicKey.EncodedKeyValue.RawData.ByteArrayToHex());
+
+            Assert.Equal(
+                "CN=localhost, OU=.NET Framework (CoreFX), O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+                req.SubjectName.Name);
+
+            if (loadExtensions)
+            {
+                Assert.Equal(1, req.CertificateExtensions.Count);
+
+                X509SubjectAlternativeNameExtension san =
+                    Assert.IsType<X509SubjectAlternativeNameExtension>(req.CertificateExtensions[0]);
+
+                Assert.Equal(new[] { IPAddress.Loopback, IPAddress.IPv6Loopback }, san.EnumerateIPAddresses());
+                Assert.Equal(new[] { "localhost" }, san.EnumerateDnsNames());
+            }
+            else
+            {
+                Assert.Empty(req.CertificateExtensions);
+            }
+        }
+
         [Theory]
         [InlineData("SHA256")]
         [InlineData("SHA384")]
