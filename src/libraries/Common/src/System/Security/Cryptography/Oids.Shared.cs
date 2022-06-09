@@ -83,6 +83,7 @@ namespace System.Security.Cryptography
 
         internal static Oid? GetSharedOrNullOid(ref AsnValueReader asnValueReader, Asn1Tag? expectedTag = null)
         {
+#if NET
             Asn1Tag tag = asnValueReader.PeekTag();
 
             // This isn't a valid OID, so return null and let whatever's going to happen happen.
@@ -119,6 +120,10 @@ namespace System.Security.Cryptography
             }
 
             return ret;
+#else
+            // Cannot use list patterns on older TFMs.
+            return null;
+#endif
         }
 
         internal static bool ValueEquals(this Oid oid, Oid? other)

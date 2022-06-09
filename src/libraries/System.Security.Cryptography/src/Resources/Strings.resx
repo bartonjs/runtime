@@ -513,6 +513,21 @@
   <data name="Cryptography_Pfx_NoCertificates" xml:space="preserve">
     <value>The provided PFX data contains no certificates.</value>
   </data>
+  <data name="Cryptography_Pkcs_InvalidSignatureParameters" xml:space="preserve">
+    <value>Invalid signature parameters.</value>
+  </data>
+  <data name="Cryptography_Pkcs_PssParametersMissing" xml:space="preserve">
+    <value>PSS parameters were not present.</value>
+  </data>
+  <data name="Cryptography_Pkcs_PssParametersMgfHashMismatch" xml:space="preserve">
+    <value>This platform does not support the MGF hash algorithm ({0}) being different from the signature hash algorithm ({1}).</value>
+  </data>
+  <data name="Cryptography_Pkcs_PssParametersMgfNotSupported" xml:space="preserve">
+    <value>Mask generation function '{0}' is not supported by this platform.</value>
+  </data>
+  <data name="Cryptography_Pkcs_PssParametersSaltMismatch" xml:space="preserve">
+    <value>PSS salt size {0} is not supported by this platform with hash algorithm {1}.</value>
+  </data>
   <data name="Cryptography_Pkcs8_EncryptedReadFailed" xml:space="preserve">
     <value>The EncryptedPrivateKeyInfo structure was decoded but was not successfully interpreted, the password may be incorrect.</value>
   </data>

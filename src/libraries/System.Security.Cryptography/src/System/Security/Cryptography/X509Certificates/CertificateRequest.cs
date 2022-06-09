@@ -952,67 +952,14 @@ namespace System.Security.Cryptography.X509Certificates
                         algorithmIdentifier.Parameters.GetValueOrDefault(),
                         AsnEncodingRules.DER);
 
-                    if (pssParams.TrailerField != 1 ||
-                        !pssParams.HashAlgorithm.HasNullEquivalentParameters() ||
-                        pssParams.MaskGenAlgorithm.Algorithm != Oids.Mgf1 ||
-                        !pssParams.MaskGenAlgorithm.Parameters.HasValue)
-                    {
-                        return false;
-                    }
-
-                    AlgorithmIdentifierAsn mgfParams = AlgorithmIdentifierAsn.Decode(
-                        pssParams.MaskGenAlgorithm.Parameters.GetValueOrDefault(),
-                        AsnEncodingRules.DER);
-
-                    if (mgfParams.Algorithm != pssParams.HashAlgorithm.Algorithm ||
-                        !mgfParams.HasNullEquivalentParameters())
-                    {
-                        return false;
-                    }
-
-                    switch (pssParams.HashAlgorithm.Algorithm)
-                    {
-                        case Oids.Sha256:
-                            if (pssParams.SaltLength != SHA256.HashSizeInBytes)
-                            {
-                                return false;
-                            }
-
-                            hashAlg = HashAlgorithmName.SHA256;
-                            break;
-                        case Oids.Sha384:
-                            if (pssParams.SaltLength != SHA384.HashSizeInBytes)
-                            {
-                                return false;
-                            }
-
-                            hashAlg = HashAlgorithmName.SHA384;
-                            break;
-                        case Oids.Sha512:
-                            if (pssParams.SaltLength != SHA512.HashSizeInBytes)
-                            {
-                                return false;
-                            }
-
-                            hashAlg = HashAlgorithmName.SHA512;
-                            break;
-                        case Oids.Sha1:
-                            if (pssParams.SaltLength != SHA1.HashSizeInBytes)
-                            {
-                                return false;
-                            }
-
-                            hashAlg = HashAlgorithmName.SHA1;
-                            break;
-                        default:
-                            return false;
-                    }
+                    RSASignaturePadding padding = pssParams.GetSignaturePadding();
+                    hashAlg = HashAlgorithmName.FromOid(pssParams.HashAlgorithm.Algorithm);
 
                     return rsa.VerifyData(
                         toBeSigned,
                         signature,
                         hashAlg,
-                        RSASignaturePadding.Pss);
+                        padding);
                 }
 
                 // All remaining algorithms have no defined parameters
