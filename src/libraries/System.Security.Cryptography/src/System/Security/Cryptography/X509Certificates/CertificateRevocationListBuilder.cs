@@ -223,7 +223,7 @@ namespace System.Security.Cryptography.X509Certificates
                 }
             }
 
-            throw new CryptographicException("No PEM-encoded CRL was found");
+            throw new CryptographicException(SR.Cryptography_NoPemOfLabel, PemLabels.X509CertificateRevocationList);
         }
 
         public void AddEntry(X509Certificate2 certificate)

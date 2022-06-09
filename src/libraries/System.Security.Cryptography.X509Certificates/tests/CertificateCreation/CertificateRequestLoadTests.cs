@@ -14,24 +14,127 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         [InlineData(false, false)]
         [InlineData(true, true)]
         [InlineData(false, true)]
-        public static void LoadBigExponentRequest(bool loadExtensions, bool oversizedRequest)
+        public static void LoadBigExponentRequest_Span(bool loadExtensions, bool oversized)
         {
             byte[] pkcs10 = TestData.BigExponentPkcs10Bytes;
 
-            if (oversizedRequest)
+            if (oversized)
             {
-                byte[] temp = new byte[pkcs10.Length + 22];
-                pkcs10.AsSpan().CopyTo(temp);
-                pkcs10 = temp;
+                Array.Resize(ref pkcs10, pkcs10.Length + 22);
             }
 
             CertificateRequest req = CertificateRequest.LoadCertificateRequest(
-                pkcs10,
+                new ReadOnlySpan<byte>(pkcs10),
                 HashAlgorithmName.SHA256,
                 out int bytesConsumed,
                 unsafeLoadCertificateExtensions: loadExtensions);
 
             Assert.Equal(TestData.BigExponentPkcs10Bytes.Length, bytesConsumed);
+            VerifyBigExponentRequest(req, loadExtensions);
+        }
+        
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void LoadBigExponentRequest_Bytes(bool loadExtensions)
+        {
+            CertificateRequest req = CertificateRequest.LoadCertificateRequest(
+                TestData.BigExponentPkcs10Bytes,
+                HashAlgorithmName.SHA256,
+                unsafeLoadCertificateExtensions: loadExtensions);
+
+            VerifyBigExponentRequest(req, loadExtensions);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void LoadBigExponentRequest_Bytes_Oversized(bool loadExtensions)
+        {
+            byte[] pkcs10 = TestData.BigExponentPkcs10Bytes;
+            Array.Resize(ref pkcs10, pkcs10.Length + 2);
+
+            Assert.Throws<CryptographicException>(
+                () => CertificateRequest.LoadCertificateRequest(
+                    pkcs10,
+                    HashAlgorithmName.SHA256,
+                    unsafeLoadCertificateExtensions: loadExtensions));
+        }
+
+        [Theory]
+        [InlineData(true, false)]
+        [InlineData(false, false)]
+        [InlineData(true, true)]
+        [InlineData(false, true)]
+        public static void LoadBigExponentRequest_PemString(bool loadExtensions, bool multiPem)
+        {
+            string pem = TestData.BigExponentPkcs10Pem;
+
+            if (multiPem)
+            {
+                pem = $@"
+-----BEGIN UNRELATED-----
+abcd
+-----END UNRELATED-----
+-----BEGIN CERTIFICATE REQUEST-----
+!!!!!INVALID!!!!!
+-----END CERTIFICATE REQUEST-----
+-----BEGIN MORE UNRELATED-----
+efgh
+-----END MORE UNRELATED-----
+{pem}
+-----BEGIN CERTIFICATE REQUEST-----
+!!!!!INVALID!!!!!
+-----END CERTIFICATE REQUEST-----";
+            }
+
+            CertificateRequest req = CertificateRequest.LoadCertificateRequestPem(
+                pem,
+                HashAlgorithmName.SHA256,
+                unsafeLoadCertificateExtensions: loadExtensions);
+
+            VerifyBigExponentRequest(req, loadExtensions);
+        }
+
+        [Theory]
+        [InlineData(true, false)]
+        [InlineData(false, false)]
+        [InlineData(true, true)]
+        [InlineData(false, true)]
+        public static void LoadBigExponentRequest_PemSpam(bool loadExtensions, bool multiPem)
+        {
+            string pem = TestData.BigExponentPkcs10Pem;
+
+            if (multiPem)
+            {
+                pem = $@"
+-----BEGIN UNRELATED-----
+abcd
+-----END UNRELATED-----
+Free Floating Text
+-----BEGIN CERTIFICATE REQUEST-----
+!!!!!INVALID!!!!!
+-----END CERTIFICATE REQUEST-----
+-----BEGIN MORE UNRELATED-----
+efgh
+-----END MORE UNRELATED-----
+More Text.
+{pem}
+-----BEGIN CERTIFICATE REQUEST-----
+!!!!!INVALID!!!!!
+-----END CERTIFICATE REQUEST-----";
+            }
+
+            CertificateRequest req = CertificateRequest.LoadCertificateRequestPem(
+                pem.AsSpan(),
+                HashAlgorithmName.SHA256,
+                unsafeLoadCertificateExtensions: loadExtensions);
+
+            VerifyBigExponentRequest(req, loadExtensions);
+        }
+
+        private static void VerifyBigExponentRequest(CertificateRequest req, bool loadExtensions)
+        {
             Assert.Equal("1.2.840.113549.1.1.1", req.PublicKey.Oid.Value);
             Assert.Equal("0500", req.PublicKey.EncodedParameters.RawData.ByteArrayToHex());
             Assert.Null(req.PublicKey.EncodedParameters.Oid);

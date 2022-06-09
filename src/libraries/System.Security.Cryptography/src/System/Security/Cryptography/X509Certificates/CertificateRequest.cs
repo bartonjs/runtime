@@ -764,8 +764,103 @@ namespace System.Security.Cryptography.X509Certificates
             return ret;
         }
 
+        public static unsafe CertificateRequest LoadCertificateRequestPem(
+            string pkcs10Pem,
+            HashAlgorithmName signerHashAlgorithm,
+            bool skipSignatureValidation = false,
+            bool unsafeLoadCertificateExtensions = false,
+            RSASignaturePadding? signerSignaturePadding = null)
+        {
+            ArgumentNullException.ThrowIfNull(pkcs10Pem);
+
+            return LoadCertificateRequestPem(
+                pkcs10Pem.AsSpan(),
+                signerHashAlgorithm,
+                skipSignatureValidation,
+                unsafeLoadCertificateExtensions,
+                signerSignaturePadding);
+        }
+
+        public static unsafe CertificateRequest LoadCertificateRequestPem(
+            ReadOnlySpan<char> pkcs10Pem,
+            HashAlgorithmName signerHashAlgorithm,
+            bool skipSignatureValidation = false,
+            bool unsafeLoadCertificateExtensions = false,
+            RSASignaturePadding? signerSignaturePadding = null)
+        {
+            foreach ((ReadOnlySpan<char> contents, PemFields fields) in new PemEnumerator(pkcs10Pem))
+            {
+                if (contents[fields.Label].SequenceEqual(PemLabels.Pkcs10CertificateRequest))
+                {
+                    byte[] rented = ArrayPool<byte>.Shared.Rent(fields.DecodedDataLength);
+
+                    if (!Convert.TryFromBase64Chars(contents[fields.Base64Data], rented, out int bytesWritten))
+                    {
+                        Debug.Fail("Base64Decode failed, but PemEncoding said it was legal");
+                        throw new UnreachableException();
+                    }
+
+                    try
+                    {
+                        return LoadCertificateRequest(
+                            rented.AsSpan(0, bytesWritten),
+                            permitTrailingData: false,
+                            signerHashAlgorithm,
+                            out _,
+                            skipSignatureValidation,
+                            unsafeLoadCertificateExtensions,
+                            signerSignaturePadding);
+                    }
+                    finally
+                    {
+                        ArrayPool<byte>.Shared.Return(rented);
+                    }
+                }
+            }
+
+            throw new CryptographicException(SR.Cryptography_NoPemOfLabel, PemLabels.Pkcs10CertificateRequest);
+        }
+
+        public static unsafe CertificateRequest LoadCertificateRequest(
+            byte[] pkcs10,
+            HashAlgorithmName signerHashAlgorithm,
+            bool skipSignatureValidation = false,
+            bool unsafeLoadCertificateExtensions = false,
+            RSASignaturePadding? signerSignaturePadding = null)
+        {
+            ArgumentNullException.ThrowIfNull(pkcs10);
+
+            return LoadCertificateRequest(
+                pkcs10,
+                permitTrailingData: false,
+                signerHashAlgorithm,
+                out _,
+                skipSignatureValidation,
+                unsafeLoadCertificateExtensions,
+                signerSignaturePadding);
+        }
+
         public static unsafe CertificateRequest LoadCertificateRequest(
             ReadOnlySpan<byte> pkcs10,
+            HashAlgorithmName signerHashAlgorithm,
+            out int bytesConsumed,
+            bool skipSignatureValidation = false,
+            bool unsafeLoadCertificateExtensions = false,
+            RSASignaturePadding? signerSignaturePadding = null)
+        {
+            return LoadCertificateRequest(
+                pkcs10,
+                permitTrailingData: true,
+                signerHashAlgorithm,
+                out bytesConsumed,
+                skipSignatureValidation,
+                unsafeLoadCertificateExtensions,
+                signerSignaturePadding);
+        }
+
+        private static unsafe CertificateRequest LoadCertificateRequest(
+            ReadOnlySpan<byte> pkcs10,
+            bool permitTrailingData,
             HashAlgorithmName signerHashAlgorithm,
             out int bytesConsumed,
             bool skipSignatureValidation = false,
@@ -779,6 +874,11 @@ namespace System.Security.Cryptography.X509Certificates
 
                 AsnValueReader pkcs10Asn = outer.ReadSequence();
                 CertificateRequest req;
+
+                if (!permitTrailingData)
+                {
+                    outer.ThrowIfNotEmpty();
+                }
 
                 fixed (byte* p10ptr = pkcs10)
                 {
