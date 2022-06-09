@@ -57,6 +57,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     HashAlgorithmName.SHA256,
                     out int bytesConsumed,
                     skipSignatureValidation: true,
+                    unsafeLoadCertificateExtensions: true,
                     signerSignaturePadding: RSASignaturePadding.Pss);
 
                 AsnEncodedData? challengePassword = null;

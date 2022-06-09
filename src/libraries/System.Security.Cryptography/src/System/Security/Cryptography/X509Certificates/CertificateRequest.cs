@@ -769,6 +769,7 @@ namespace System.Security.Cryptography.X509Certificates
             HashAlgorithmName signerHashAlgorithm,
             out int bytesConsumed,
             bool skipSignatureValidation = false,
+            bool unsafeLoadCertificateExtensions = false,
             RSASignaturePadding? signerSignaturePadding = null)
         {
             try
@@ -857,21 +858,25 @@ namespace System.Security.Cryptography.X509Certificates
                                     {
                                         X509ExtensionAsn.Decode(ref exts, rebind, out X509ExtensionAsn extAsn);
 
-                                        X509Extension ext = new X509Extension(
-                                            extAsn.ExtnId,
-                                            extAsn.ExtnValue.Span,
-                                            extAsn.Critical);
-
-                                        X509Extension? rich = X509Certificate2.CreateCustomExtensionIfAny(extAsn.ExtnId);
-
-                                        if (rich is not null)
+                                        if (unsafeLoadCertificateExtensions)
                                         {
-                                            rich.CopyFrom(ext);
-                                            req.CertificateExtensions.Add(rich);
-                                        }
-                                        else
-                                        {
-                                            req.CertificateExtensions.Add(ext);
+                                            X509Extension ext = new X509Extension(
+                                                extAsn.ExtnId,
+                                                extAsn.ExtnValue.Span,
+                                                extAsn.Critical);
+
+                                            X509Extension? rich =
+                                                X509Certificate2.CreateCustomExtensionIfAny(extAsn.ExtnId);
+
+                                            if (rich is not null)
+                                            {
+                                                rich.CopyFrom(ext);
+                                                req.CertificateExtensions.Add(rich);
+                                            }
+                                            else
+                                            {
+                                                req.CertificateExtensions.Add(ext);
+                                            }
                                         }
                                     }
                                 }
