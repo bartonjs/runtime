@@ -202,7 +202,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
             foreach ((ReadOnlySpan<char> contents, PemFields fields) in new PemEnumerator(currentCrl))
             {
-                if (contents[fields.Label].SequenceEqual("X509 CRL"))
+                if (contents[fields.Label].SequenceEqual(PemLabels.X509CertificateRevocationList))
                 {
                     byte[] rented = ArrayPool<byte>.Shared.Rent(fields.DecodedDataLength);
 

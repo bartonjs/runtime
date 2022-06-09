@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 using System.Formats.Asn1;
-using System.Runtime.CompilerServices;
 
 namespace System.Security.Cryptography
 {
@@ -120,6 +119,23 @@ namespace System.Security.Cryptography
             }
 
             return ret;
+        }
+
+        internal static bool ValueEquals(this Oid oid, Oid? other)
+        {
+            Debug.Assert(oid is not null);
+
+            if (ReferenceEquals(oid, other))
+            {
+                return true;
+            }
+
+            if (other is null)
+            {
+                return false;
+            }
+
+            return oid.Value is not null && oid.Value.Equals(other.Value);
         }
     }
 }

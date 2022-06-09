@@ -242,36 +242,9 @@ namespace System.Security.Cryptography.X509Certificates
         /// <remarks>
         ///   When submitting a certificate signing request via a web browser, or other graphical or textual
         ///   interface, the input is frequently expected to be in the PEM (Privacy Enhanced Mail) format,
-        ///   instead of the DER binary format. To convert the return value to PEM format, make a string
-        ///   consisting of <c>-----BEGIN CERTIFICATE REQUEST-----</c>, a newline, the Base-64-encoded
-        ///   representation of the request (by convention, linewrapped at 64 characters), a newline,
-        ///   and <c>-----END CERTIFICATE REQUEST-----</c>.
-        ///
-        ///   <code><![CDATA[
-        ///     public static string PemEncodeSigningRequest(CertificateRequest request, PkcsSignatureGenerator generator)
-        ///     {
-        ///         byte[] pkcs10 = request.CreateSigningRequest(generator);
-        ///         StringBuilder builder = new StringBuilder();
-        ///
-        ///         builder.AppendLine("-----BEGIN CERTIFICATE REQUEST-----");
-        ///
-        ///         string base64 = Convert.ToBase64String(pkcs10);
-        ///
-        ///         int offset = 0;
-        ///         const int LineLength = 64;
-        ///
-        ///         while (offset < base64.Length)
-        ///         {
-        ///             int lineEnd = Math.Min(offset + LineLength, base64.Length);
-        ///             builder.AppendLine(base64.Substring(offset, lineEnd - offset));
-        ///             offset = lineEnd;
-        ///         }
-        ///
-        ///         builder.AppendLine("-----END CERTIFICATE REQUEST-----");
-        ///         return builder.ToString();
-        ///     }
-        ///   ]]></code>
+        ///   instead of the DER binary format.
         /// </remarks>
+        /// <seealso cref="CreateSigningRequestPem()"/>
         public byte[] CreateSigningRequest()
         {
             if (_generator == null)
@@ -287,6 +260,12 @@ namespace System.Security.Cryptography.X509Certificates
         /// <param name="signatureGenerator">
         ///   A <see cref="X509SignatureGenerator"/> with which to sign the request.
         /// </param>
+        /// <remarks>
+        ///   When submitting a certificate signing request via a web browser, or other graphical or textual
+        ///   interface, the input is frequently expected to be in the PEM (Privacy Enhanced Mail) format,
+        ///   instead of the DER binary format.
+        /// </remarks>
+        /// <seealso cref="CreateSigningRequestPem(X509SignatureGenerator)"/>
         public byte[] CreateSigningRequest(X509SignatureGenerator signatureGenerator)
         {
             ArgumentNullException.ThrowIfNull(signatureGenerator);
@@ -330,6 +309,33 @@ namespace System.Security.Cryptography.X509Certificates
 
             var requestInfo = new Pkcs10CertificationRequestInfo(SubjectName, PublicKey, attributes);
             return requestInfo.ToPkcs10Request(signatureGenerator, HashAlgorithm);
+        }
+
+        /// <summary>
+        ///   Create a PEM-encoded PKCS#10 CertificationRequest representing the current state
+        ///   of this object using the provided signature generator.
+        /// </summary>
+        /// <seealso cref="CreateSigningRequest()"/>
+        public string CreateSigningRequestPem()
+        {
+            byte[] der = CreateSigningRequest();
+            return PemEncoding.WriteString(PemLabels.Pkcs10CertificateRequest, der);
+        }
+
+        /// <summary>
+        ///   Create a PEM-encoded PKCS#10 CertificationRequest representing the current state
+        ///   of this object using the provided signature generator.
+        /// </summary>
+        /// <param name="signatureGenerator">
+        ///   A <see cref="X509SignatureGenerator"/> with which to sign the request.
+        /// </param>
+        /// <seealso cref="CreateSigningRequest(X509SignatureGenerator)"/>
+        public string CreateSigningRequestPem(X509SignatureGenerator signatureGenerator)
+        {
+            ArgumentNullException.ThrowIfNull(signatureGenerator);
+
+            byte[] der = CreateSigningRequest(signatureGenerator);
+            return PemEncoding.WriteString(PemLabels.Pkcs10CertificateRequest, der);
         }
 
         /// <summary>

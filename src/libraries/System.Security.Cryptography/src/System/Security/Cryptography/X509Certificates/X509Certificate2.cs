@@ -1371,13 +1371,13 @@ namespace System.Security.Cryptography.X509Certificates
                             AsnValueReader attributeTypeAndValue = set.ReadSequence();
                             Oid? type = Oids.GetSharedOrNullOid(ref attributeTypeAndValue);
 
-                            if (ReferenceEquals(type, Oids.CommonNameOid))
+                            if (Oids.CommonNameOid.ValueEquals(type))
                             {
                                 return false;
                             }
                         }
                     }
-                    else if (ReferenceEquals(rdn.SingleValueType, Oids.CommonNameOid))
+                    else if (Oids.CommonNameOid.ValueEquals(rdn.SingleValueType))
                     {
                         if (cn is null)
                         {

@@ -2441,6 +2441,8 @@ namespace System.Security.Cryptography.X509Certificates
         public byte[] CreateSigningRequest() { throw null; }
         public byte[] CreateSigningRequest(System.Security.Cryptography.X509Certificates.X509SignatureGenerator signatureGenerator) { throw null; }
         public static System.Security.Cryptography.X509Certificates.CertificateRequest LoadCertificateRequest(System.ReadOnlySpan<byte> pkcs10, System.Security.Cryptography.HashAlgorithmName signerHashAlgorithm, out int bytesConsumed, bool skipSignatureValidation = false, System.Security.Cryptography.RSASignaturePadding? signerSignaturePadding = null) { throw null; }
+        public string CreateSigningRequestPem() { throw null; }
+        public string CreateSigningRequestPem(System.Security.Cryptography.X509Certificates.X509SignatureGenerator signatureGenerator) { throw null; }
     }
     public sealed partial class CertificateRevocationListBuilder
     {
