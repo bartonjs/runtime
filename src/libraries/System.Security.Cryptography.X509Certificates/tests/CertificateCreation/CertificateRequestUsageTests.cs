@@ -19,6 +19,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
             byte[] autoCsr;
             byte[] csr;
+            string csrPem;
+            string autoCsrPem;
 
             using (RSA rsa = RSA.Create())
             {
@@ -33,13 +35,17 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 request.CertificateExtensions.Add(sanExtension);
 
                 autoCsr = request.CreateSigningRequest();
+                autoCsrPem = request.CreateSigningRequestPem();
 
                 X509SignatureGenerator generator = X509SignatureGenerator.CreateForRSA(rsa, RSASignaturePadding.Pkcs1);
                 csr = request.CreateSigningRequest(generator);
+                csrPem = request.CreateSigningRequestPem(generator);
             }
 
             Assert.Equal(TestData.BigExponentPkcs10Bytes.ByteArrayToHex(), autoCsr.ByteArrayToHex());
             Assert.Equal(TestData.BigExponentPkcs10Bytes.ByteArrayToHex(), csr.ByteArrayToHex());
+            Assert.Equal(TestData.BigExponentPkcs10Pem, autoCsrPem);
+            Assert.Equal(TestData.BigExponentPkcs10Pem, csrPem);
         }
 
         [Fact]
