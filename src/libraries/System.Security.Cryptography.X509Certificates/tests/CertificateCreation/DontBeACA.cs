@@ -56,7 +56,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     pkcs10,
                     HashAlgorithmName.SHA256,
                     out int bytesConsumed,
-                    skipSignatureValidation: true,
                     unsafeLoadCertificateExtensions: true,
                     signerSignaturePadding: RSASignaturePadding.Pss);
 

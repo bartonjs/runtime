@@ -243,6 +243,9 @@
   <data name="Cryptography_CertReq_RSAPaddingRequired" xml:space="preserve">
     <value>The issuer certificate uses an RSA key but no RSASignaturePadding was provided to a constructor. If one cannot be provided, use the X509SignatureGenerator overload.</value>
   </data>
+  <data name="Cryptography_CertReq_SignatureVerificationFailed" xml:space="preserve">
+    <value>The public key within the PKCS#10 Certification Signing Request did not verify the embedded signature.</value>
+  </data>
   <data name="Cryptography_CipherModeFeedbackNotSupported" xml:space="preserve">
     <value>The specified feedback size '{0}' for CipherMode '{1}' is not supported.</value>
   </data>

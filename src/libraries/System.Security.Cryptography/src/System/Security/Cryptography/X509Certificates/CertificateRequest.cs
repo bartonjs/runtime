@@ -815,7 +815,7 @@ namespace System.Security.Cryptography.X509Certificates
                             if (signatureUnusedBitCount != 0 ||
                                 !VerifyX509Signature(encodedRequestInfo, signature, publicKey, algorithmIdentifier))
                             {
-                                throw new CryptographicException("Signature didn't work");
+                                throw new CryptographicException(SR.Cryptography_CertReq_SignatureVerificationFailed);
                             }
                         }
 
@@ -962,12 +962,6 @@ namespace System.Security.Cryptography.X509Certificates
                         padding);
                 }
 
-                // All remaining algorithms have no defined parameters
-                if (!algorithmIdentifier.HasNullEquivalentParameters())
-                {
-                    return false;
-                }
-
                 switch (algorithmIdentifier.Algorithm)
                 {
                     case Oids.RsaPkcs1Sha256:
@@ -987,7 +981,14 @@ namespace System.Security.Cryptography.X509Certificates
                         hashAlg = HashAlgorithmName.SHA1;
                         break;
                     default:
-                        return false;
+                        throw new NotSupportedException(
+                            SR.Format(SR.Cryptography_UnknownKeyAlgorithm, algorithmIdentifier.Algorithm));
+                }
+
+                // All remaining algorithms have no defined parameters
+                if (!algorithmIdentifier.HasNullEquivalentParameters())
+                {
+                    return false;
                 }
 
                 switch (algorithmIdentifier.Algorithm)
@@ -1011,7 +1012,7 @@ namespace System.Security.Cryptography.X509Certificates
                             return false;
                         }
 
-                        return ecdsa.VerifyData(toBeSigned, signature, hashAlg);
+                        return ecdsa.VerifyData(toBeSigned, signature, hashAlg, DSASignatureFormat.Rfc3279DerSequence);
                     default:
                         Debug.Fail($"Algorithm ID {algorithmIdentifier.Algorithm} was in the first switch, but not the second");
                         return false;
