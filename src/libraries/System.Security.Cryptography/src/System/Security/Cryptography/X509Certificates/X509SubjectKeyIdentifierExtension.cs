@@ -61,13 +61,18 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        public ReadOnlyMemory<byte> SubjectKeyIdentifierBytes
+        public ReadOnlyMemory<byte>? SubjectKeyIdentifierBytes
         {
             get
             {
                 if (!_decoded)
                 {
                     Decode(RawData);
+                }
+
+                if (_subjectKeyIdentifier is null)
+                {
+                    return default;
                 }
 
                 return _subjectKeyIdentifier;

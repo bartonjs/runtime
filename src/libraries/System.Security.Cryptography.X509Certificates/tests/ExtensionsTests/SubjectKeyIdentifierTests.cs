@@ -20,6 +20,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
 
             string skid = e.SubjectKeyIdentifier;
             Assert.Null(skid);
+
+            Assert.False(e.SubjectKeyIdentifierBytes.HasValue, "SubjectKeyIdentifierBytes.HasValue");
         }
 
         [Theory]
@@ -55,6 +57,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
 
             string skid = e.SubjectKeyIdentifier;
             Assert.Equal("01020304", skid);
+
+            AssertExtensions.SequenceEqual(
+                new byte[] { 1, 2, 3, 4 },
+                e.SubjectKeyIdentifierBytes.GetValueOrDefault().Span);
         }
 
         [Fact]
@@ -69,6 +75,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
             e = new X509SubjectKeyIdentifierExtension(new AsnEncodedData(rawData), false);
             string skid = e.SubjectKeyIdentifier;
             Assert.Equal("01ABCD", skid);
+
+            AssertExtensions.SequenceEqual(
+                new byte[] { 0x01, 0xAB, 0xCD },
+                e.SubjectKeyIdentifierBytes.GetValueOrDefault().Span);
         }
 
         [Fact]
@@ -89,6 +99,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
             e = new X509SubjectKeyIdentifierExtension(new AsnEncodedData(rawData), false);
             string skid = e.SubjectKeyIdentifier;
             Assert.Equal("5971A65A334DDA980780FF841EBE87F9723241F2", skid);
+
+            Assert.Equal(
+                "5971A65A334DDA980780FF841EBE87F9723241F2",
+                e.SubjectKeyIdentifierBytes.GetValueOrDefault().ByteArrayToHex());
+
         }
 
         [Fact]
@@ -134,8 +149,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
             ext = new X509SubjectKeyIdentifierExtension(new AsnEncodedData(rawData), false);
             string skid = ext.SubjectKeyIdentifier;
             Assert.Equal("5971A65A334DDA980780FF841EBE87F9723241F2", skid);
+
+            Assert.Equal(
+                "5971A65A334DDA980780FF841EBE87F9723241F2",
+                ext.SubjectKeyIdentifierBytes.GetValueOrDefault().ByteArrayToHex());
         }
-        
+
         private static void EncodeDecode(
             byte[] certBytes,
             X509SubjectKeyIdentifierHashAlgorithm algorithm,
@@ -158,6 +177,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
 
             ext = new X509SubjectKeyIdentifierExtension(new AsnEncodedData(rawData), critical);
             Assert.Equal(expectedIdentifier, ext.SubjectKeyIdentifier);
+
+            Assert.Equal(
+                expectedIdentifier,
+                ext.SubjectKeyIdentifierBytes.GetValueOrDefault().ByteArrayToHex());
         }
     }
 }
