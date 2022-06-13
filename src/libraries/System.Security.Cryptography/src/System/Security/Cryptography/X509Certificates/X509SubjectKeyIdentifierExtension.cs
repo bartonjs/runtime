@@ -61,18 +61,16 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        public ReadOnlyMemory<byte>? SubjectKeyIdentifierBytes
+        public ReadOnlyMemory<byte> SubjectKeyIdentifierBytes
         {
             get
             {
-                if (!_decoded)
-                {
-                    Decode(RawData);
-                }
-
+                // Rather than check _decoded, this property checks for a null _subjectKeyIdentifier so that using
+                // the default constructor, not calling CopyFrom, and then calling this property will throw
+                // instead of using Nullable to talk about that degenerate state.
                 if (_subjectKeyIdentifier is null)
                 {
-                    return default;
+                    Decode(RawData);
                 }
 
                 return _subjectKeyIdentifier;

@@ -138,13 +138,8 @@ namespace System.Security.Cryptography.X509Certificates
         {
             ArgumentNullException.ThrowIfNull(subjectKeyIdentifier);
 
-            if (!subjectKeyIdentifier.SubjectKeyIdentifierBytes.HasValue)
-            {
-                throw new ArgumentException("Something about the extension has not had a value provided to it");
-            }
-
             return CreateFromSubjectKeyIdentifier(
-                subjectKeyIdentifier.SubjectKeyIdentifierBytes.GetValueOrDefault().Span);
+                subjectKeyIdentifier.SubjectKeyIdentifierBytes.Span);
         }
 
         public static X509AuthorityKeyIdentifierExtension CreateFromSubjectKeyIdentifier(
@@ -271,9 +266,7 @@ namespace System.Security.Cryptography.X509Certificates
                     throw new CryptographicException("Provided certificate does not have a subject key identifier");
                 }
 
-                // Only the default constructor for the X509SubjectKeyIdentifierExtension produces null
-                Debug.Assert(skid.SubjectKeyIdentifierBytes.HasValue);
-                ReadOnlySpan<byte> skidBytes = skid.SubjectKeyIdentifierBytes.GetValueOrDefault().Span;
+                ReadOnlySpan<byte> skidBytes = skid.SubjectKeyIdentifierBytes.Span;
 
                 if (includeIssuerAndSerial)
                 {

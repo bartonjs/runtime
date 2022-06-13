@@ -3202,7 +3202,7 @@ namespace System.Security.Cryptography.X509Certificates
         public X509SubjectKeyIdentifierExtension(System.Security.Cryptography.X509Certificates.PublicKey key, System.Security.Cryptography.X509Certificates.X509SubjectKeyIdentifierHashAlgorithm algorithm, bool critical) { }
         public X509SubjectKeyIdentifierExtension(string subjectKeyIdentifier, bool critical) { }
         public string? SubjectKeyIdentifier { get { throw null; } }
-        public System.ReadOnlyMemory<byte>? SubjectKeyIdentifierBytes { get { throw null; } }
+        public System.ReadOnlyMemory<byte> SubjectKeyIdentifierBytes { get { throw null; } }
         public override void CopyFrom(System.Security.Cryptography.AsnEncodedData asnEncodedData) { }
     }
     public enum X509SubjectKeyIdentifierHashAlgorithm

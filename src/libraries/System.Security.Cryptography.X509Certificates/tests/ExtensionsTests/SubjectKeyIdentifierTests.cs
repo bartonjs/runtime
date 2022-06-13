@@ -21,7 +21,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
             string skid = e.SubjectKeyIdentifier;
             Assert.Null(skid);
 
-            Assert.False(e.SubjectKeyIdentifierBytes.HasValue, "SubjectKeyIdentifierBytes.HasValue");
+            Assert.Throws<CryptographicException>(() => e.SubjectKeyIdentifierBytes);
         }
 
         [Theory]
@@ -60,7 +60,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
 
             AssertExtensions.SequenceEqual(
                 new byte[] { 1, 2, 3, 4 },
-                e.SubjectKeyIdentifierBytes.GetValueOrDefault().Span);
+                e.SubjectKeyIdentifierBytes.Span);
         }
 
         [Fact]
@@ -78,7 +78,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
 
             AssertExtensions.SequenceEqual(
                 new byte[] { 0x01, 0xAB, 0xCD },
-                e.SubjectKeyIdentifierBytes.GetValueOrDefault().Span);
+                e.SubjectKeyIdentifierBytes.Span);
         }
 
         [Fact]
@@ -102,7 +102,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
 
             Assert.Equal(
                 "5971A65A334DDA980780FF841EBE87F9723241F2",
-                e.SubjectKeyIdentifierBytes.GetValueOrDefault().ByteArrayToHex());
+                e.SubjectKeyIdentifierBytes.ByteArrayToHex());
 
         }
 
@@ -152,7 +152,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
 
             Assert.Equal(
                 "5971A65A334DDA980780FF841EBE87F9723241F2",
-                ext.SubjectKeyIdentifierBytes.GetValueOrDefault().ByteArrayToHex());
+                ext.SubjectKeyIdentifierBytes.ByteArrayToHex());
         }
 
         private static void EncodeDecode(
@@ -177,10 +177,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
 
             ext = new X509SubjectKeyIdentifierExtension(new AsnEncodedData(rawData), critical);
             Assert.Equal(expectedIdentifier, ext.SubjectKeyIdentifier);
-
-            Assert.Equal(
-                expectedIdentifier,
-                ext.SubjectKeyIdentifierBytes.GetValueOrDefault().ByteArrayToHex());
+            Assert.Equal(expectedIdentifier, ext.SubjectKeyIdentifierBytes.ByteArrayToHex());
         }
     }
 }
