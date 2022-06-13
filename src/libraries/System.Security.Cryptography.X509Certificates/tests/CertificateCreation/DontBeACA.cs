@@ -52,7 +52,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
             static CertificateRequest IngestRequest(byte[] pkcs10, X509Certificate2 issuerCert)
             {
-                CertificateRequest req = CertificateRequest.LoadCertificateRequest(
+                CertificateRequest req = CertificateRequest.LoadSigningRequest(
                     pkcs10,
                     HashAlgorithmName.SHA256,
                     out int bytesConsumed,

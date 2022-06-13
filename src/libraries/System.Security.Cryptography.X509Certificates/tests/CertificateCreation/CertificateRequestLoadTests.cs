@@ -23,7 +23,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 Array.Resize(ref pkcs10, pkcs10.Length + 22);
             }
 
-            CertificateRequest req = CertificateRequest.LoadCertificateRequest(
+            CertificateRequest req = CertificateRequest.LoadSigningRequest(
                 new ReadOnlySpan<byte>(pkcs10),
                 HashAlgorithmName.SHA256,
                 out int bytesConsumed,
@@ -38,7 +38,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         [InlineData(false)]
         public static void LoadBigExponentRequest_Bytes(bool loadExtensions)
         {
-            CertificateRequest req = CertificateRequest.LoadCertificateRequest(
+            CertificateRequest req = CertificateRequest.LoadSigningRequest(
                 TestData.BigExponentPkcs10Bytes,
                 HashAlgorithmName.SHA256,
                 unsafeLoadCertificateExtensions: loadExtensions);
@@ -55,7 +55,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             Array.Resize(ref pkcs10, pkcs10.Length + 2);
 
             Assert.Throws<CryptographicException>(
-                () => CertificateRequest.LoadCertificateRequest(
+                () => CertificateRequest.LoadSigningRequest(
                     pkcs10,
                     HashAlgorithmName.SHA256,
                     unsafeLoadCertificateExtensions: loadExtensions));
@@ -88,7 +88,7 @@ efgh
 -----END CERTIFICATE REQUEST-----";
             }
 
-            CertificateRequest req = CertificateRequest.LoadCertificateRequestPem(
+            CertificateRequest req = CertificateRequest.LoadSigningRequestPem(
                 pem,
                 HashAlgorithmName.SHA256,
                 unsafeLoadCertificateExtensions: loadExtensions);
@@ -125,7 +125,7 @@ More Text.
 -----END CERTIFICATE REQUEST-----";
             }
 
-            CertificateRequest req = CertificateRequest.LoadCertificateRequestPem(
+            CertificateRequest req = CertificateRequest.LoadSigningRequestPem(
                 pem.AsSpan(),
                 HashAlgorithmName.SHA256,
                 unsafeLoadCertificateExtensions: loadExtensions);
@@ -200,12 +200,12 @@ More Text.
                 }
 
                 // Assert.NoThrow
-                CertificateRequest.LoadCertificateRequest(pkcs10, hashAlgorithmName, out _);
+                CertificateRequest.LoadSigningRequest(pkcs10, hashAlgorithmName, out _);
 
                 pkcs10[^1] ^= 0xFF;
 
                 Assert.Throws<CryptographicException>(
-                    () => CertificateRequest.LoadCertificateRequest(pkcs10, hashAlgorithmName, out _));
+                    () => CertificateRequest.LoadSigningRequest(pkcs10, hashAlgorithmName, out _));
             }
         }
 
@@ -238,15 +238,15 @@ More Text.
                 }
 
                 // Assert.NoThrow
-                CertificateRequest.LoadCertificateRequest(pkcs10, hashAlgorithmName, out _);
+                CertificateRequest.LoadSigningRequest(pkcs10, hashAlgorithmName, out _);
 
                 pkcs10[^1] ^= 0xFF;
 
                 Assert.Throws<CryptographicException>(
-                    () => CertificateRequest.LoadCertificateRequest(pkcs10, hashAlgorithmName, out _));
+                    () => CertificateRequest.LoadSigningRequest(pkcs10, hashAlgorithmName, out _));
 
                 // Assert.NoThrow
-                CertificateRequest.LoadCertificateRequest(
+                CertificateRequest.LoadSigningRequest(
                     pkcs10,
                     hashAlgorithmName,
                     out _,
@@ -283,15 +283,15 @@ More Text.
                 }
 
                 // Assert.NoThrow
-                CertificateRequest.LoadCertificateRequest(pkcs10, hashAlgorithmName, out _);
+                CertificateRequest.LoadSigningRequest(pkcs10, hashAlgorithmName, out _);
 
                 pkcs10[^1] ^= 0xFF;
 
                 Assert.Throws<CryptographicException>(
-                    () => CertificateRequest.LoadCertificateRequest(pkcs10, hashAlgorithmName, out _));
+                    () => CertificateRequest.LoadSigningRequest(pkcs10, hashAlgorithmName, out _));
 
                 // Assert.NoThrow
-                CertificateRequest.LoadCertificateRequest(
+                CertificateRequest.LoadSigningRequest(
                     pkcs10,
                     hashAlgorithmName,
                     out _,
@@ -319,10 +319,10 @@ More Text.
 
                 // The inbox version doesn't support DSA
                 Assert.Throws<NotSupportedException>(
-                    () => CertificateRequest.LoadCertificateRequest(pkcs10, hashAlgorithmName, out _));
+                    () => CertificateRequest.LoadSigningRequest(pkcs10, hashAlgorithmName, out _));
 
                 // Assert.NoThrow
-                CertificateRequest.LoadCertificateRequest(
+                CertificateRequest.LoadSigningRequest(
                     pkcs10,
                     hashAlgorithmName,
                     out _,
