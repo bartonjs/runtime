@@ -408,8 +408,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 }
                 else
                 {
-                    foreach (X500DistinguishedName.RelativeDistinguishedName rdn in
-                        req.SubjectName.EnumerateRelativeDistinguishedNames())
+                    foreach (X500RelativeDistinguishedName rdn in req.SubjectName.EnumerateRelativeDistinguishedNames())
                     {
                         if (rdn.HasMultipleValues)
                         {

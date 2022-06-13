@@ -2557,16 +2557,8 @@ namespace System.Security.Cryptography.X509Certificates
         public X500DistinguishedName(string distinguishedName, System.Security.Cryptography.X509Certificates.X500DistinguishedNameFlags flag) { }
         public string Name { get { throw null; } }
         public string Decode(System.Security.Cryptography.X509Certificates.X500DistinguishedNameFlags flag) { throw null; }
-        public System.Collections.Generic.IEnumerable<System.Security.Cryptography.X509Certificates.X500DistinguishedName.RelativeDistinguishedName> EnumerateRelativeDistinguishedNames(bool reversed = true) { throw null; }
+        public System.Collections.Generic.IEnumerable<System.Security.Cryptography.X509Certificates.X500RelativeDistinguishedName> EnumerateRelativeDistinguishedNames(bool reversed = true) { throw null; }
         public override string Format(bool multiLine) { throw null; }
-        public sealed partial class RelativeDistinguishedName
-        {
-            internal RelativeDistinguishedName() { }
-            public bool HasMultipleValues { get { throw null; } }
-            public System.ReadOnlyMemory<byte> RawData { get { throw null; } }
-            public System.Security.Cryptography.Oid? SingleValueType { get { throw null; } }
-            public string? SingleValueValue { get { throw null; } }
-        }
     }
     public sealed partial class X500DistinguishedNameBuilder
     {
@@ -2596,6 +2588,14 @@ namespace System.Security.Cryptography.X509Certificates
         UseUTF8Encoding = 4096,
         UseT61Encoding = 8192,
         ForceUTF8Encoding = 16384,
+    }
+    public sealed partial class X500RelativeDistinguishedName
+    {
+        internal X500RelativeDistinguishedName() { }
+        public bool HasMultipleValues { get { throw null; } }
+        public System.ReadOnlyMemory<byte> RawData { get { throw null; } }
+        public System.Security.Cryptography.Oid? SingleValueType { get { throw null; } }
+        public string? SingleValueValue { get { throw null; } }
     }
     public sealed partial class X509AuthorityInformationAccessExtension : System.Security.Cryptography.X509Certificates.X509Extension
     {

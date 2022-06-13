@@ -10,7 +10,7 @@ namespace System.Security.Cryptography.X509Certificates
     public sealed class X500DistinguishedName : AsnEncodedData
     {
         private volatile string? _lazyDistinguishedName;
-        private List<RelativeDistinguishedName>? _parsedAttributes;
+        private List<X500RelativeDistinguishedName>? _parsedAttributes;
 
         public X500DistinguishedName(byte[] encodedDistinguishedName)
             : base(new Oid(null, null), encodedDistinguishedName)
@@ -89,9 +89,9 @@ namespace System.Security.Cryptography.X509Certificates
         /// <exception cref="CryptographicException">
         ///   The X.500 Name is not a proper DER-encoded X.500 Name value.
         /// </exception>
-        public IEnumerable<RelativeDistinguishedName> EnumerateRelativeDistinguishedNames(bool reversed = true)
+        public IEnumerable<X500RelativeDistinguishedName> EnumerateRelativeDistinguishedNames(bool reversed = true)
         {
-            List<RelativeDistinguishedName> parsedAttributes = _parsedAttributes ??= ParseAttributes(RawData);
+            List<X500RelativeDistinguishedName> parsedAttributes = _parsedAttributes ??= ParseAttributes(RawData);
 
             return EnumerateRelativeDistinguishedNames(parsedAttributes, reversed);
         }
@@ -114,8 +114,8 @@ namespace System.Security.Cryptography.X509Certificates
                 throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, "flag"));
         }
 
-        private static IEnumerable<RelativeDistinguishedName> EnumerateRelativeDistinguishedNames(
-            List<RelativeDistinguishedName> parsedAttributes,
+        private static IEnumerable<X500RelativeDistinguishedName> EnumerateRelativeDistinguishedNames(
+            List<X500RelativeDistinguishedName> parsedAttributes,
             bool reversed)
         {
             if (reversed)
@@ -134,9 +134,9 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        private static List<RelativeDistinguishedName> ParseAttributes(byte[] rawData)
+        private static List<X500RelativeDistinguishedName> ParseAttributes(byte[] rawData)
         {
-            List<RelativeDistinguishedName>? parsedAttributes = null;
+            List<X500RelativeDistinguishedName>? parsedAttributes = null;
             ReadOnlyMemory<byte> rawDataMemory = rawData;
             ReadOnlySpan<byte> rawDataSpan = rawData;
 
@@ -156,9 +156,9 @@ namespace System.Security.Cryptography.X509Certificates
                         throw new UnreachableException();
                     }
 
-                    var rdn = new RelativeDistinguishedName(rawDataMemory.Slice(offset, encodedValue.Length));
+                    var rdn = new X500RelativeDistinguishedName(rawDataMemory.Slice(offset, encodedValue.Length));
                     sequence.ReadEncodedValue();
-                    (parsedAttributes ??= new List<RelativeDistinguishedName>()).Add(rdn);
+                    (parsedAttributes ??= new List<X500RelativeDistinguishedName>()).Add(rdn);
                 }
             }
             catch (AsnContentException e)
@@ -166,48 +166,7 @@ namespace System.Security.Cryptography.X509Certificates
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
             }
 
-            return parsedAttributes ?? new List<RelativeDistinguishedName>();
-        }
-
-        public sealed class RelativeDistinguishedName
-        {
-            public ReadOnlyMemory<byte> RawData { get; }
-            public bool HasMultipleValues { get; }
-            public Oid? SingleValueType { get; }
-            public string? SingleValueValue { get; }
-
-            internal RelativeDistinguishedName(ReadOnlyMemory<byte> rawData)
-            {
-                RawData = rawData;
-
-                AsnValueReader outer = new AsnValueReader(rawData.Span, AsnEncodingRules.DER);
-
-                // Windows does not enforce the sort order on multi-value RDNs.
-                AsnValueReader rdn = outer.ReadSetOf(skipSortOrderValidation: true);
-                AsnValueReader typeAndValue = rdn.ReadSequence();
-
-                Oid firstType = Oids.GetSharedOrNewOid(ref typeAndValue);
-                string firstValue = typeAndValue.ReadAnyAsnString();
-                typeAndValue.ThrowIfNotEmpty();
-
-                if (rdn.HasData)
-                {
-                    HasMultipleValues = true;
-
-                    while (rdn.HasData)
-                    {
-                        typeAndValue = rdn.ReadSequence();
-                        Oids.GetSharedOrNewOid(ref typeAndValue);
-                        typeAndValue.ReadAnyAsnString();
-                        typeAndValue.ThrowIfNotEmpty();
-                    }
-                }
-                else
-                {
-                    SingleValueType = firstType;
-                    SingleValueValue = firstValue;
-                }
-            }
+            return parsedAttributes ?? new List<X500RelativeDistinguishedName>();
         }
     }
 }

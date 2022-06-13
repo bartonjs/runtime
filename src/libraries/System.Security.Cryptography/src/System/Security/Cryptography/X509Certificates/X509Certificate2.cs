@@ -1355,10 +1355,9 @@ namespace System.Security.Cryptography.X509Certificates
 
             if (allowCommonName)
             {
-                X500DistinguishedName.RelativeDistinguishedName? cn = null;
+                X500RelativeDistinguishedName? cn = null;
 
-                foreach (X500DistinguishedName.RelativeDistinguishedName rdn in
-                    SubjectName.EnumerateRelativeDistinguishedNames())
+                foreach (X500RelativeDistinguishedName rdn in SubjectName.EnumerateRelativeDistinguishedNames())
                 {
                     if (rdn.HasMultipleValues)
                     {
