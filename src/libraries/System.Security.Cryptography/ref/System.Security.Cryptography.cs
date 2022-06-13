@@ -2595,7 +2595,7 @@ namespace System.Security.Cryptography.X509Certificates
         public bool HasMultipleValues { get { throw null; } }
         public System.ReadOnlyMemory<byte> RawData { get { throw null; } }
         public System.Security.Cryptography.Oid? SingleValueType { get { throw null; } }
-        public string? SingleValueValue { get { throw null; } }
+        public string? GetSingleValueValue() { throw null; }
     }
     public sealed partial class X509AuthorityInformationAccessExtension : System.Security.Cryptography.X509Certificates.X509Extension
     {

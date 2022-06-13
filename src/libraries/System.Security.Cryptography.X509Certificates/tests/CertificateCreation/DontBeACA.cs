@@ -423,13 +423,16 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                                     throw new InvalidOperationException("CN was specified more than once");
                                 }
 
-                                if (rdn.SingleValueValue.Length == 0 || rdn.SingleValueValue.IndexOfAny(new[] { ' ', '*' }) > -1 ||
-                                    !rdn.SingleValueValue.EndsWith(".fruit.example"))
+                                string? cnValue = rdn.GetSingleValueValue();
+
+                                if (string.IsNullOrEmpty(cnValue) ||
+                                    cnValue.IndexOfAny(new[] { ' ', '*' }) > -1 ||
+                                    !cnValue.EndsWith(".fruit.example"))
                                 {
                                     throw new InvalidOperationException("CN is unauthorized");
                                 }
 
-                                cn = rdn.SingleValueValue;
+                                cn = cnValue;
                                 break;
                             default:
                                 acceptSubject = false;

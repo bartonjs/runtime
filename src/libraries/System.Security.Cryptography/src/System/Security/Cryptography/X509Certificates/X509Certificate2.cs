@@ -1391,7 +1391,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                 if (cn is not null)
                 {
-                    return hostname.Equals(cn.SingleValueValue, StringComparison.OrdinalIgnoreCase);
+                    return hostname.Equals(cn.GetSingleValueValue(), StringComparison.OrdinalIgnoreCase);
                 }
             }
 

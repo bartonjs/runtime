@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.InteropServices;
+using System.Collections.Generic;
 using Test.Cryptography;
 using Xunit;
 
@@ -228,6 +228,67 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             X500DistinguishedName dn = new X500DistinguishedName("ST=VA, C=US");
             Assert.Equal("C=US, S=VA", dn.Decode(X500DistinguishedNameFlags.None));
+        }
+
+        [Fact]
+        public static void EnumeratorWithNonTextualData()
+        {
+            // OID.2.5.4.106=#06032A0304, CN=localhost, OU=.NET Framework (CoreFX), O=Microsoft Corporation,
+            // L=Redmond, S=Washington, C=US
+            byte[] encoded =
+            {
+                0x30, 0x81, 0x98, 0x31, 0x0B, 0x30, 0x09, 0x06, 0x03, 0x55, 0x04, 0x06, 0x13, 0x02, 0x55, 0x53,
+                0x31, 0x13, 0x30, 0x11, 0x06, 0x03, 0x55, 0x04, 0x08, 0x13, 0x0A, 0x57, 0x61, 0x73, 0x68, 0x69,
+                0x6E, 0x67, 0x74, 0x6F, 0x6E, 0x31, 0x10, 0x30, 0x0E, 0x06, 0x03, 0x55, 0x04, 0x07, 0x13, 0x07,
+                0x52, 0x65, 0x64, 0x6D, 0x6F, 0x6E, 0x64, 0x31, 0x1E, 0x30, 0x1C, 0x06, 0x03, 0x55, 0x04, 0x0A,
+                0x13, 0x15, 0x4D, 0x69, 0x63, 0x72, 0x6F, 0x73, 0x6F, 0x66, 0x74, 0x20, 0x43, 0x6F, 0x72, 0x70,
+                0x6F, 0x72, 0x61, 0x74, 0x69, 0x6F, 0x6E, 0x31, 0x20, 0x30, 0x1E, 0x06, 0x03, 0x55, 0x04, 0x0B,
+                0x13, 0x17, 0x2E, 0x4E, 0x45, 0x54, 0x20, 0x46, 0x72, 0x61, 0x6D, 0x65, 0x77, 0x6F, 0x72, 0x6B,
+                0x20, 0x28, 0x43, 0x6F, 0x72, 0x65, 0x46, 0x58, 0x29, 0x31, 0x12, 0x30, 0x10, 0x06, 0x03, 0x55,
+                0x04, 0x03, 0x13, 0x09, 0x6C, 0x6F, 0x63, 0x61, 0x6C, 0x68, 0x6F, 0x73, 0x74, 0x31, 0x0C, 0x30,
+                0x0A, 0x06, 0x03, 0x55, 0x04, 0x6A, 0x06, 0x03, 0x2A, 0x03, 0x04,
+            };
+
+            X500DistinguishedName dn = new X500DistinguishedName(encoded);
+            IEnumerable<X500RelativeDistinguishedName> able = dn.EnumerateRelativeDistinguishedNames(false);
+            IEnumerator<X500RelativeDistinguishedName> ator = able.GetEnumerator();
+
+            Assert.True(ator.MoveNext(), "ator.MoveNext() 1");
+            Assert.False(ator.Current.HasMultipleValues, "ator.Current.HasMultipleValues 1");
+            Assert.Equal("2.5.4.6", ator.Current.SingleValueType.Value);
+            Assert.Equal("US", ator.Current.GetSingleValueValue());
+
+            Assert.True(ator.MoveNext(), "ator.MoveNext() 2");
+            Assert.False(ator.Current.HasMultipleValues, "ator.Current.HasMultipleValues 2");
+            Assert.Equal("2.5.4.8", ator.Current.SingleValueType.Value);
+            Assert.Equal("Washington", ator.Current.GetSingleValueValue());
+
+            Assert.True(ator.MoveNext(), "ator.MoveNext() 3");
+            Assert.False(ator.Current.HasMultipleValues, "ator.Current.HasMultipleValues 3");
+            Assert.Equal("2.5.4.7", ator.Current.SingleValueType.Value);
+            Assert.Equal("Redmond", ator.Current.GetSingleValueValue());
+
+            Assert.True(ator.MoveNext(), "ator.MoveNext() 4");
+            Assert.False(ator.Current.HasMultipleValues, "ator.Current.HasMultipleValues 4");
+            Assert.Equal("2.5.4.10", ator.Current.SingleValueType.Value);
+            Assert.Equal("Microsoft Corporation", ator.Current.GetSingleValueValue());
+
+            Assert.True(ator.MoveNext(), "ator.MoveNext() 5");
+            Assert.False(ator.Current.HasMultipleValues, "ator.Current.HasMultipleValues 5");
+            Assert.Equal("2.5.4.11", ator.Current.SingleValueType.Value);
+            Assert.Equal(".NET Framework (CoreFX)", ator.Current.GetSingleValueValue());
+
+            Assert.True(ator.MoveNext(), "ator.MoveNext() 6");
+            Assert.False(ator.Current.HasMultipleValues, "ator.Current.HasMultipleValues 6");
+            Assert.Equal("2.5.4.3", ator.Current.SingleValueType.Value);
+            Assert.Equal("localhost", ator.Current.GetSingleValueValue());
+
+            Assert.True(ator.MoveNext(), "ator.MoveNext() 7");
+            Assert.False(ator.Current.HasMultipleValues, "ator.Current.HasMultipleValues 7");
+            Assert.Equal("2.5.4.106", ator.Current.SingleValueType.Value);
+            Assert.Null(ator.Current.GetSingleValueValue());
+
+            Assert.False(ator.MoveNext(), "ator.MoveNext() 8");
         }
 
         public static readonly object[][] WhitespaceBeforeCases =
