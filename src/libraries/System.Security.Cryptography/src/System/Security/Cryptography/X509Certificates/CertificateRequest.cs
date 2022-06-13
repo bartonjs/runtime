@@ -764,7 +764,7 @@ namespace System.Security.Cryptography.X509Certificates
             return ret;
         }
 
-        public static unsafe CertificateRequest LoadCertificateRequestPem(
+        public static unsafe CertificateRequest LoadSigningRequestPem(
             string pkcs10Pem,
             HashAlgorithmName signerHashAlgorithm,
             bool skipSignatureValidation = false,
@@ -773,7 +773,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
             ArgumentNullException.ThrowIfNull(pkcs10Pem);
 
-            return LoadCertificateRequestPem(
+            return LoadSigningRequestPem(
                 pkcs10Pem.AsSpan(),
                 signerHashAlgorithm,
                 skipSignatureValidation,
@@ -781,7 +781,7 @@ namespace System.Security.Cryptography.X509Certificates
                 signerSignaturePadding);
         }
 
-        public static unsafe CertificateRequest LoadCertificateRequestPem(
+        public static unsafe CertificateRequest LoadSigningRequestPem(
             ReadOnlySpan<char> pkcs10Pem,
             HashAlgorithmName signerHashAlgorithm,
             bool skipSignatureValidation = false,
@@ -802,7 +802,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                     try
                     {
-                        return LoadCertificateRequest(
+                        return LoadSigningRequest(
                             rented.AsSpan(0, bytesWritten),
                             permitTrailingData: false,
                             signerHashAlgorithm,
@@ -821,7 +821,7 @@ namespace System.Security.Cryptography.X509Certificates
             throw new CryptographicException(SR.Cryptography_NoPemOfLabel, PemLabels.Pkcs10CertificateRequest);
         }
 
-        public static unsafe CertificateRequest LoadCertificateRequest(
+        public static unsafe CertificateRequest LoadSigningRequest(
             byte[] pkcs10,
             HashAlgorithmName signerHashAlgorithm,
             bool skipSignatureValidation = false,
@@ -830,7 +830,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
             ArgumentNullException.ThrowIfNull(pkcs10);
 
-            return LoadCertificateRequest(
+            return LoadSigningRequest(
                 pkcs10,
                 permitTrailingData: false,
                 signerHashAlgorithm,
@@ -840,7 +840,7 @@ namespace System.Security.Cryptography.X509Certificates
                 signerSignaturePadding);
         }
 
-        public static unsafe CertificateRequest LoadCertificateRequest(
+        public static unsafe CertificateRequest LoadSigningRequest(
             ReadOnlySpan<byte> pkcs10,
             HashAlgorithmName signerHashAlgorithm,
             out int bytesConsumed,
@@ -848,7 +848,7 @@ namespace System.Security.Cryptography.X509Certificates
             bool unsafeLoadCertificateExtensions = false,
             RSASignaturePadding? signerSignaturePadding = null)
         {
-            return LoadCertificateRequest(
+            return LoadSigningRequest(
                 pkcs10,
                 permitTrailingData: true,
                 signerHashAlgorithm,
@@ -858,7 +858,7 @@ namespace System.Security.Cryptography.X509Certificates
                 signerSignaturePadding);
         }
 
-        private static unsafe CertificateRequest LoadCertificateRequest(
+        private static unsafe CertificateRequest LoadSigningRequest(
             ReadOnlySpan<byte> pkcs10,
             bool permitTrailingData,
             HashAlgorithmName signerHashAlgorithm,
