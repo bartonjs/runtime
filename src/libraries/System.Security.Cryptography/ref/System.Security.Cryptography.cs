@@ -2450,18 +2450,16 @@ namespace System.Security.Cryptography.X509Certificates
     public sealed partial class CertificateRevocationListBuilder
     {
         public CertificateRevocationListBuilder() { }
-        public System.Security.Cryptography.HashAlgorithmName? HashAlgorithm { get { throw null; } set { } }
-        public System.Security.Cryptography.RSASignaturePadding? RSASignaturePadding { get { throw null; } set { } }
         public void AddEntry(byte[] serialNumber) { }
         public void AddEntry(byte[] serialNumber, System.DateTimeOffset revocationTime) { }
         public void AddEntry(System.ReadOnlySpan<byte> serialNumber) { }
         public void AddEntry(System.ReadOnlySpan<byte> serialNumber, System.DateTimeOffset revocationTime) { }
         public void AddEntry(System.Security.Cryptography.X509Certificates.X509Certificate2 certificate) { }
         public void AddEntry(System.Security.Cryptography.X509Certificates.X509Certificate2 certificate, System.DateTimeOffset revocationTime) { }
-        public byte[] Build(System.Security.Cryptography.X509Certificates.X500DistinguishedName issuerName, System.Security.Cryptography.X509Certificates.X509SignatureGenerator generator, System.Numerics.BigInteger crlNumber, System.DateTimeOffset nextUpdate, System.DateTimeOffset thisUpdate, System.Security.Cryptography.X509Certificates.X509AuthorityKeyIdentifierExtension akid) { throw null; }
-        public byte[] Build(System.Security.Cryptography.X509Certificates.X500DistinguishedName issuerName, System.Security.Cryptography.X509Certificates.X509SignatureGenerator generator, System.Numerics.BigInteger crlNumber, System.DateTimeOffset nextUpdate, System.Security.Cryptography.X509Certificates.X509AuthorityKeyIdentifierExtension akid) { throw null; }
-        public byte[] Build(System.Security.Cryptography.X509Certificates.X509Certificate2 issuerCertificate, System.Numerics.BigInteger crlNumber, System.DateTimeOffset nextUpdate) { throw null; }
-        public byte[] Build(System.Security.Cryptography.X509Certificates.X509Certificate2 issuerCertificate, System.Numerics.BigInteger crlNumber, System.DateTimeOffset nextUpdate, System.DateTimeOffset thisUpdate) { throw null; }
+        public byte[] Build(System.Security.Cryptography.X509Certificates.X500DistinguishedName issuerName, System.Security.Cryptography.X509Certificates.X509SignatureGenerator generator, System.Numerics.BigInteger crlNumber, System.DateTimeOffset nextUpdate, System.DateTimeOffset thisUpdate, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.Security.Cryptography.X509Certificates.X509AuthorityKeyIdentifierExtension akid) { throw null; }
+        public byte[] Build(System.Security.Cryptography.X509Certificates.X500DistinguishedName issuerName, System.Security.Cryptography.X509Certificates.X509SignatureGenerator generator, System.Numerics.BigInteger crlNumber, System.DateTimeOffset nextUpdate, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.Security.Cryptography.X509Certificates.X509AuthorityKeyIdentifierExtension akid) { throw null; }
+        public byte[] Build(System.Security.Cryptography.X509Certificates.X509Certificate2 issuerCertificate, System.Numerics.BigInteger crlNumber, System.DateTimeOffset nextUpdate, System.DateTimeOffset thisUpdate, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.Security.Cryptography.RSASignaturePadding? rsaSignaturePadding = null) { throw null; }
+        public byte[] Build(System.Security.Cryptography.X509Certificates.X509Certificate2 issuerCertificate, System.Numerics.BigInteger crlNumber, System.DateTimeOffset nextUpdate, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.Security.Cryptography.RSASignaturePadding? rsaSignaturePadding = null) { throw null; }
         public static System.Security.Cryptography.X509Certificates.X509Extension BuildCrlDistributionPointExtension(System.Collections.Generic.IEnumerable<string> uris, bool critical = false) { throw null; }
         public void ExpireEntries(System.DateTimeOffset oldestRevocationTimeToKeep) { }
         public static System.Security.Cryptography.X509Certificates.CertificateRevocationListBuilder Load(byte[] currentCrl, out System.Numerics.BigInteger currentCrlNumber) { throw null; }

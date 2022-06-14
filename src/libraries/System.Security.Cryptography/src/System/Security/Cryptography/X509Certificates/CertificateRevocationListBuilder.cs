@@ -12,42 +12,8 @@ namespace System.Security.Cryptography.X509Certificates
 {
     public sealed partial class CertificateRevocationListBuilder
     {
-        private struct RevokedCertificate
-        {
-            internal byte[] Serial;
-            internal DateTimeOffset RevocationTime;
-            internal byte[]? Extensions;
-
-            internal RevokedCertificate(ref AsnValueReader reader, int version)
-            {
-                AsnValueReader revokedCertificate = reader.ReadSequence();
-                Serial = revokedCertificate.ReadIntegerBytes().ToArray();
-                RevocationTime = ReadX509Time(ref revokedCertificate);
-                Extensions = null;
-
-                if (version > 0 && revokedCertificate.HasData)
-                {
-                    AsnValueReader crlExtensionsExplicit =
-                        revokedCertificate.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
-
-                    if (!crlExtensionsExplicit.PeekTag().HasSameClassAndValue(Asn1Tag.Sequence))
-                    {
-                        throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-                    }
-
-                    Extensions = crlExtensionsExplicit.ReadEncodedValue().ToArray();
-                    crlExtensionsExplicit.ThrowIfNotEmpty();
-                }
-
-                revokedCertificate.ThrowIfNotEmpty();
-            }
-        }
-
         private List<RevokedCertificate> _revoked;
         private AsnWriter? _writer;
-
-        public HashAlgorithmName? HashAlgorithm { get; set; }
-        public RSASignaturePadding? RSASignaturePadding { get; set; }
 
         public CertificateRevocationListBuilder()
         {
@@ -272,16 +238,29 @@ namespace System.Security.Cryptography.X509Certificates
             _revoked.RemoveAll(rc => rc.RevocationTime < oldestRevocationTimeToKeep);
         }
 
-        public byte[] Build(X509Certificate2 issuerCertificate, BigInteger crlNumber, DateTimeOffset nextUpdate)
+        public byte[] Build(
+            X509Certificate2 issuerCertificate,
+            BigInteger crlNumber,
+            DateTimeOffset nextUpdate,
+            HashAlgorithmName hashAlgorithm,
+            RSASignaturePadding? rsaSignaturePadding = null)
         {
-            return Build(issuerCertificate, crlNumber, nextUpdate, DateTimeOffset.UtcNow);
+            return Build(
+                issuerCertificate,
+                crlNumber,
+                nextUpdate,
+                DateTimeOffset.UtcNow,
+                hashAlgorithm,
+                rsaSignaturePadding);
         }
 
         public byte[] Build(
             X509Certificate2 issuerCertificate,
             BigInteger crlNumber,
             DateTimeOffset nextUpdate,
-            DateTimeOffset thisUpdate)
+            DateTimeOffset thisUpdate,
+            HashAlgorithmName hashAlgorithm,
+            RSASignaturePadding? rsaSignaturePadding = null)
         {
             ArgumentNullException.ThrowIfNull(issuerCertificate);
 
@@ -293,6 +272,7 @@ namespace System.Security.Cryptography.X509Certificates
                 throw new ArgumentOutOfRangeException(nameof(crlNumber), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (nextUpdate <= thisUpdate)
                 throw new ArgumentException(SR.Cryptography_CRLBuilder_DatesReversed);
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
 
             // Check the Basic Constraints and Key Usage extensions to help identify inappropriate certificates.
             // Note that this is not a security check. The system library backing X509Chain will use these same criteria
@@ -301,7 +281,8 @@ namespace System.Security.Cryptography.X509Certificates
             // chosen the wrong cert.
             var basicConstraints = (X509BasicConstraintsExtension?)issuerCertificate.Extensions[Oids.BasicConstraints2];
             var keyUsage = (X509KeyUsageExtension?)issuerCertificate.Extensions[Oids.KeyUsage];
-            //var akid = issuerCertificate.Extensions["Oids.Autho"];
+            var subjectKeyIdentifier =
+                (X509SubjectKeyIdentifierExtension?)issuerCertificate.Extensions[Oids.SubjectKeyIdentifier];
 
             if (basicConstraints == null)
                 throw new ArgumentException(
@@ -313,8 +294,6 @@ namespace System.Security.Cryptography.X509Certificates
                     nameof(issuerCertificate));
             if (keyUsage != null && (keyUsage.KeyUsages & X509KeyUsageFlags.CrlSign) == 0)
                 throw new ArgumentException(SR.Cryptography_CRLBuilder_IssuerKeyUsageInvalid, nameof(issuerCertificate));
-            //if (akid is null)
-            //    throw new ArgumentException("AKID needed", nameof(issuerCertificate));
 
             AsymmetricAlgorithm? key = null;
             string keyAlgorithm = issuerCertificate.GetKeyAlgorithm();
@@ -325,7 +304,7 @@ namespace System.Security.Cryptography.X509Certificates
                 switch (keyAlgorithm)
                 {
                     case Oids.Rsa:
-                        if (RSASignaturePadding is null)
+                        if (rsaSignaturePadding is null)
                         {
                             throw new InvalidOperationException(
                                 "The issuer certificate uses an RSA key, but no RSASignaturePadding value was provided.");
@@ -333,7 +312,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                         RSA? rsa = issuerCertificate.GetRSAPrivateKey();
                         key = rsa;
-                        generator = X509SignatureGenerator.CreateForRSA(rsa!, RSASignaturePadding);
+                        generator = X509SignatureGenerator.CreateForRSA(rsa!, rsaSignaturePadding);
                         break;
                     case Oids.EcPublicKey:
                         ECDsa? ecdsa = issuerCertificate.GetECDsaPrivateKey();
@@ -346,7 +325,27 @@ namespace System.Security.Cryptography.X509Certificates
                             nameof(issuerCertificate));
                 }
 
-                return Build(issuerCertificate.SubjectName, generator, crlNumber, nextUpdate, thisUpdate, null!);
+                X509AuthorityKeyIdentifierExtension akid;
+
+                if (subjectKeyIdentifier is not null)
+                {
+                    akid = X509AuthorityKeyIdentifierExtension.CreateFromSubjectKeyIdentifier(subjectKeyIdentifier);
+                }
+                else
+                {
+                    akid = X509AuthorityKeyIdentifierExtension.CreateFromIssuerNameAndSerialNumber(
+                        issuerCertificate.SubjectName,
+                        issuerCertificate.SerialNumberBytes.Span);
+                }
+
+                return Build(
+                    issuerCertificate.SubjectName,
+                    generator,
+                    crlNumber,
+                    nextUpdate,
+                    thisUpdate,
+                    hashAlgorithm,
+                    akid);
             }
             finally
             {
@@ -359,9 +358,17 @@ namespace System.Security.Cryptography.X509Certificates
             X509SignatureGenerator generator,
             BigInteger crlNumber,
             DateTimeOffset nextUpdate,
+            HashAlgorithmName hashAlgorithm,
             X509AuthorityKeyIdentifierExtension akid)
         {
-            return Build(issuerName, generator, crlNumber, nextUpdate, DateTimeOffset.UtcNow, akid);
+            return Build(
+                issuerName,
+                generator,
+                crlNumber,
+                nextUpdate,
+                DateTimeOffset.UtcNow,
+                hashAlgorithm,
+                akid);
         }
 
         public byte[] Build(
@@ -370,6 +377,7 @@ namespace System.Security.Cryptography.X509Certificates
             BigInteger crlNumber,
             DateTimeOffset nextUpdate,
             DateTimeOffset thisUpdate,
+            HashAlgorithmName hashAlgorithm,
             X509AuthorityKeyIdentifierExtension akid)
         {
             ArgumentNullException.ThrowIfNull(issuerName);
@@ -380,15 +388,8 @@ namespace System.Security.Cryptography.X509Certificates
             if (nextUpdate <= thisUpdate)
                 throw new ArgumentException(SR.Cryptography_CRLBuilder_DatesReversed);
 
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
             ArgumentNullException.ThrowIfNull(akid);
-
-            HashAlgorithmName hashAlgorithm = HashAlgorithm.GetValueOrDefault();
-
-            if (string.IsNullOrEmpty(hashAlgorithm.Name))
-            {
-                throw new InvalidOperationException(
-                    "The hash algorithm to use during signing must be specified via the HashAlgorithm property.");
-            }
 
             byte[] signatureAlgId = generator.GetSignatureAlgorithmIdentifier(hashAlgorithm);
             AsnWriter writer = (_writer ??= new AsnWriter(AsnEncodingRules.DER));
@@ -525,6 +526,37 @@ namespace System.Security.Cryptography.X509Certificates
             else
             {
                 writer.WriteGeneralizedTime(time, omitFractionalSeconds: true);
+            }
+        }
+
+        private struct RevokedCertificate
+        {
+            internal byte[] Serial;
+            internal DateTimeOffset RevocationTime;
+            internal byte[]? Extensions;
+
+            internal RevokedCertificate(ref AsnValueReader reader, int version)
+            {
+                AsnValueReader revokedCertificate = reader.ReadSequence();
+                Serial = revokedCertificate.ReadIntegerBytes().ToArray();
+                RevocationTime = ReadX509Time(ref revokedCertificate);
+                Extensions = null;
+
+                if (version > 0 && revokedCertificate.HasData)
+                {
+                    AsnValueReader crlExtensionsExplicit =
+                        revokedCertificate.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
+
+                    if (!crlExtensionsExplicit.PeekTag().HasSameClassAndValue(Asn1Tag.Sequence))
+                    {
+                        throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                    }
+
+                    Extensions = crlExtensionsExplicit.ReadEncodedValue().ToArray();
+                    crlExtensionsExplicit.ThrowIfNotEmpty();
+                }
+
+                revokedCertificate.ThrowIfNotEmpty();
             }
         }
     }

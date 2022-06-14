@@ -308,8 +308,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
             }
 
             CertificateRevocationListBuilder builder = new CertificateRevocationListBuilder();
-            builder.RSASignaturePadding = RSASignaturePadding.Pkcs1;
-            builder.HashAlgorithm = HashAlgorithmName.SHA256;
 
             if (_revocationList is not null)
             {
@@ -337,10 +335,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
             {
                 crl = builder.Build(
                     CorruptRevocationIssuerName ? s_nonParticipatingName : _cert.SubjectName,
-                    X509SignatureGenerator.CreateForRSA(key, builder.RSASignaturePadding),
+                    X509SignatureGenerator.CreateForRSA(key, RSASignaturePadding.Pkcs1),
                     _crlNumber,
                     nextUpdate,
                     thisUpdate,
+                    HashAlgorithmName.SHA256,
                     _akidExtension ??= CreateAkidExtension());
 
                 if (CorruptRevocationSignature)
