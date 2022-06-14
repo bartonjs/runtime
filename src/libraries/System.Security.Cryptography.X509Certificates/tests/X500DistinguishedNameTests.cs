@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Formats.Asn1;
+using System.Text;
 using Test.Cryptography;
 using Xunit;
 
@@ -289,6 +291,129 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.Null(ator.Current.GetSingleValueValue());
 
             Assert.False(ator.MoveNext(), "ator.MoveNext() 8");
+        }
+
+        [Fact]
+        public static void EnumeratorWithInvalidData()
+        {
+            // A variety of encodings of a country name, except it as two versions of
+            // the CountryCode3n attribute, both say they are NumericString (as matching the spec),
+            // but the latter one has the correct value (840) and the earlier one has the 3c text (USA).
+            X500DistinguishedName dn = new X500DistinguishedName((
+                "304C31133011060B2B0601040182373C02010313025553310C300A0603550462" +
+                "1303555341310C300A06035504631203555341310C300A060355046312033834" +
+                "30310B3009060355040613025553").HexToByteArray());
+
+            int index = 0;
+
+            foreach (X500RelativeDistinguishedName rdn in dn.EnumerateRelativeDistinguishedNames(reversed: false))
+            {
+                switch (index)
+                {
+                    case 0:
+                        Assert.False(rdn.HasMultipleValues, $"rdn.HasMultipleValues {index}");
+                        Assert.Equal("1.3.6.1.4.1.311.60.2.1.3", rdn.SingleValueType.Value);
+                        Assert.Equal("US", rdn.GetSingleValueValue());
+                        break;
+                    case 1:
+                        Assert.False(rdn.HasMultipleValues, $"rdn.HasMultipleValues {index}");
+                        Assert.Equal("2.5.4.98", rdn.SingleValueType.Value);
+                        Assert.Equal("USA", rdn.GetSingleValueValue());
+                        break;
+                    case 2:
+                        Assert.False(rdn.HasMultipleValues, $"rdn.HasMultipleValues {index}");
+                        Assert.Equal("2.5.4.99", rdn.SingleValueType.Value);
+
+                        CryptographicException ex = Assert.Throws<CryptographicException>(
+                            () => rdn.GetSingleValueValue());
+
+                        Assert.IsType<AsnContentException>(ex.InnerException);
+                        Assert.IsType<DecoderFallbackException>(ex.InnerException.InnerException);
+                        break;
+                    case 3:
+                        Assert.False(rdn.HasMultipleValues, $"rdn.HasMultipleValues {index}");
+                        Assert.Equal("2.5.4.99", rdn.SingleValueType.Value);
+                        Assert.Equal("840", rdn.GetSingleValueValue());
+                        break;
+                    case 4:
+                        Assert.False(rdn.HasMultipleValues, $"rdn.HasMultipleValues {index}");
+                        Assert.Equal("2.5.4.6", rdn.SingleValueType.Value);
+                        Assert.Equal("US", rdn.GetSingleValueValue());
+                        break;
+                    default:
+                        Assert.Fail($"Enumeration produced an unexpected {index}th result");
+                        break;
+                }
+
+                index++;
+            }
+
+            Assert.Equal(5, index);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void EnumerateWithMultiValueRdn(bool fromSpan)
+        {
+            ReadOnlySpan<byte> encoded = stackalloc byte[]
+            {
+                0x30, 0x3D, 0x31, 0x0B, 0x30, 0x09, 0x06, 0x03, 0x55, 0x04, 0x06, 0x13, 0x02, 0x55, 0x53, 0x31,
+                0x20, 0x30, 0x0C, 0x06, 0x03, 0x55, 0x04, 0x03, 0x13, 0x05, 0x4A, 0x61, 0x6D, 0x65, 0x73, 0x30,
+                0x10, 0x06, 0x03, 0x55, 0x04, 0x0A, 0x13, 0x09, 0x4D, 0x69, 0x63, 0x72, 0x6F, 0x73, 0x6F, 0x66,
+                0x74, 0x31, 0x0C, 0x30, 0x0A, 0x06, 0x03, 0x55, 0x04, 0x63, 0x12, 0x03, 0x38, 0x34, 0x30,
+            };
+
+            X500DistinguishedName dn;
+
+            if (fromSpan)
+            {
+                dn = new X500DistinguishedName(encoded);
+            }
+            else
+            {
+                byte[] tmp = encoded.ToArray();
+                dn = new X500DistinguishedName(tmp);
+
+                // Updating encoded here is important for the !Overlaps test.
+                encoded = tmp;
+            }
+
+            int index = 0;
+
+            foreach (X500RelativeDistinguishedName rdn in dn.EnumerateRelativeDistinguishedNames(reversed: false))
+            {
+                switch (index)
+                {
+                    case 0:
+                        Assert.False(rdn.HasMultipleValues, $"rdn.HasMultipleValues {index}");
+                        Assert.Equal("2.5.4.6", rdn.SingleValueType.Value);
+                        Assert.Equal("US", rdn.GetSingleValueValue());
+                        break;
+                    case 1:
+                        Assert.True(rdn.HasMultipleValues, $"rdn.HasMultipleValues {index}");
+                        Assert.Null(rdn.SingleValueType);
+                        Assert.Throws<InvalidOperationException>(() => rdn.GetSingleValueValue());
+
+                        ReadOnlySpan<byte> expected = encoded.Slice(15, 34);
+                        AssertExtensions.SequenceEqual(expected, rdn.RawData.Span);
+                        Assert.False(expected.Overlaps(rdn.RawData.Span), "expected.Overlaps(rdn.RawData.Span)");
+
+                        break;
+                    case 2:
+                        Assert.False(rdn.HasMultipleValues, $"rdn.HasMultipleValues {index}");
+                        Assert.Equal("2.5.4.99", rdn.SingleValueType.Value);
+                        Assert.Equal("840", rdn.GetSingleValueValue());
+                        break;
+                    default:
+                        Assert.Fail($"Enumeration produced an unexpected {index}th result");
+                        break;
+                }
+
+                index++;
+            }
+
+            Assert.Equal(3, index);
         }
 
         public static readonly object[][] WhitespaceBeforeCases =
