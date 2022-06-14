@@ -2592,6 +2592,7 @@ namespace System.Security.Cryptography.X509Certificates
     public sealed partial class X500RelativeDistinguishedName
     {
         internal X500RelativeDistinguishedName() { }
+        [System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute(false, "SingleValueType")]
         public bool HasMultipleValues { get { throw null; } }
         public System.ReadOnlyMemory<byte> RawData { get { throw null; } }
         public System.Security.Cryptography.Oid? SingleValueType { get { throw null; } }

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
 
 namespace System.Security.Cryptography.X509Certificates
@@ -13,16 +14,6 @@ namespace System.Security.Cryptography.X509Certificates
     public sealed class X500RelativeDistinguishedName
     {
         private readonly ReadOnlyMemory<byte> _singleValueValue;
-
-        /// <summary>
-        ///   Gets a value that indicates whether this Relative Distinguished Name is composed
-        ///   of multiple attributes or only a single attribute.
-        /// </summary>
-        /// <value>
-        ///   <see langword="true"/> if the Relative Distinguished Name is composed of multiple
-        ///   attributes; <see langword="false"/> if it is composed of only a single attribute.
-        /// </value>
-        public bool HasMultipleValues { get; }
 
         /// <summary>
         ///   Gets the encoded representation of this Relative Distinguished Name.
@@ -59,8 +50,6 @@ namespace System.Security.Cryptography.X509Certificates
 
             if (rdn.HasData)
             {
-                HasMultipleValues = true;
-
                 while (rdn.HasData)
                 {
                     typeAndValue = rdn.ReadSequence();
@@ -87,6 +76,17 @@ namespace System.Security.Cryptography.X509Certificates
                 _singleValueValue = rawData.Slice(offset, firstValue.Length);
             }
         }
+
+        /// <summary>
+        ///   Gets a value that indicates whether this Relative Distinguished Name is composed
+        ///   of multiple attributes or only a single attribute.
+        /// </summary>
+        /// <value>
+        ///   <see langword="true"/> if the Relative Distinguished Name is composed of multiple
+        ///   attributes; <see langword="false"/> if it is composed of only a single attribute.
+        /// </value>
+        [MemberNotNullWhen(false, nameof(SingleValueType))]
+        public bool HasMultipleValues => SingleValueType is null;
 
         /// <summary>
         ///   Gets the textual representation of the value for the Relative Distinguished Name (RDN),
