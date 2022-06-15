@@ -120,6 +120,295 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 });
         }
 
+        [Fact]
+        public static void BuildWithCertificateWithBadKeyUsage()
+        {
+            BuildCertificateAndRun(
+                new X509Extension[]
+                {
+                    X509BasicConstraintsExtension.CreateForCertificateAuthority(),
+                    new X509KeyUsageExtension(X509KeyUsageFlags.KeyCertSign, true),
+                },
+                static (cert, now) =>
+                {
+                    CertificateRevocationListBuilder builder = new CertificateRevocationListBuilder();
+
+                    ArgumentException e;
+
+                    e = Assert.Throws<ArgumentException>(
+                        CertParam,
+                        () => builder.Build(cert, 0, now.AddMinutes(5), HashAlgorithmName.SHA256));
+
+                    Assert.Contains("CrlSign", e.Message);
+
+                    e = Assert.Throws<ArgumentException>(
+                        CertParam,
+                        () => builder.Build(cert, 0, now.AddMinutes(5), now, HashAlgorithmName.SHA256));
+
+                    Assert.Contains("CrlSign", e.Message);
+                });
+        }
+
+        [Fact]
+        public static void BuildWithNextUpdateBeforeThisUpdate()
+        {
+            BuildCertificateAndRun(
+                new X509Extension[]
+                {
+                    X509BasicConstraintsExtension.CreateForCertificateAuthority(),
+                    new X509KeyUsageExtension(
+                        X509KeyUsageFlags.KeyCertSign | X509KeyUsageFlags.CrlSign,
+                        true),
+                },
+                static (cert, now) =>
+                {
+                    CertificateRevocationListBuilder builder = new CertificateRevocationListBuilder();
+                    ArgumentException e;
+
+                    e = Assert.Throws<ArgumentException>(
+                        () => builder.Build(cert, 0, now.AddMinutes(-5), HashAlgorithmName.SHA256));
+
+                    Assert.Null(e.ParamName);
+                    Assert.Contains("thisUpdate", e.Message);
+                    Assert.Contains("nextUpdate", e.Message);
+
+                    e = Assert.Throws<ArgumentException>(
+                        () => builder.Build(cert, 0, now, now.AddSeconds(1), HashAlgorithmName.SHA256));
+
+                    Assert.Null(e.ParamName);
+                    Assert.Contains("thisUpdate", e.Message);
+                    Assert.Contains("nextUpdate", e.Message);
+
+                    using (ECDsa key = cert.GetECDsaPrivateKey())
+                    {
+                        X509SignatureGenerator gen = X509SignatureGenerator.CreateForECDsa(key);
+                        X500DistinguishedName dn = cert.SubjectName;
+
+                        e = Assert.Throws<ArgumentException>(
+                            () => builder.Build(dn, gen, 0, now.AddMinutes(-5), HashAlgorithmName.SHA256, null));
+
+                        Assert.Null(e.ParamName);
+                        Assert.Contains("thisUpdate", e.Message);
+                        Assert.Contains("nextUpdate", e.Message);
+
+                        e = Assert.Throws<ArgumentException>(
+                            () => builder.Build(dn, gen, 0, now, now.AddSeconds(1), HashAlgorithmName.SHA256, null));
+
+                        Assert.Null(e.ParamName);
+                        Assert.Contains("thisUpdate", e.Message);
+                        Assert.Contains("nextUpdate", e.Message);
+                    }
+                });
+        }
+
+        [Fact]
+        public static void BuildWithNoHashAlgorithm()
+        {
+            BuildCertificateAndRun(
+                new X509Extension[]
+                {
+                    X509BasicConstraintsExtension.CreateForCertificateAuthority(),
+                },
+                static (cert, now) =>
+                {
+                    HashAlgorithmName hashAlg = default;
+                    CertificateRevocationListBuilder builder = new CertificateRevocationListBuilder();
+
+                    Assert.Throws<ArgumentNullException>(
+                        "hashAlgorithm",
+                        () => builder.Build(cert, 0, now.AddMinutes(5), hashAlg));
+
+                    Assert.Throws<ArgumentNullException>(
+                        "hashAlgorithm",
+                        () => builder.Build(cert, 0, now.AddMinutes(5), now, hashAlg));
+
+                    using (ECDsa key = cert.GetECDsaPrivateKey())
+                    {
+                        X509SignatureGenerator gen = X509SignatureGenerator.CreateForECDsa(key);
+                        X500DistinguishedName dn = cert.SubjectName;
+
+                        Assert.Throws<ArgumentNullException>(
+                            "hashAlgorithm",
+                            () => builder.Build(dn, gen, 0, now.AddMinutes(5), hashAlg, null));
+
+                        Assert.Throws<ArgumentNullException>(
+                            "hashAlgorithm",
+                            () => builder.Build(dn, gen, 0, now.AddMinutes(5), now, hashAlg, null));
+                    }
+                });
+        }
+
+        [Fact]
+        public static void BuildWithEmptyHashAlgorithm()
+        {
+            BuildCertificateAndRun(
+                new X509Extension[]
+                {
+                    X509BasicConstraintsExtension.CreateForCertificateAuthority(),
+                },
+                static (cert, now) =>
+                {
+                    HashAlgorithmName hashAlg = new HashAlgorithmName("");
+                    CertificateRevocationListBuilder builder = new CertificateRevocationListBuilder();
+                    ArgumentException e;
+
+                    e = Assert.Throws<ArgumentException>(
+                        "hashAlgorithm",
+                        () => builder.Build(cert, 0, now.AddMinutes(5), hashAlg));
+
+                    Assert.Contains("empty", e.Message);
+
+                    e = Assert.Throws<ArgumentException>(
+                        "hashAlgorithm",
+                        () => builder.Build(cert, 0, now.AddMinutes(5), now, hashAlg));
+
+                    Assert.Contains("empty", e.Message);
+
+                    using (ECDsa key = cert.GetECDsaPrivateKey())
+                    {
+                        X509SignatureGenerator gen = X509SignatureGenerator.CreateForECDsa(key);
+                        X500DistinguishedName dn = cert.SubjectName;
+
+                        e = Assert.Throws<ArgumentException>(
+                            "hashAlgorithm",
+                            () => builder.Build(dn, gen, 0, now.AddMinutes(5), hashAlg, null));
+
+                        Assert.Contains("empty", e.Message);
+
+                        e = Assert.Throws<ArgumentException>(
+                            "hashAlgorithm",
+                            () => builder.Build(dn, gen, 0, now.AddMinutes(5), now, hashAlg, null));
+
+                        Assert.Contains("empty", e.Message);
+                    }
+                });
+        }
+
+        [Fact]
+        public static void BuildWithNegativeCrlNumber()
+        {
+            BuildCertificateAndRun(
+                new X509Extension[]
+                {
+                    X509BasicConstraintsExtension.CreateForCertificateAuthority(),
+                },
+                static (cert, now) =>
+                {
+                    HashAlgorithmName hashAlg = new HashAlgorithmName("");
+                    CertificateRevocationListBuilder builder = new CertificateRevocationListBuilder();
+
+                    Assert.Throws<ArgumentOutOfRangeException>(
+                        "crlNumber",
+                        () => builder.Build(cert, -1, now.AddMinutes(5), hashAlg));
+
+                    Assert.Throws<ArgumentOutOfRangeException>(
+                        "crlNumber",
+                        () => builder.Build(cert, -1, now.AddMinutes(5), now, hashAlg));
+
+                    using (ECDsa key = cert.GetECDsaPrivateKey())
+                    {
+                        X509SignatureGenerator gen = X509SignatureGenerator.CreateForECDsa(key);
+                        X500DistinguishedName dn = cert.SubjectName;
+
+                        Assert.Throws<ArgumentOutOfRangeException>(
+                            "crlNumber",
+                            () => builder.Build(dn, gen, -1, now.AddMinutes(5), hashAlg, null));
+
+                        Assert.Throws<ArgumentOutOfRangeException>(
+                            "crlNumber",
+                            () => builder.Build(dn, gen, -1, now.AddMinutes(5), now, hashAlg, null));
+                    }
+                });
+        }
+
+        [Fact]
+        public static void BuildWithGeneratorNullName()
+        {
+            CertificateRevocationListBuilder builder = new CertificateRevocationListBuilder();
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+
+            Assert.Throws<ArgumentNullException>(
+                "issuerName",
+                () => builder.Build(null, null, 0, now.AddMinutes(5), HashAlgorithmName.SHA256, null));
+
+            Assert.Throws<ArgumentNullException>(
+                "issuerName",
+                () => builder.Build(null, null, 0, now.AddMinutes(5), now, HashAlgorithmName.SHA256, null));
+        }
+
+        [Fact]
+        public static void BuildWithGeneratorNullGenerator()
+        {
+            CertificateRevocationListBuilder builder = new CertificateRevocationListBuilder();
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            X500DistinguishedName dn = new X500DistinguishedName("CN=Name");
+
+            Assert.Throws<ArgumentNullException>(
+                "generator",
+                () => builder.Build(dn, null, 0, now.AddMinutes(5), HashAlgorithmName.SHA256, null));
+
+            Assert.Throws<ArgumentNullException>(
+                "generator",
+                () => builder.Build(dn, null, 0, now.AddMinutes(5), now, HashAlgorithmName.SHA256, null));
+        }
+
+        [Fact]
+        public static void BuildWithGeneratorNullAkid()
+        {
+            CertificateRevocationListBuilder builder = new CertificateRevocationListBuilder();
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+            X500DistinguishedName dn = new X500DistinguishedName("CN=Name");
+
+            using (RSA rsa = RSA.Create(TestData.RsaBigExponentParams))
+            {
+                X509SignatureGenerator gen = X509SignatureGenerator.CreateForRSA(rsa, RSASignaturePadding.Pkcs1);
+
+                Assert.Throws<ArgumentNullException>(
+                    "akid",
+                    () => builder.Build(dn, gen, 0, now.AddMinutes(5), HashAlgorithmName.SHA256, null));
+
+                Assert.Throws<ArgumentNullException>(
+                    "akid",
+                    () => builder.Build(dn, gen, 0, now.AddMinutes(5), now, HashAlgorithmName.SHA256, null));
+            }
+        }
+
+        [Fact]
+        public static void BuildWithRSACertificateAndNoPadding()
+        {
+            using (RSA key = RSA.Create(TestData.RsaBigExponentParams))
+            {
+                CertificateRequest req = new CertificateRequest(
+                    "CN=RSA Test",
+                    key,
+                    HashAlgorithmName.SHA256,
+                    RSASignaturePadding.Pkcs1);
+
+                req.CertificateExtensions.Add(new X509SubjectKeyIdentifierExtension(req.PublicKey, false));
+                req.CertificateExtensions.Add(X509BasicConstraintsExtension.CreateForCertificateAuthority());
+
+                DateTimeOffset now = DateTimeOffset.UtcNow;
+
+                using (X509Certificate2 cert = req.CreateSelfSigned(now.AddMonths(-1), now.AddMonths(1)))
+                {
+                    CertificateRevocationListBuilder builder = new CertificateRevocationListBuilder();
+                    ArgumentException e;
+
+                    e = Assert.Throws<ArgumentException>(
+                        () => builder.Build(cert, 0, now.AddMinutes(5), HashAlgorithmName.SHA256));
+
+                    Assert.Null(e.ParamName);
+                    Assert.Contains(nameof(RSASignaturePadding), e.Message);
+
+                    e = Assert.Throws<ArgumentException>(
+                        () => builder.Build(cert, 0, now.AddMinutes(5), now, HashAlgorithmName.SHA256));
+
+                    Assert.Null(e.ParamName);
+                    Assert.Contains(nameof(RSASignaturePadding), e.Message);
+                }
+            }
+        }
+
         private static void BuildCertificateAndRun(
             IEnumerable<X509Extension> extensions,
             Action<X509Certificate2, DateTimeOffset> action,
@@ -131,6 +420,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     $"CN=\"{callerName}\"",
                     key,
                     HashAlgorithmName.SHA384);
+
+                req.CertificateExtensions.Add(new X509SubjectKeyIdentifierExtension(req.PublicKey, false));
 
                 foreach (X509Extension ext in extensions)
                 {

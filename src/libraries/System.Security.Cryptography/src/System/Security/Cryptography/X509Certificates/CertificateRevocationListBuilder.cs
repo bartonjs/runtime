@@ -306,7 +306,7 @@ namespace System.Security.Cryptography.X509Certificates
                     case Oids.Rsa:
                         if (rsaSignaturePadding is null)
                         {
-                            throw new InvalidOperationException(
+                            throw new ArgumentException(
                                 "The issuer certificate uses an RSA key, but no RSASignaturePadding value was provided.");
                         }
 
@@ -334,7 +334,7 @@ namespace System.Security.Cryptography.X509Certificates
                 else
                 {
                     akid = X509AuthorityKeyIdentifierExtension.CreateFromIssuerNameAndSerialNumber(
-                        issuerCertificate.SubjectName,
+                        issuerCertificate.IssuerName,
                         issuerCertificate.SerialNumberBytes.Span);
                 }
 
