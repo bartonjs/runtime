@@ -238,6 +238,7 @@ namespace System.Security.Cryptography.X509Certificates
                 writer.WriteOctetString(keyIdentifier, new Asn1Tag(TagClass.ContextSpecific, 0));
 
                 using (writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 1)))
+                using (writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 4)))
                 {
                     writer.WriteEncodedValue(issuerName.RawData);
                 }
@@ -329,10 +330,10 @@ namespace System.Security.Cryptography.X509Certificates
 
                 if (nextTag.HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 1)))
                 {
-                    byte[] rawIssuer = aki.ReadOctetString(nextTag);
+                    byte[] rawIssuer = aki.PeekEncodedValue().ToArray();
                     _rawIssuer = rawIssuer;
 
-                    AsnValueReader generalNames = new AsnValueReader(rawIssuer, AsnEncodingRules.DER);
+                    AsnValueReader generalNames = aki.ReadSequence(nextTag);
                     bool foundIssuer = false;
 
                     // Walk all of the entities to make sure they decode legally, so no early abort.
