@@ -659,6 +659,38 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
             Assert.Equal(expected, ext.RawData);
         }
+
+        [Fact]
+        public static void UnsupportedRevocationReasons()
+        {
+            CertificateRevocationListBuilder builder = new CertificateRevocationListBuilder();
+            byte[] serial = { 1, 2, 3 };
+            const string ParamName = "reason";
+
+            Assert.Throws<ArgumentOutOfRangeException>(
+                ParamName,
+                () => builder.AddEntry(serial, reason: (X509RevocationReason)(-1)));
+
+            Assert.Throws<ArgumentOutOfRangeException>(
+                ParamName,
+                () => builder.AddEntry(serial, reason: (X509RevocationReason)(-2)));
+
+            Assert.Throws<ArgumentOutOfRangeException>(
+                ParamName,
+                () => builder.AddEntry(serial, reason: (X509RevocationReason)7));
+
+            Assert.Throws<ArgumentOutOfRangeException>(
+                ParamName,
+                () => builder.AddEntry(serial, reason: (X509RevocationReason)12));
+
+            Assert.Throws<ArgumentOutOfRangeException>(
+                ParamName,
+                () => builder.AddEntry(serial, reason: X509RevocationReason.AACompromise));
+
+            Assert.Throws<ArgumentOutOfRangeException>(
+                ParamName,
+                () => builder.AddEntry(serial, reason: X509RevocationReason.RemoveFromCrl));
+        }
         
         private static void BuildCertificateAndRun(
             IEnumerable<X509Extension> extensions,
