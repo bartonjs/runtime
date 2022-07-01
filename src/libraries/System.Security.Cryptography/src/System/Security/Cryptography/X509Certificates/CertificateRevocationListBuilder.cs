@@ -73,6 +73,25 @@ namespace System.Security.Cryptography.X509Certificates
             _revoked.RemoveAll(rc => rc.RevocationTime < oldestRevocationTimeToKeep);
         }
 
+        public void RemoveEntry(byte[] serialNumber)
+        {
+            ArgumentNullException.ThrowIfNull(serialNumber);
+
+            RemoveEntry(new ReadOnlySpan<byte>(serialNumber));
+        }
+
+        public void RemoveEntry(ReadOnlySpan<byte> serialNumber)
+        {
+            for (int i = _revoked.Count - 1; i >= 0; i--)
+            {
+                if (serialNumber.SequenceEqual(_revoked[i].Serial))
+                {
+                    _revoked.RemoveAt(i);
+                    return;
+                }
+            }
+        }
+
         private static DateTimeOffset ReadX509Time(ref AsnValueReader reader)
         {
             if (reader.PeekTag().HasSameClassAndValue(Asn1Tag.UtcTime))

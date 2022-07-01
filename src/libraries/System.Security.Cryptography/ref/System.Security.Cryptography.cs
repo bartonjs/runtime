@@ -2466,6 +2466,8 @@ namespace System.Security.Cryptography.X509Certificates
         public static System.Security.Cryptography.X509Certificates.CertificateRevocationListBuilder Load(System.ReadOnlySpan<byte> currentCrl, out System.Numerics.BigInteger currentCrlNumber, out int bytesConsumed) { throw null; }
         public static System.Security.Cryptography.X509Certificates.CertificateRevocationListBuilder LoadPem(System.ReadOnlySpan<char> currentCrl, out System.Numerics.BigInteger currentCrlNumber) { throw null; }
         public static System.Security.Cryptography.X509Certificates.CertificateRevocationListBuilder LoadPem(string currentCrl, out System.Numerics.BigInteger currentCrlNumber) { throw null; }
+        public void RemoveEntry(byte[] serialNumber) { }
+        public void RemoveEntry(System.ReadOnlySpan<byte> serialNumber) { }
     }
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]

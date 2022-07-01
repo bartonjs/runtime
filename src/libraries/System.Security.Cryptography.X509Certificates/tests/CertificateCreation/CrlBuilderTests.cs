@@ -547,6 +547,58 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         }
 
         [Fact]
+        public static void AddTwiceRemoveOnce()
+        {
+            BuildRsaCertificateAndRun(
+                new X509Extension[]
+                {
+                    X509BasicConstraintsExtension.CreateForCertificateAuthority(),
+                },
+                static (cert, notNow) =>
+                {
+                    HashAlgorithmName hashAlg = HashAlgorithmName.SHA256;
+                    RSASignaturePadding pad = RSASignaturePadding.Pkcs1;
+                    DateTimeOffset now = new DateTimeOffset(2013, 4, 6, 7, 58, 9, TimeSpan.Zero);
+                    CertificateRevocationListBuilder builder = new CertificateRevocationListBuilder();
+                    ReadOnlySpan<byte> serial = new byte[] { 0x01, 0x01, 0x02, 0x03, 0x05, 0x08, 0x0C, 0x15 };
+
+                    builder.AddEntry(serial, now.AddSeconds(-1812));
+
+                    // This entry will have a revocation time based on DateTimeOffset.UtcNow, so it's unpredictable.
+                    // But, that's OK, because we're going to remove it.
+                    builder.AddEntry(serial);
+
+                    // Remove only the last one.
+                    builder.RemoveEntry(serial);
+
+                    byte[] explicitUpdateTime = builder.Build(cert, 123, now.AddMinutes(5), now, hashAlg, pad);
+
+                    // The length of the output depends on a number of factors, but they're all stable
+                    // for this test (since it doesn't use ECDSA's variable-length, non-deterministic, signature)
+                    //
+                    // In fact, because RSASSA-PKCS1 is a deterministic algorithm, we can check it for a fixed output.
+
+                    byte[] expected = (
+                        "308201B430819D020101300D06092A864886F70D01010B0500301D311B301906" +
+                        "035504031312416464547769636552656D6F76654F6E6365170D313330343036" +
+                        "3037353830395A170D3133303430363038303330395A301B3019020801010203" +
+                        "05080C15170D3133303430363037323735375AA02F302D301F0603551D230418" +
+                        "3016801478A5C75D51667331D5A96924114C9B5FA00D7BCB300A0603551D1404" +
+                        "0302017B300D06092A864886F70D01010B050003820101005B959102271A96F4" +
+                        "4EF37B6C7D1BC566875C6CB2B45B5F32CE474155890047EAD9CF74A97E89CA4B" +
+                        "2139417167B0EDC537300A5271F399820E1D2B326DF85FD4F3249B4D0AE0B067" +
+                        "5662986E44E2041E1DADC4A3F557FFE6E50DB12E12BE5A6734BD3EBD537D348D" +
+                        "DD454C2310AEFC586722730252AA63F20CCF8E5127E5A2E5FDD0F16E1296E831" +
+                        "03730D6ACA32584D33DC51B6075000507A808EDC012C982BF9969970C115D0BB" +
+                        "BEDB56089C5E3A51FD1E6180088BDEC343976E42BE4F04798E19B043D5295E1D" +
+                        "A9C0371F6E62CED8626E65804E13A9D28D5A9458AAE6DEC3E06B43E236EDEA55" +
+                        "6AAA7E7A32930C2E8289D62E1CBF7AFAB632FF260B1B49F9").HexToByteArray();
+
+                    AssertExtensions.SequenceEqual(expected, explicitUpdateTime);
+                });
+        }
+
+        [Fact]
         public static void BuildSimpleCdp()
         {
             X509Extension ext = CertificateRevocationListBuilder.BuildCrlDistributionPointExtension(
