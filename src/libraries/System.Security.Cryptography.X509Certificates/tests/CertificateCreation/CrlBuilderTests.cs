@@ -547,6 +547,54 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         }
 
         [Fact]
+        public static void BuildSingleEntryWithReason()
+        {
+            BuildRsaCertificateAndRun(
+                new X509Extension[]
+                {
+                    X509BasicConstraintsExtension.CreateForCertificateAuthority(),
+                },
+                static (cert, notNow) =>
+                {
+                    HashAlgorithmName hashAlg = HashAlgorithmName.SHA256;
+                    RSASignaturePadding pad = RSASignaturePadding.Pkcs1;
+                    DateTimeOffset now = new DateTimeOffset(2013, 4, 6, 7, 58, 9, TimeSpan.Zero);
+                    CertificateRevocationListBuilder builder = new CertificateRevocationListBuilder();
+
+                    builder.AddEntry(
+                        stackalloc byte[] { 0x01, 0x01, 0x02, 0x03, 0x05, 0x08, 0x0C, 0x15 },
+                        now.AddSeconds(-1812),
+                        X509RevocationReason.KeyCompromise);
+
+                    byte[] explicitUpdateTime = builder.Build(cert, 123, now.AddMinutes(5), now, hashAlg, pad);
+
+                    // The length of the output depends on a number of factors, but they're all stable
+                    // for this test (since it doesn't use ECDSA's variable-length, non-deterministic, signature)
+                    //
+                    // In fact, because RSASSA-PKCS1 is a deterministic algorithm, we can check it for a fixed output.
+
+                    byte[] expected = (
+                        "308201CA3081B3020101300D06092A864886F70D01010B050030253123302106" +
+                        "03550403131A4275696C6453696E676C65456E74727957697468526561736F6E" +
+                        "170D3133303430363037353830395A170D3133303430363038303330395A3029" +
+                        "302702080101020305080C15170D3133303430363037323735375A300C300A06" +
+                        "03551D1504030A0101A02F302D301F0603551D2304183016801478A5C75D5166" +
+                        "7331D5A96924114C9B5FA00D7BCB300A0603551D14040302017B300D06092A86" +
+                        "4886F70D01010B0500038201010055283C97666765D19AABFFDAA36112781957" +
+                        "1FCA3CE68AA00DAFDFF784F8F34D0EFF4EC8659A26A254DDDC9BBD7D664E0160" +
+                        "4D3696209B5A4B0FFF57102BC8AA17FED0D33AD3452BE5E22269E78BB4084698" +
+                        "28E2814EA8E6B8003EBB7AC727DAD912580F941C6D2616195C083218F997D682" +
+                        "966CC6EEB810B815ABA991135469E2CD2915EE7C0FCB387C0B6169E0F1F2CFD8" +
+                        "2274D134DB2C27826E04138FF8C7AB4B8678AF53C3904C09F1F9589D5325E5D4" +
+                        "3F2A7F2EF81BD19DE5362181B9E0603DE98F664F98A6599A3BFB9AAFA2DC3491" +
+                        "9305B8812BC11BFA06C6550A257396766B750D10B6C6BEA7A193E4D3F4C2FEFD" +
+                        "FC2B875D1A2BFDB849EBBCFC767B").HexToByteArray();
+
+                    AssertExtensions.SequenceEqual(expected, explicitUpdateTime);
+                });
+        }
+
+        [Fact]
         public static void AddTwiceRemoveOnce()
         {
             BuildRsaCertificateAndRun(

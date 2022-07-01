@@ -201,10 +201,7 @@ namespace System.Security.Cryptography.X509Certificates
 
                                 if (revoked.Extensions is not null)
                                 {
-                                    using (writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 0)))
-                                    {
-                                        writer.WriteEncodedValue(revoked.Extensions);
-                                    }
+                                    writer.WriteEncodedValue(revoked.Extensions);
                                 }
                             }
                         }

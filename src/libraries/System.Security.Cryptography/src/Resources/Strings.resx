@@ -264,6 +264,9 @@
   <data name="Cryptography_CRLBuilder_IssuerKeyUsageInvalid" xml:space="preserve">
     <value>The issuer certificate's Key Usage extension is present but does not contain the CrlSign flag.</value>
   </data>
+  <data name="Cryptography_CRLBuilder_ReasonNotSupported" xml:space="preserve">
+    <value>The specified revocation reason is not supported.</value>
+  </data>
   <data name="Cryptography_CryptoStream_FlushFinalBlockTwice" xml:space="preserve">
     <value>FlushFinalBlock() method was called twice on a CryptoStream. It can only be called once.</value>
   </data>

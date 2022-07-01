@@ -26,45 +26,88 @@ namespace System.Security.Cryptography.X509Certificates
             _revoked = revoked;
         }
 
-        public void AddEntry(X509Certificate2 certificate)
-        {
-            AddEntry(certificate, DateTimeOffset.UtcNow);
-        }
-
-        public void AddEntry(X509Certificate2 certificate, DateTimeOffset revocationTime)
+        public void AddEntry(
+            X509Certificate2 certificate,
+            DateTimeOffset? revocationTime = null,
+            X509RevocationReason? reason = null)
         {
             ArgumentNullException.ThrowIfNull(certificate);
 
-            AddEntry(certificate.SerialNumberBytes.Span, revocationTime);
+            AddEntry(certificate.SerialNumberBytes.Span, revocationTime, reason);
         }
 
-        public void AddEntry(byte[] serialNumber)
-        {
-            AddEntry(serialNumber, DateTimeOffset.UtcNow);
-        }
-
-        public void AddEntry(byte[] serialNumber, DateTimeOffset revocationTime)
+        public void AddEntry(
+            byte[] serialNumber,
+            DateTimeOffset? revocationTime = null,
+            X509RevocationReason? reason = null)
         {
             ArgumentNullException.ThrowIfNull(serialNumber);
 
-            AddEntry(new ReadOnlySpan<byte>(serialNumber), revocationTime);
+            AddEntry(new ReadOnlySpan<byte>(serialNumber), revocationTime, reason);
         }
 
-        public void AddEntry(ReadOnlySpan<byte> serialNumber)
-        {
-            AddEntry(serialNumber, DateTimeOffset.UtcNow);
-        }
-
-        public void AddEntry(ReadOnlySpan<byte> serialNumber, DateTimeOffset revocationTime)
+        public void AddEntry(
+            ReadOnlySpan<byte> serialNumber,
+            DateTimeOffset? revocationTime = null,
+            X509RevocationReason? reason = null)
         {
             if (serialNumber.IsEmpty)
                 throw new ArgumentException(SR.Arg_EmptyOrNullArray, nameof(serialNumber));
+
+            byte[]? extensions = null;
+
+            if (reason.HasValue)
+            {
+                X509RevocationReason reasonValue = reason.GetValueOrDefault();
+
+                switch (reasonValue)
+                {
+                    case X509RevocationReason.Unspecified:
+                    case X509RevocationReason.KeyCompromise:
+                    case X509RevocationReason.CACompromise:
+                    case X509RevocationReason.AffiliationChanged:
+                    case X509RevocationReason.Superseded:
+                    case X509RevocationReason.CessationOfOperation:
+                    case X509RevocationReason.CertificateHold:
+                    case X509RevocationReason.PrivilegeWithdrawn:
+                    case X509RevocationReason.WeakAlgorithmOrKey:
+                        break;
+                    default:
+                        // Includes RemoveFromCrl (no delta CRL support)
+                        // Includes AaCompromise (no support for attribute certificates)
+                        throw new ArgumentOutOfRangeException(
+                            nameof(reason),
+                            reasonValue,
+                            SR.Cryptography_CRLBuilder_ReasonNotSupported);
+                }
+
+                AsnWriter writer = (_writer ??= new AsnWriter(AsnEncodingRules.DER));
+                writer.Reset();
+
+                // SEQUENCE OF Extension
+                using (writer.PushSequence())
+                {
+                    // Extension
+                    using (writer.PushSequence())
+                    {
+                        writer.WriteObjectIdentifier(Oids.CrlReasons);
+
+                        using (writer.PushOctetString())
+                        {
+                            writer.WriteEnumeratedValue(reasonValue);
+                        }
+                    }
+                }
+
+                extensions = writer.Encode();
+            }
 
             _revoked.Add(
                 new RevokedCertificate
                 {
                     Serial = serialNumber.ToArray(),
-                    RevocationTime = revocationTime.ToUniversalTime(),
+                    RevocationTime = (revocationTime ?? DateTimeOffset.UtcNow).ToUniversalTime(),
+                    Extensions = extensions,
                 });
         }
 
@@ -149,16 +192,12 @@ namespace System.Security.Cryptography.X509Certificates
 
                 if (version > 0 && revokedCertificate.HasData)
                 {
-                    AsnValueReader crlExtensionsExplicit =
-                        revokedCertificate.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
-
-                    if (!crlExtensionsExplicit.PeekTag().HasSameClassAndValue(Asn1Tag.Sequence))
+                    if (!revokedCertificate.PeekTag().HasSameClassAndValue(Asn1Tag.Sequence))
                     {
                         throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                     }
 
-                    Extensions = crlExtensionsExplicit.ReadEncodedValue().ToArray();
-                    crlExtensionsExplicit.ThrowIfNotEmpty();
+                    Extensions = revokedCertificate.ReadEncodedValue().ToArray();
                 }
 
                 revokedCertificate.ThrowIfNotEmpty();

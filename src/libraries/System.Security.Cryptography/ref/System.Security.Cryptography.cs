@@ -2450,12 +2450,9 @@ namespace System.Security.Cryptography.X509Certificates
     public sealed partial class CertificateRevocationListBuilder
     {
         public CertificateRevocationListBuilder() { }
-        public void AddEntry(byte[] serialNumber) { }
-        public void AddEntry(byte[] serialNumber, System.DateTimeOffset revocationTime) { }
-        public void AddEntry(System.ReadOnlySpan<byte> serialNumber) { }
-        public void AddEntry(System.ReadOnlySpan<byte> serialNumber, System.DateTimeOffset revocationTime) { }
-        public void AddEntry(System.Security.Cryptography.X509Certificates.X509Certificate2 certificate) { }
-        public void AddEntry(System.Security.Cryptography.X509Certificates.X509Certificate2 certificate, System.DateTimeOffset revocationTime) { }
+        public void AddEntry(byte[] serialNumber, System.DateTimeOffset? revocationTime = default(System.DateTimeOffset?), System.Security.Cryptography.X509Certificates.X509RevocationReason? reason = default(System.Security.Cryptography.X509Certificates.X509RevocationReason?)) { }
+        public void AddEntry(System.ReadOnlySpan<byte> serialNumber, System.DateTimeOffset? revocationTime = default(System.DateTimeOffset?), System.Security.Cryptography.X509Certificates.X509RevocationReason? reason = default(System.Security.Cryptography.X509Certificates.X509RevocationReason?)) { }
+        public void AddEntry(System.Security.Cryptography.X509Certificates.X509Certificate2 certificate, System.DateTimeOffset? revocationTime = default(System.DateTimeOffset?), System.Security.Cryptography.X509Certificates.X509RevocationReason? reason = default(System.Security.Cryptography.X509Certificates.X509RevocationReason?)) { }
         public byte[] Build(System.Security.Cryptography.X509Certificates.X500DistinguishedName issuerName, System.Security.Cryptography.X509Certificates.X509SignatureGenerator generator, System.Numerics.BigInteger crlNumber, System.DateTimeOffset nextUpdate, System.DateTimeOffset thisUpdate, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.Security.Cryptography.X509Certificates.X509AuthorityKeyIdentifierExtension akid) { throw null; }
         public byte[] Build(System.Security.Cryptography.X509Certificates.X500DistinguishedName issuerName, System.Security.Cryptography.X509Certificates.X509SignatureGenerator generator, System.Numerics.BigInteger crlNumber, System.DateTimeOffset nextUpdate, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.Security.Cryptography.X509Certificates.X509AuthorityKeyIdentifierExtension akid) { throw null; }
         public byte[] Build(System.Security.Cryptography.X509Certificates.X509Certificate2 issuerCertificate, System.Numerics.BigInteger crlNumber, System.DateTimeOffset nextUpdate, System.DateTimeOffset thisUpdate, System.Security.Cryptography.HashAlgorithmName hashAlgorithm, System.Security.Cryptography.RSASignaturePadding? rsaSignaturePadding = null) { throw null; }
@@ -3149,6 +3146,20 @@ namespace System.Security.Cryptography.X509Certificates
         NoCheck = 0,
         Online = 1,
         Offline = 2,
+    }
+    public enum X509RevocationReason
+    {
+        Unspecified = 0,
+        KeyCompromise = 1,
+        CACompromise = 2,
+        AffiliationChanged = 3,
+        Superseded = 4,
+        CessationOfOperation = 5,
+        CertificateHold = 6,
+        RemoveFromCrl = 8,
+        PrivilegeWithdrawn = 9,
+        AACompromise = 10,
+        WeakAlgorithmOrKey = 11,
     }
     public abstract partial class X509SignatureGenerator
     {
