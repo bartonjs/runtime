@@ -222,7 +222,7 @@ namespace System.Security.Cryptography.X509Certificates
             X500DistinguishedName subjectName,
             PublicKey publicKey,
             HashAlgorithmName hashAlgorithm,
-            RSASignaturePadding? rsaSignaturePadding)
+            RSASignaturePadding? rsaSignaturePadding = default)
         {
             ArgumentNullException.ThrowIfNull(subjectName);
             ArgumentNullException.ThrowIfNull(publicKey);

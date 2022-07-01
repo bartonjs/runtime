@@ -569,7 +569,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     builder.AddEntry(serial);
 
                     // Remove only the last one.
-                    builder.RemoveEntry(serial);
+                    Assert.True(builder.RemoveEntry(serial), "builder.RemoveEntry(serial)");
 
                     byte[] explicitUpdateTime = builder.Build(cert, 123, now.AddMinutes(5), now, hashAlg, pad);
 
