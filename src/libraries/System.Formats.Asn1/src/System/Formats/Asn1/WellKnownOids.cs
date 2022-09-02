@@ -312,7 +312,7 @@ namespace System.Formats.Asn1
             };
         }
 
-        internal static ReadOnlySpan<byte> GetContents(string value)
+        internal static ReadOnlySpan<byte> GetContents(ReadOnlySpan<char> value)
         {
             return value switch
             {
