@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers.Binary;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Numerics;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -53,9 +55,124 @@ namespace System.Formats.Asn1
             out int bytesConsumed,
             Asn1Tag? expectedTag = null)
         {
-            // TODO: Inline this call when it won't cause a PR/diff problem.
-            return ReadObjectIdentifier(source, ruleSet, expectedTag, out bytesConsumed);
+            // T-REC-X.690-201508 sec 8.19.1
+            ReadOnlySpan<byte> contents = GetPrimitiveContentSpan(
+                source,
+                ruleSet,
+                expectedTag ?? Asn1Tag.ObjectIdentifier,
+                UniversalTagNumber.ObjectIdentifier,
+                out int consumed);
+
+#if NETCOREAPP
+            string? wellKnown = WellKnownOids.GetValue(contents);
+
+            if (wellKnown is not null)
+            {
+                bytesConsumed = consumed;
+                return wellKnown;
+            }
+#endif
+
+            string ret = ReadObjectIdentifier(contents);
+
+#if NETCOREAPP && DEBUG
+            lock (s_createCounts)
+            {
+                ref int count = ref CollectionsMarshal.GetValueRefOrAddDefault(s_createCounts, ret, out _);
+                count++;
+
+                if (ret == "!!1.2.840.113549.1.16.12.12")
+                {
+                    ref int count2 = ref CollectionsMarshal.GetValueRefOrAddDefault(
+                        s_stackCounts,
+                        Environment.StackTrace,
+                        out _);
+
+                    count2++;
+                }
+            }
+#endif
+            bytesConsumed = consumed;
+            return ret;
         }
+
+#if DEBUG
+        private static readonly Dictionary<string, int> s_createCounts =
+            new Dictionary<string, int>(StringComparer.Ordinal);
+
+        private static readonly Dictionary<string, int> s_stackCounts =
+            new Dictionary<string, int>(StringComparer.Ordinal);
+
+        static AsnDecoder()
+        {
+            AppDomain.CurrentDomain.ProcessExit += CurrentDomain_DomainUnload;
+        }
+
+        private static void CurrentDomain_DomainUnload(object? sender, EventArgs e)
+        {
+            KeyValuePair<string, int>[] data = new KeyValuePair<string, int>[s_createCounts.Count];
+            int i = 0;
+
+            foreach (var kvp in s_createCounts)
+            {
+                data[i] = kvp;
+                i++;
+            }
+
+            Array.Sort(data, KVPComparer.Instance);
+
+            Console.WriteLine($"OID: Allocation Count");
+
+            foreach (var kvp in data)
+            {
+                Console.WriteLine($"{kvp.Key}: {kvp.Value}");
+            }
+
+            Console.WriteLine();
+
+            data = new KeyValuePair<string, int>[s_stackCounts.Count];
+            i = 0;
+
+            foreach (var kvp in s_stackCounts)
+            {
+                data[i] = kvp;
+                i++;
+            }
+
+            Array.Sort(data, KVPComparer.Instance);
+
+            Console.WriteLine($"Call Count => Allocation Source");
+            i = 0;
+
+            foreach (var kvp in data)
+            {
+                if (i > 5)
+                {
+                    break;
+                }
+
+                Console.WriteLine($"{kvp.Value} => {kvp.Key}");
+                i++;
+            }
+        }
+
+        private sealed class KVPComparer : IComparer<KeyValuePair<string, int>>
+        {
+            public static readonly KVPComparer Instance = new KVPComparer();
+
+            public int Compare(KeyValuePair<string, int> x, KeyValuePair<string, int> y)
+            {
+                int valueComparison = y.Value.CompareTo(x.Value);
+
+                if (valueComparison != 0)
+                {
+                    return valueComparison;
+                }
+
+                return string.Compare(x.Key, y.Key, StringComparison.Ordinal);
+            }
+        }
+#endif
 
         private static void ReadSubIdentifier(
             ReadOnlySpan<byte> source,
@@ -172,20 +289,8 @@ namespace System.Formats.Asn1
             CryptoPool.Return(tmpBytes, bytesWritten);
         }
 
-        private static string ReadObjectIdentifier(
-            ReadOnlySpan<byte> source,
-            AsnEncodingRules ruleSet,
-            Asn1Tag? expectedTag,
-            out int totalBytesRead)
+        private static string ReadObjectIdentifier(ReadOnlySpan<byte> contents)
         {
-            // T-REC-X.690-201508 sec 8.19.1
-            ReadOnlySpan<byte> contents = GetPrimitiveContentSpan(
-                source,
-                ruleSet,
-                expectedTag ?? Asn1Tag.ObjectIdentifier,
-                UniversalTagNumber.ObjectIdentifier,
-                out int consumed);
-
             // T-REC-X.690-201508 sec 8.19.2 says the minimum length is 1
             if (contents.Length < 1)
             {
@@ -278,7 +383,6 @@ namespace System.Formats.Asn1
                 contents = contents.Slice(bytesRead);
             }
 
-            totalBytesRead = consumed;
             return builder.ToString();
         }
     }

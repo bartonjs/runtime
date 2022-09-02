@@ -53,8 +53,12 @@ System.Formats.Asn1.AsnWriter</PackageDescription>
     <Compile Include="System\Formats\Asn1\SetOfValueComparer.cs" />
     <Compile Include="System\Formats\Asn1\TagClass.cs" />
     <Compile Include="System\Formats\Asn1\UniversalTagNumber.cs" />
+    <Compile Include="System\Formats\Asn1\WellKnownOids.cs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Reference Include="System.Console" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Reference Include="System.Collections" />
     <Reference Include="System.Memory" />
@@ -62,6 +66,7 @@ System.Formats.Asn1.AsnWriter</PackageDescription>
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Runtime.Numerics" />
     <Reference Include="System.Text.Encoding.Extensions" />
+    <Reference Include="System.Threading" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
