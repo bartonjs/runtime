@@ -148,6 +148,8 @@ namespace System.Formats.Asn1
             new byte[] { 0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x06, 0x02, };
         private static ReadOnlySpan<byte> OCSP =>
             new byte[] { 0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x30, 0x01, };
+        private static ReadOnlySpan<byte> OcspNonce =>
+            new byte[] { 0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x30, 0x01, 0x02, };
         private static ReadOnlySpan<byte> CAIssuers =>
             new byte[] { 0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x30, 0x02, };
         private static ReadOnlySpan<byte> SHA1 =>
@@ -160,6 +162,8 @@ namespace System.Formats.Asn1
             new byte[] { 0x2B, 0x81, 0x04, 0x00, 0x23, };
         private static ReadOnlySpan<byte> CommonName =>
             new byte[] { 0x55, 0x04, 0x03, };
+        private static ReadOnlySpan<byte> SerialNumber =>
+            new byte[] { 0x55, 0x04, 0x05, };
         private static ReadOnlySpan<byte> CountryOrRegionName =>
             new byte[] { 0x55, 0x04, 0x06, };
         private static ReadOnlySpan<byte> Locality =>
@@ -172,18 +176,6 @@ namespace System.Formats.Asn1
             new byte[] { 0x55, 0x04, 0x0B, };
         private static ReadOnlySpan<byte> OrganizationIdentifier =>
             new byte[] { 0x55, 0x04, 0x61, };
-        private static ReadOnlySpan<byte> Aes128Cbc =>
-            new byte[] { 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x01, 0x02, };
-        private static ReadOnlySpan<byte> Aes192Cbc =>
-            new byte[] { 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x01, 0x16, };
-        private static ReadOnlySpan<byte> Aes256Cbc =>
-            new byte[] { 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x01, 0x2A, };
-        private static ReadOnlySpan<byte> Sha256 =>
-            new byte[] { 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01, };
-        private static ReadOnlySpan<byte> Sha384 =>
-            new byte[] { 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x02, };
-        private static ReadOnlySpan<byte> Sha512 =>
-            new byte[] { 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x03, };
         private static ReadOnlySpan<byte> SubjectKeyIdentifier =>
             new byte[] { 0x55, 0x1D, 0x0E, };
         private static ReadOnlySpan<byte> KeyUsage =>
@@ -196,6 +188,22 @@ namespace System.Formats.Asn1
             new byte[] { 0x55, 0x1D, 0x14, };
         private static ReadOnlySpan<byte> AuthorityKeyIdentifier =>
             new byte[] { 0x55, 0x1D, 0x23, };
+        private static ReadOnlySpan<byte> Aes128Cbc =>
+            new byte[] { 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x01, 0x02, };
+        private static ReadOnlySpan<byte> Aes192Cbc =>
+            new byte[] { 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x01, 0x16, };
+        private static ReadOnlySpan<byte> Aes256Cbc =>
+            new byte[] { 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x01, 0x2A, };
+        private static ReadOnlySpan<byte> Sha256 =>
+            new byte[] { 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01, };
+        private static ReadOnlySpan<byte> Sha384 =>
+            new byte[] { 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x02, };
+        private static ReadOnlySpan<byte> Sha512 =>
+            new byte[] { 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x03, };
+        private static ReadOnlySpan<byte> CabForumDV =>
+            new byte[] { 0x67, 0x81, 0x0C, 0x01, 0x02, 0x01, };
+        private static ReadOnlySpan<byte> CabForumOV =>
+            new byte[] { 0x67, 0x81, 0x0C, 0x01, 0x02, 0x02, };
 
         internal static string? GetValue(ReadOnlySpan<byte> contents)
         {
@@ -272,30 +280,34 @@ namespace System.Formats.Asn1
                 [ 0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x03, 0x09, ] => "1.3.6.1.5.5.7.3.9",
                 [ 0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x06, 0x02, ] => "1.3.6.1.5.5.7.6.2",
                 [ 0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x30, 0x01, ] => "1.3.6.1.5.5.7.48.1",
+                [ 0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x30, 0x01, 0x02, ] => "1.3.6.1.5.5.7.48.1.2",
                 [ 0x2B, 0x06, 0x01, 0x05, 0x05, 0x07, 0x30, 0x02, ] => "1.3.6.1.5.5.7.48.2",
                 [ 0x2B, 0x0E, 0x03, 0x02, 0x1A, ] => "1.3.14.3.2.26",
                 [ 0x2B, 0x0E, 0x03, 0x02, 0x07, ] => "1.3.14.3.2.7",
                 [ 0x2B, 0x81, 0x04, 0x00, 0x22, ] => "1.3.132.0.34",
                 [ 0x2B, 0x81, 0x04, 0x00, 0x23, ] => "1.3.132.0.35",
                 [ 0x55, 0x04, 0x03, ] => "2.5.4.3",
+                [ 0x55, 0x04, 0x05, ] => "2.5.4.5",
                 [ 0x55, 0x04, 0x06, ] => "2.5.4.6",
                 [ 0x55, 0x04, 0x07, ] => "2.5.4.7",
                 [ 0x55, 0x04, 0x08, ] => "2.5.4.8",
                 [ 0x55, 0x04, 0x0A, ] => "2.5.4.10",
                 [ 0x55, 0x04, 0x0B, ] => "2.5.4.11",
                 [ 0x55, 0x04, 0x61, ] => "2.5.4.97",
-                [ 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x01, 0x02, ] => "2.16.840.1.101.3.4.1.2",
-                [ 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x01, 0x16, ] => "2.16.840.1.101.3.4.1.22",
-                [ 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x01, 0x2A, ] => "2.16.840.1.101.3.4.1.42",
-                [ 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01, ] => "2.16.840.1.101.3.4.2.1",
-                [ 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x02, ] => "2.16.840.1.101.3.4.2.2",
-                [ 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x03, ] => "2.16.840.1.101.3.4.2.3",
                 [ 0x55, 0x1D, 0x0E, ] => "2.5.29.14",
                 [ 0x55, 0x1D, 0x0F, ] => "2.5.29.15",
                 [ 0x55, 0x1D, 0x11, ] => "2.5.29.17",
                 [ 0x55, 0x1D, 0x13, ] => "2.5.29.19",
                 [ 0x55, 0x1D, 0x14, ] => "2.5.29.20",
                 [ 0x55, 0x1D, 0x23, ] => "2.5.29.35",
+                [ 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x01, 0x02, ] => "2.16.840.1.101.3.4.1.2",
+                [ 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x01, 0x16, ] => "2.16.840.1.101.3.4.1.22",
+                [ 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x01, 0x2A, ] => "2.16.840.1.101.3.4.1.42",
+                [ 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01, ] => "2.16.840.1.101.3.4.2.1",
+                [ 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x02, ] => "2.16.840.1.101.3.4.2.2",
+                [ 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x03, ] => "2.16.840.1.101.3.4.2.3",
+                [ 0x67, 0x81, 0x0C, 0x01, 0x02, 0x01, ] => "2.23.140.1.2.1",
+                [ 0x67, 0x81, 0x0C, 0x01, 0x02, 0x02, ] => "2.23.140.1.2.2",
                _ => null,
             };
         }
@@ -375,30 +387,34 @@ namespace System.Formats.Asn1
                 "1.3.6.1.5.5.7.3.9" => KeyPurposeOcspSigner,
                 "1.3.6.1.5.5.7.6.2" => Pkcs7NoSignature,
                 "1.3.6.1.5.5.7.48.1" => OCSP,
+                "1.3.6.1.5.5.7.48.1.2" => OcspNonce,
                 "1.3.6.1.5.5.7.48.2" => CAIssuers,
                 "1.3.14.3.2.26" => SHA1,
                 "1.3.14.3.2.7" => DES,
                 "1.3.132.0.34" => Secp384r1,
                 "1.3.132.0.35" => Secp521r1,
                 "2.5.4.3" => CommonName,
+                "2.5.4.5" => SerialNumber,
                 "2.5.4.6" => CountryOrRegionName,
                 "2.5.4.7" => Locality,
                 "2.5.4.8" => StateOrProvinceName,
                 "2.5.4.10" => OrganizationName,
                 "2.5.4.11" => OrganizationalUnit,
                 "2.5.4.97" => OrganizationIdentifier,
-                "2.16.840.1.101.3.4.1.2" => Aes128Cbc,
-                "2.16.840.1.101.3.4.1.22" => Aes192Cbc,
-                "2.16.840.1.101.3.4.1.42" => Aes256Cbc,
-                "2.16.840.1.101.3.4.2.1" => Sha256,
-                "2.16.840.1.101.3.4.2.2" => Sha384,
-                "2.16.840.1.101.3.4.2.3" => Sha512,
                 "2.5.29.14" => SubjectKeyIdentifier,
                 "2.5.29.15" => KeyUsage,
                 "2.5.29.17" => SubjectAlternativeName,
                 "2.5.29.19" => BasicConstraints,
                 "2.5.29.20" => CrlNumber,
                 "2.5.29.35" => AuthorityKeyIdentifier,
+                "2.16.840.1.101.3.4.1.2" => Aes128Cbc,
+                "2.16.840.1.101.3.4.1.22" => Aes192Cbc,
+                "2.16.840.1.101.3.4.1.42" => Aes256Cbc,
+                "2.16.840.1.101.3.4.2.1" => Sha256,
+                "2.16.840.1.101.3.4.2.2" => Sha384,
+                "2.16.840.1.101.3.4.2.3" => Sha512,
+                "2.23.140.1.2.1" => CabForumDV,
+                "2.23.140.1.2.2" => CabForumOV,
                 _ => ReadOnlySpan<byte>.Empty,
             };
         }
