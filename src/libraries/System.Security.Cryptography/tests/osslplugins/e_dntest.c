@@ -83,7 +83,6 @@ static int bind(ENGINE* engine, const char* id)
     if (ret != 1 ||
         !ENGINE_set_id(engine, g_engineId) ||
         !ENGINE_set_name(engine, g_engineName) ||
-        !ENGINE_set_RSA(engine, RSA_PKCS1_OpenSSL()) ||
         !ENGINE_set_load_privkey_function(engine, dntest_load_privkey) ||
         !ENGINE_set_load_pubkey_function(engine, dntest_load_pubkey))
     {
