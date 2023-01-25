@@ -7,11 +7,10 @@ static const char* g_engineName = "DotNet Test ENGINE";
 static const char* g_keyPath;
 static int g_keyPathLength;
 
-static EVP_PKEY* load_priv(BIO* file)
+static EVP_PKEY* load_priv(BIO* bio)
 {
     EVP_PKEY* ret = NULL;
-    PKCS8_PRIV_KEY_INFO* p8info = PEM_read_bio_PKCS8_PRIV_KEY_INFO(file, NULL, NULL, NULL);
-    BIO_free(file);
+    PKCS8_PRIV_KEY_INFO* p8info = PEM_read_bio_PKCS8_PRIV_KEY_INFO(bio, NULL, NULL, NULL);
 
     if (p8info != NULL)
     {
@@ -20,6 +19,11 @@ static EVP_PKEY* load_priv(BIO* file)
     }
 
     return ret;
+}
+
+static EVP_PKEY* load_pub(BIO* bio)
+{
+    return PEM_read_bio_PUBKEY(bio, NULL, NULL, NULL);
 }
 
 static EVP_PKEY* load_key(
@@ -42,11 +46,12 @@ static EVP_PKEY* load_key(
 
         strncat(path, keyId, sizeof(path) - 1);
 
-        BIO* file = BIO_new_file(path, "rb");
+        BIO* bio = BIO_new_file(path, "rb");
 
-        if (file != NULL)
+        if (bio != NULL)
         {
-            ret = load_func(file);
+            ret = load_func(bio);
+            BIO_free(bio);
         }
     }
 
@@ -62,6 +67,15 @@ static EVP_PKEY* dntest_load_privkey(
     return load_key(keyId, load_priv);
 }
 
+static EVP_PKEY* dntest_load_pubkey(
+    ENGINE* engine,
+    const char* keyId,
+    UI_METHOD* ui_method,
+    void* callback_data)
+{
+    return load_key(keyId, load_pub);
+}
+
 static int bind(ENGINE* engine, const char* id)
 {
     int ret = 1;
@@ -70,7 +84,8 @@ static int bind(ENGINE* engine, const char* id)
         !ENGINE_set_id(engine, g_engineId) ||
         !ENGINE_set_name(engine, g_engineName) ||
         !ENGINE_set_RSA(engine, RSA_PKCS1_OpenSSL()) ||
-        !ENGINE_set_load_privkey_function(engine, dntest_load_privkey))
+        !ENGINE_set_load_privkey_function(engine, dntest_load_privkey) ||
+        !ENGINE_set_load_pubkey_function(engine, dntest_load_pubkey))
     {
         ret = 0;
     }
