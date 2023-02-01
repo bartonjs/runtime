@@ -1,5 +1,9 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
 #include <string.h>
+
+#define OPENSSL_SUPPRESS_DEPRECATED
 #include <openssl/engine.h>
 
 static const char* g_engineId = "dntest";
@@ -30,6 +34,7 @@ static EVP_PKEY* load_key(
     const char* keyId,
     EVP_PKEY* (*load_func)(BIO* bio))
 {
+	printf("Key load request for '%s'\n", keyId);
     EVP_PKEY* ret = NULL;
 
     if (keyId != NULL && g_keyPathLength > 0 && g_keyPathLength < 250)
