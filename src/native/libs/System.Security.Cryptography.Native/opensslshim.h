@@ -44,6 +44,7 @@
 
 #if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_3_0_RTM
 #include <openssl/provider.h>
+#include <openssl/store.h>
 #endif
 
 #if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_1_1_1_RTM
@@ -434,7 +435,19 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     RENAMED_FUNCTION(OPENSSL_sk_push, sk_push) \
     RENAMED_FUNCTION(OPENSSL_sk_value, sk_value) \
     FALLBACK_FUNCTION(OpenSSL_version_num) \
+    LIGHTUP_FUNCTION(OSSL_LIB_CTX_free) \
+    LIGHTUP_FUNCTION(OSSL_LIB_CTX_new) \
+    LIGHTUP_FUNCTION(OSSL_PROVIDER_load) \
     LIGHTUP_FUNCTION(OSSL_PROVIDER_try_load) \
+    LIGHTUP_FUNCTION(OSSL_PROVIDER_unload) \
+    LIGHTUP_FUNCTION(OSSL_STORE_close) \
+    LIGHTUP_FUNCTION(OSSL_STORE_eof) \
+    LIGHTUP_FUNCTION(OSSL_STORE_INFO_free) \
+    LIGHTUP_FUNCTION(OSSL_STORE_INFO_get_type) \
+    LIGHTUP_FUNCTION(OSSL_STORE_INFO_get1_PKEY) \
+    LIGHTUP_FUNCTION(OSSL_STORE_INFO_get1_PUBKEY) \
+    LIGHTUP_FUNCTION(OSSL_STORE_load) \
+    LIGHTUP_FUNCTION(OSSL_STORE_open_ex) \
     REQUIRED_FUNCTION(PKCS8_PRIV_KEY_INFO_free) \
     REQUIRED_FUNCTION(PEM_read_bio_PKCS7) \
     REQUIRED_FUNCTION(PEM_read_bio_X509) \
@@ -922,7 +935,19 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define OPENSSL_sk_push OPENSSL_sk_push_ptr
 #define OPENSSL_sk_value OPENSSL_sk_value_ptr
 #define OpenSSL_version_num OpenSSL_version_num_ptr
+#define OSSL_LIB_CTX_free OSSL_LIB_CTX_free_ptr
+#define OSSL_LIB_CTX_new OSSL_LIB_CTX_new_ptr
+#define OSSL_PROVIDER_load OSSL_PROVIDER_load_ptr
 #define OSSL_PROVIDER_try_load OSSL_PROVIDER_try_load_ptr
+#define OSSL_PROVIDER_unload OSSL_PROVIDER_unload_ptr
+#define OSSL_STORE_close OSSL_STORE_close_ptr
+#define OSSL_STORE_eof OSSL_STORE_eof_ptr
+#define OSSL_STORE_INFO_free OSSL_STORE_INFO_free_ptr
+#define OSSL_STORE_INFO_get_type OSSL_STORE_INFO_get_type_ptr
+#define OSSL_STORE_INFO_get1_PKEY OSSL_STORE_INFO_get1_PKEY_ptr
+#define OSSL_STORE_INFO_get1_PUBKEY OSSL_STORE_INFO_get1_PUBKEY_ptr
+#define OSSL_STORE_load OSSL_STORE_load_ptr
+#define OSSL_STORE_open_ex OSSL_STORE_open_ex_ptr
 #define PKCS8_PRIV_KEY_INFO_free PKCS8_PRIV_KEY_INFO_free_ptr
 #define PEM_read_bio_PKCS7 PEM_read_bio_PKCS7_ptr
 #define PEM_read_bio_X509 PEM_read_bio_X509_ptr

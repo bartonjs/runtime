@@ -181,5 +181,13 @@ namespace System.Security.Cryptography
 
             return Interop.Crypto.LoadPublicKeyFromEngine(engineName, keyName);
         }
+
+        public static SafeEvpPKeyHandle OpenKeyFromProvider(string providerName, string keyUri)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(providerName);
+            ArgumentException.ThrowIfNullOrEmpty(keyUri);
+
+            return Interop.Crypto.LoadKeyFromProvider(providerName, keyUri);
+        }
     }
 }

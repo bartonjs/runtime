@@ -2,8 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include <assert.h>
-#include <openssl/engine.h>
 #include "pal_evp_pkey.h"
+
+#ifdef NEED_OPENSSL_3_0
+c_static_assert(OSSL_STORE_INFO_PKEY == 4);
+c_static_assert(OSSL_STORE_INFO_PUBKEY == 3);
+#endif
 
 EVP_PKEY* CryptoNative_EvpPkeyCreate(void)
 {
@@ -312,4 +316,106 @@ EVP_PKEY* CryptoNative_LoadPrivateKeyFromEngine(const char* engineName, const ch
 EVP_PKEY* CryptoNative_LoadPublicKeyFromEngine(const char* engineName, const char* keyName)
 {
     return LoadKeyFromEngine(engineName, keyName, ENGINE_load_public_key);
+}
+
+EVP_PKEY* CryptoNative_LoadKeyFromProvider(const char* providerName, const char* keyUri)
+{
+    ERR_clear_error();
+
+#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
+    if (!API_EXISTS(OSSL_PROVIDER_load))
+    {
+        ERR_put_error(ERR_LIB_NONE, 0, ERR_R_DISABLED, __FILE__, __LINE__);
+        return NULL;
+    }
+#endif
+
+#ifdef NEED_OPENSSL_3_0
+    EVP_PKEY* ret = NULL;
+
+    OSSL_LIB_CTX* libCtx = OSSL_LIB_CTX_new();
+    OSSL_PROVIDER* prov = NULL;
+    OSSL_STORE_CTX* store = NULL;
+    OSSL_STORE_INFO* firstPubKey = NULL;
+
+    if (libCtx == NULL)
+        goto end;
+
+    prov = OSSL_PROVIDER_load(libCtx, providerName);
+
+    if (prov == NULL)
+        goto end;
+
+    store = OSSL_STORE_open_ex(keyUri, libCtx, NULL, NULL, NULL, NULL, NULL, NULL);
+
+    if (store == NULL)
+        goto end;
+
+    // Quite similar to loading a single certificate from a PFX, if we find a private key that wins.
+    // Otherwise, the first public key wins.
+    // Otherwise, we'll push a keyload error
+    while (ret == NULL && !OSSL_STORE_eof(store))
+    {
+        OSSL_STORE_INFO* info = OSSL_STORE_load(store);
+
+        if (info == NULL)
+        {
+            continue;
+        }
+
+        int type = OSSL_STORE_INFO_get_type(info);
+
+        if (type == OSSL_STORE_INFO_PKEY)
+        {
+            ret = OSSL_STORE_INFO_get1_PKEY(info);
+        }
+        else if (type == OSSL_STORE_INFO_PUBKEY && firstPubKey == NULL)
+        {
+            firstPubKey = info;
+            // skip the free
+            continue;
+        }
+
+        OSSL_STORE_INFO_free(info);
+    }
+
+    if (ret == NULL && firstPubKey != NULL)
+    {
+        ret = OSSL_STORE_INFO_get1_PUBKEY(firstPubKey);
+    }
+
+    if (ret == NULL)
+    {
+        ERR_clear_error();
+        ERR_put_error(ERR_LIB_NONE, 0, EVP_R_NO_KEY_SET, __FILE__, __LINE__);
+    }
+
+end:
+    if (firstPubKey != NULL)
+    {
+        OSSL_STORE_INFO_free(firstPubKey);
+    }
+
+    if (store != NULL)
+    {
+        OSSL_STORE_close(store);
+    }
+
+    if (prov != NULL)
+    {
+        OSSL_PROVIDER_unload(prov);
+    }
+
+    if (libCtx != NULL)
+    {
+        OSSL_LIB_CTX_free(libCtx);
+    }
+
+    return ret;
+#else
+    (void)providerName;
+    (void)keyUri;
+    ERR_put_error(ERR_LIB_NONE, 0, ERR_R_DISABLED, __FILE__, __LINE__);
+    return NULL;
+#endif
 }

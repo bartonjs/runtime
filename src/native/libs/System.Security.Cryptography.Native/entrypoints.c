@@ -207,6 +207,7 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_HmacOneShot)
     DllImportEntry(CryptoNative_HmacReset)
     DllImportEntry(CryptoNative_HmacUpdate)
+    DllImportEntry(CryptoNative_LoadKeyFromProvider)
     DllImportEntry(CryptoNative_LoadPrivateKeyFromEngine)
     DllImportEntry(CryptoNative_LoadPublicKeyFromEngine)
     DllImportEntry(CryptoNative_LookupFriendlyNameByOid)

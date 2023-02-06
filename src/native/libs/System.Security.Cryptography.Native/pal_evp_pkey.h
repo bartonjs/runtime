@@ -102,3 +102,10 @@ Load a named key, via ENGINE_load_public_key, from the named engine.
 Returns a valid EVP_PKEY* on success, NULL on failure.
 */
 PALEXPORT EVP_PKEY* CryptoNative_LoadPublicKeyFromEngine(const char* engineName, const char* keyName);
+
+/*
+Load a key by URI from a specified OSSL_PROVIDER.
+
+Returns a valid EVP_PKEY* on success, NULL on failure.
+*/
+PALEXPORT EVP_PKEY* CryptoNative_LoadKeyFromProvider(const char* providerName, const char* keyUri);

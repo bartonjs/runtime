@@ -262,6 +262,26 @@ internal static partial class Interop
             return pkey;
         }
 
+        [LibraryImport(Libraries.CryptoNative, StringMarshalling = StringMarshalling.Utf8)]
+        private static partial SafeEvpPKeyHandle CryptoNative_LoadKeyFromProvider(
+            string providerName,
+            string keyUri);
+
+        internal static SafeEvpPKeyHandle LoadKeyFromProvider(
+            string providerName,
+            string keyUri)
+        {
+            SafeEvpPKeyHandle pkey = CryptoNative_LoadKeyFromProvider(providerName, keyUri);
+
+            if (pkey.IsInvalid)
+            {
+                pkey.Dispose();
+                throw CreateOpenSslCryptographicException();
+            }
+
+            return pkey;
+        }
+
         internal enum EvpAlgorithmId
         {
             Unknown = 0,
