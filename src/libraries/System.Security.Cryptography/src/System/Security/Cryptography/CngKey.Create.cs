@@ -40,9 +40,21 @@ namespace System.Security.Cryptography
 
             SafeNCryptProviderHandle providerHandle = creationParameters.Provider!.OpenStorageProvider();
             SafeNCryptKeyHandle? keyHandle = null;
+            IDisposable? tracker = null;
             try
             {
-                ErrorCode errorCode = Interop.NCrypt.NCryptCreatePersistedKey(providerHandle, out keyHandle, algorithm.Algorithm, keyName, 0, creationParameters.KeyCreationOptions);
+                if (!string.IsNullOrEmpty(keyName))
+                {
+                    tracker = KeyFileTracker.Track();
+                }
+
+                ErrorCode errorCode = Interop.NCrypt.NCryptCreatePersistedKey(
+                    providerHandle,
+                    out keyHandle,
+                    algorithm.Algorithm,
+                    keyName,
+                    0,
+                    creationParameters.KeyCreationOptions);
                 if (errorCode != ErrorCode.ERROR_SUCCESS)
                 {
                     // For ecc, the exception may be caught and re-thrown as PlatformNotSupportedException
@@ -73,6 +85,10 @@ namespace System.Security.Cryptography
                 keyHandle?.Dispose();
                 providerHandle.Dispose();
                 throw;
+            }
+            finally
+            {
+                tracker?.Dispose();
             }
         }
 
