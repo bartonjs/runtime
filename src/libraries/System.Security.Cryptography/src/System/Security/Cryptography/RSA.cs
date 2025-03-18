@@ -899,18 +899,12 @@ namespace System.Security.Cryptography
                     out _,
                     out int localRead);
 
-                fixed (byte* ptr = &MemoryMarshal.GetReference(source))
-                {
-                    using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, localRead))
-                    {
-                        AlgorithmIdentifierAsn ignored = default;
-                        RSAKeyFormatHelper.ReadRsaPublicKey(manager.Memory, ignored, out RSAParameters rsaParameters);
+                AlgorithmIdentifierAsn ignored = default;
+                RSAKeyFormatHelper.ReadRsaPublicKey(source.Slice(0, localRead), ignored, out RSAParameters rsaParameters);
 
-                        ImportParameters(rsaParameters);
+                ImportParameters(rsaParameters);
 
-                        bytesRead = localRead;
-                    }
-                }
+                bytesRead = localRead;
             }
             catch (AsnContentException e)
             {
@@ -929,36 +923,27 @@ namespace System.Security.Cryptography
                     out _,
                     out int firstValueLength);
 
-                fixed (byte* ptr = &MemoryMarshal.GetReference(source))
+                AlgorithmIdentifierAsn ignored = default;
+                RSAKeyFormatHelper.FromPkcs1PrivateKey(source.Slice(0, firstValueLength), ignored, out RSAParameters rsaParameters);
+
+                fixed (byte* dPin = rsaParameters.D)
+                fixed (byte* pPin = rsaParameters.P)
+                fixed (byte* qPin = rsaParameters.Q)
+                fixed (byte* dpPin = rsaParameters.DP)
+                fixed (byte* dqPin = rsaParameters.DQ)
+                fixed (byte* qInvPin = rsaParameters.InverseQ)
                 {
-                    using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, firstValueLength))
+                    try
                     {
-                        ReadOnlyMemory<byte> firstValue = manager.Memory;
-                        int localRead = firstValue.Length;
-
-                        AlgorithmIdentifierAsn ignored = default;
-                        RSAKeyFormatHelper.FromPkcs1PrivateKey(firstValue, ignored, out RSAParameters rsaParameters);
-
-                        fixed (byte* dPin = rsaParameters.D)
-                        fixed (byte* pPin = rsaParameters.P)
-                        fixed (byte* qPin = rsaParameters.Q)
-                        fixed (byte* dpPin = rsaParameters.DP)
-                        fixed (byte* dqPin = rsaParameters.DQ)
-                        fixed (byte* qInvPin = rsaParameters.InverseQ)
-                        {
-                            try
-                            {
-                                ImportParameters(rsaParameters);
-                            }
-                            finally
-                            {
-                                ClearPrivateParameters(rsaParameters);
-                            }
-                        }
-
-                        bytesRead = localRead;
+                        ImportParameters(rsaParameters);
+                    }
+                    finally
+                    {
+                        ClearPrivateParameters(rsaParameters);
                     }
                 }
+
+                bytesRead = firstValueLength;
             }
             catch (AsnContentException e)
             {

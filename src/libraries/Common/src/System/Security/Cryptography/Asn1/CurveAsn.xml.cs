@@ -9,11 +9,13 @@ using System.Runtime.InteropServices;
 namespace System.Security.Cryptography.Asn1
 {
     [StructLayout(LayoutKind.Sequential)]
-    internal partial struct CurveAsn
+    internal ref partial struct CurveAsn
     {
-        internal ReadOnlyMemory<byte> A;
-        internal ReadOnlyMemory<byte> B;
-        internal ReadOnlyMemory<byte>? Seed;
+        internal ReadOnlySpan<byte> A;
+        internal ReadOnlySpan<byte> B;
+        internal ReadOnlySpan<byte> Seed;
+        internal bool SeedSet;
+        internal readonly bool HasSeed => SeedSet || Seed.Length > 0;
 
         internal readonly void Encode(AsnWriter writer)
         {
@@ -24,27 +26,27 @@ namespace System.Security.Cryptography.Asn1
         {
             writer.PushSequence(tag);
 
-            writer.WriteOctetString(A.Span);
-            writer.WriteOctetString(B.Span);
+            writer.WriteOctetString(A);
+            writer.WriteOctetString(B);
 
-            if (Seed.HasValue)
+            if (HasSeed)
             {
-                writer.WriteBitString(Seed.Value.Span, 0);
+                writer.WriteBitString(Seed, 0);
             }
 
             writer.PopSequence(tag);
         }
 
-        internal static CurveAsn Decode(ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
+        internal static CurveAsn Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet)
         {
             return Decode(Asn1Tag.Sequence, encoded, ruleSet);
         }
 
-        internal static CurveAsn Decode(Asn1Tag expectedTag, ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
+        internal static CurveAsn Decode(Asn1Tag expectedTag, ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet)
         {
             try
             {
-                AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+                AsnValueReader reader = new AsnValueReader(encoded, ruleSet);
 
                 DecodeCore(ref reader, expectedTag, encoded, out CurveAsn decoded);
                 reader.ThrowIfNotEmpty();
@@ -56,12 +58,12 @@ namespace System.Security.Cryptography.Asn1
             }
         }
 
-        internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out CurveAsn decoded)
+        internal static void Decode(scoped ref AsnValueReader reader, ReadOnlySpan<byte> rebind, out CurveAsn decoded)
         {
             Decode(ref reader, Asn1Tag.Sequence, rebind, out decoded);
         }
 
-        internal static void Decode(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out CurveAsn decoded)
+        internal static void Decode(scoped ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlySpan<byte> rebind, out CurveAsn decoded)
         {
             try
             {
@@ -73,11 +75,11 @@ namespace System.Security.Cryptography.Asn1
             }
         }
 
-        private static void DecodeCore(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out CurveAsn decoded)
+        private static void DecodeCore(scoped ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlySpan<byte> rebind, out CurveAsn decoded)
         {
             decoded = default;
             AsnValueReader sequenceReader = reader.ReadSequence(expectedTag);
-            ReadOnlySpan<byte> rebindSpan = rebind.Span;
+            ReadOnlySpan<byte> rebindSpan = rebind;
             int offset;
             ReadOnlySpan<byte> tmpSpan;
 

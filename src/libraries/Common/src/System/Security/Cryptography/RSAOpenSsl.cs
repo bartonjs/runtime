@@ -426,7 +426,7 @@ namespace System.Security.Cryptography
                     {
                         AlgorithmIdentifierAsn algId = default;
                         RSAParameters ret;
-                        RSAKeyFormatHelper.FromPkcs1PrivateKey(pkcs1, in algId, out ret);
+                        RSAKeyFormatHelper.FromPkcs1PrivateKey(pkcs1.Span, in algId, out ret);
                         return ret;
                     });
             }
@@ -810,7 +810,7 @@ namespace System.Security.Cryptography
             {
                 ReadOnlyMemory<byte> pkcs1Priv = RSAKeyFormatHelper.ReadPkcs8(pkcs8, out int read);
                 Debug.Assert(read == pkcs8.Length);
-                _ = RSAPrivateKeyAsn.Decode(pkcs1Priv, AsnEncodingRules.BER);
+                _ = RSAPrivateKeyAsn.Decode(pkcs1Priv.Span, AsnEncodingRules.BER);
                 return pkcs1Priv;
             }
             catch (CryptographicException)

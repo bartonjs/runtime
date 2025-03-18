@@ -9,10 +9,10 @@ using System.Runtime.InteropServices;
 namespace System.Security.Cryptography.Asn1
 {
     [StructLayout(LayoutKind.Sequential)]
-    internal partial struct FieldID
+    internal ref partial struct FieldID
     {
         internal string FieldType;
-        internal ReadOnlyMemory<byte> Parameters;
+        internal ReadOnlySpan<byte> Parameters;
 
         internal readonly void Encode(AsnWriter writer)
         {
@@ -33,7 +33,7 @@ namespace System.Security.Cryptography.Asn1
             }
             try
             {
-                writer.WriteEncodedValue(Parameters.Span);
+                writer.WriteEncodedValue(Parameters);
             }
             catch (ArgumentException e)
             {
@@ -42,16 +42,16 @@ namespace System.Security.Cryptography.Asn1
             writer.PopSequence(tag);
         }
 
-        internal static FieldID Decode(ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
+        internal static FieldID Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet)
         {
             return Decode(Asn1Tag.Sequence, encoded, ruleSet);
         }
 
-        internal static FieldID Decode(Asn1Tag expectedTag, ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
+        internal static FieldID Decode(Asn1Tag expectedTag, ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet)
         {
             try
             {
-                AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+                AsnValueReader reader = new AsnValueReader(encoded, ruleSet);
 
                 DecodeCore(ref reader, expectedTag, encoded, out FieldID decoded);
                 reader.ThrowIfNotEmpty();
@@ -63,12 +63,12 @@ namespace System.Security.Cryptography.Asn1
             }
         }
 
-        internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out FieldID decoded)
+        internal static void Decode(scoped ref AsnValueReader reader, ReadOnlySpan<byte> rebind, out FieldID decoded)
         {
             Decode(ref reader, Asn1Tag.Sequence, rebind, out decoded);
         }
 
-        internal static void Decode(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out FieldID decoded)
+        internal static void Decode(scoped ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlySpan<byte> rebind, out FieldID decoded)
         {
             try
             {
@@ -80,11 +80,11 @@ namespace System.Security.Cryptography.Asn1
             }
         }
 
-        private static void DecodeCore(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out FieldID decoded)
+        private static void DecodeCore(scoped ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlySpan<byte> rebind, out FieldID decoded)
         {
             decoded = default;
             AsnValueReader sequenceReader = reader.ReadSequence(expectedTag);
-            ReadOnlySpan<byte> rebindSpan = rebind.Span;
+            ReadOnlySpan<byte> rebindSpan = rebind;
             int offset;
             ReadOnlySpan<byte> tmpSpan;
 

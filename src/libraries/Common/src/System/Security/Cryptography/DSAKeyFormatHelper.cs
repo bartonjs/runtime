@@ -16,7 +16,7 @@ namespace System.Security.Cryptography
         };
 
         internal static void ReadDsaPrivateKey(
-            ReadOnlyMemory<byte> xBytes,
+            ReadOnlySpan<byte> xBytes,
             in AlgorithmIdentifierAsn algId,
             out DSAParameters ret)
         {
@@ -30,7 +30,7 @@ namespace System.Security.Cryptography
             try
             {
                 ReadOnlySpan<byte> xSpan = AsnDecoder.ReadIntegerBytes(
-                    xBytes.Span,
+                    xBytes,
                     AsnEncodingRules.DER,
                     out int consumed);
 
@@ -47,7 +47,7 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
             }
 
-            DssParms parms = DssParms.Decode(algId.Parameters.Value, AsnEncodingRules.BER);
+            DssParms parms = DssParms.Decode(algId.Parameters.Value.Span, AsnEncodingRules.BER);
 
             // Sanity checks from FIPS 186-4 4.1/4.2.  Since FIPS 186-5 withdrew DSA/DSS
             // these will never change again.
@@ -82,7 +82,7 @@ namespace System.Security.Cryptography
         }
 
         internal static void ReadDsaPublicKey(
-            ReadOnlyMemory<byte> yBytes,
+            ReadOnlySpan<byte> yBytes,
             in AlgorithmIdentifierAsn algId,
             out DSAParameters ret)
         {
@@ -96,7 +96,7 @@ namespace System.Security.Cryptography
             try
             {
                 y = AsnDecoder.ReadInteger(
-                    yBytes.Span,
+                    yBytes,
                     AsnEncodingRules.DER,
                     out int consumed);
 
@@ -110,7 +110,7 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
             }
 
-            DssParms parms = DssParms.Decode(algId.Parameters.Value, AsnEncodingRules.BER);
+            DssParms parms = DssParms.Decode(algId.Parameters.Value.Span, AsnEncodingRules.BER);
 
             // Sanity checks from FIPS 186-4 4.1/4.2.  Since FIPS 186-5 withdrew DSA/DSS
             // these will never change again.

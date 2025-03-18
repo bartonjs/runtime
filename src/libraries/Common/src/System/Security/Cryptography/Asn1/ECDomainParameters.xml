@@ -2,6 +2,7 @@
 <asn:Choice
   xmlns:asn="http://schemas.dot.net/asnxml/201808/"
   name="ECDomainParameters"
+  span="true"
   namespace="System.Security.Cryptography.Asn1">
 
   <!--
@@ -13,6 +14,6 @@
         implicitCA NULL
     }
   -->
-  <asn:AsnType name="Specified" typeName="System.Security.Cryptography.Asn1.SpecifiedECDomain" />
+  <asn:AsnType name="Specified" typeName="System.Security.Cryptography.Asn1.SpecifiedECDomain" refType="true" />
   <asn:ObjectIdentifier name="Named" />
 </asn:Choice>

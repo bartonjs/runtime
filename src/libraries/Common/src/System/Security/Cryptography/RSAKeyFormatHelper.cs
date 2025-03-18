@@ -16,7 +16,7 @@ namespace System.Security.Cryptography
         };
 
         internal static void FromPkcs1PrivateKey(
-            ReadOnlyMemory<byte> keyData,
+            ReadOnlySpan<byte> keyData,
             in AlgorithmIdentifierAsn algId,
             out RSAParameters ret)
         {
@@ -56,7 +56,7 @@ namespace System.Security.Cryptography
         }
 
         internal static void ReadRsaPublicKey(
-            ReadOnlyMemory<byte> keyData,
+            ReadOnlySpan<byte> keyData,
             in AlgorithmIdentifierAsn algId,
             out RSAParameters ret)
         {
@@ -70,14 +70,14 @@ namespace System.Security.Cryptography
         }
 
         internal static void ReadRsaPublicKey(
-            ReadOnlyMemory<byte> keyData,
+            ReadOnlySpan<byte> keyData,
             out int bytesRead)
         {
             int read;
 
             try
             {
-                AsnValueReader reader = new AsnValueReader(keyData.Span, AsnEncodingRules.DER);
+                AsnValueReader reader = new AsnValueReader(keyData, AsnEncodingRules.DER);
                 read = reader.PeekEncodedValue().Length;
                 RSAPublicKeyAsn.Decode(keyData, AsnEncodingRules.BER);
             }

@@ -403,7 +403,7 @@ namespace System.Security.Cryptography
                         return null;
                     }
 
-                    ECPrivateKey privateKey = ECPrivateKey.Decode(privateKeyInfo.PrivateKey, AsnEncodingRules.BER);
+                    ECPrivateKey privateKey = ECPrivateKey.Decode(privateKeyInfo.PrivateKey.Span, AsnEncodingRules.BER);
                     EccKeyFormatHelper.FromECPrivateKey(privateKey, privateAlgorithm, out ECParameters ecParameters);
 
                     fixed (byte* pD = ecParameters.D)

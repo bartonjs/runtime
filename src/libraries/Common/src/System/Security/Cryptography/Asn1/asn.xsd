@@ -47,6 +47,7 @@
     <xs:attribute name="name" use="required" type="xs:NCName" />
     <xs:attribute name="namespace" use="required" type="QualifiedName" />
     <xs:attribute name="rebind" use="optional" type="xs:boolean" default="true" />
+    <xs:attribute name="span" use="optional" type="xs:boolean"/>
   </xs:complexType>
 
   <xs:complexType name="FieldBase">
@@ -61,6 +62,7 @@
     <xs:complexContent>
       <xs:extension base="FieldBase">
         <xs:attribute name="typeName" use="required" type="QualifiedName" />
+        <xs:attribute name="refType" use="optional" type="xs:boolean" />
       </xs:extension>
     </xs:complexContent>
   </xs:complexType>

@@ -9,9 +9,11 @@ using System.Runtime.InteropServices;
 namespace System.Security.Cryptography.Asn1
 {
     [StructLayout(LayoutKind.Sequential)]
-    internal partial struct ECDomainParameters
+    internal ref partial struct ECDomainParameters
     {
-        internal System.Security.Cryptography.Asn1.SpecifiedECDomain? Specified;
+        internal System.Security.Cryptography.Asn1.SpecifiedECDomain Specified;
+        internal readonly bool HasSpecified => SpecifiedSet;
+        internal bool SpecifiedSet;
         internal string? Named;
 
 #if DEBUG
@@ -37,12 +39,12 @@ namespace System.Security.Cryptography.Asn1
         {
             bool wroteValue = false;
 
-            if (Specified.HasValue)
+            if (HasSpecified)
             {
                 if (wroteValue)
                     throw new CryptographicException();
 
-                Specified.Value.Encode(writer);
+                Specified.Encode(writer);
                 wroteValue = true;
             }
 
@@ -68,11 +70,11 @@ namespace System.Security.Cryptography.Asn1
             }
         }
 
-        internal static ECDomainParameters Decode(ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
+        internal static ECDomainParameters Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet)
         {
             try
             {
-                AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+                AsnValueReader reader = new AsnValueReader(encoded, ruleSet);
 
                 DecodeCore(ref reader, encoded, out ECDomainParameters decoded);
                 reader.ThrowIfNotEmpty();
@@ -84,7 +86,7 @@ namespace System.Security.Cryptography.Asn1
             }
         }
 
-        internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out ECDomainParameters decoded)
+        internal static void Decode(scoped ref AsnValueReader reader, ReadOnlySpan<byte> rebind, out ECDomainParameters decoded)
         {
             try
             {
@@ -96,7 +98,7 @@ namespace System.Security.Cryptography.Asn1
             }
         }
 
-        private static void DecodeCore(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out ECDomainParameters decoded)
+        private static void DecodeCore(scoped ref AsnValueReader reader, ReadOnlySpan<byte> rebind, out ECDomainParameters decoded)
         {
             decoded = default;
             Asn1Tag tag = reader.PeekTag();
@@ -106,6 +108,7 @@ namespace System.Security.Cryptography.Asn1
                 System.Security.Cryptography.Asn1.SpecifiedECDomain tmpSpecified;
                 System.Security.Cryptography.Asn1.SpecifiedECDomain.Decode(ref reader, rebind, out tmpSpecified);
                 decoded.Specified = tmpSpecified;
+                decoded.SpecifiedSet = true;
 
             }
             else if (tag.HasSameClassAndValue(Asn1Tag.ObjectIdentifier))

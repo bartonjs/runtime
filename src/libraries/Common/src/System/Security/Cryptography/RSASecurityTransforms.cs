@@ -157,28 +157,22 @@ namespace System.Security.Cryptography
                 }
             }
 
-            public override unsafe void ImportRSAPublicKey(ReadOnlySpan<byte> source, out int bytesRead)
+            public override void ImportRSAPublicKey(ReadOnlySpan<byte> source, out int bytesRead)
             {
                 ThrowIfDisposed();
 
-                fixed (byte* ptr = &MemoryMarshal.GetReference(source))
-                {
-                    using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, source.Length))
-                    {
-                        // Validate the DER value and get the number of bytes.
-                        RSAKeyFormatHelper.ReadRsaPublicKey(
-                            manager.Memory,
-                            out int localRead);
+                // Validate the DER value and get the number of bytes.
+                RSAKeyFormatHelper.ReadRsaPublicKey(
+                    source,
+                    out int localRead);
 
-                        SafeSecKeyRefHandle publicKey = Interop.AppleCrypto.CreateDataKey(
-                            source.Slice(0, localRead),
-                            Interop.AppleCrypto.PAL_KeyAlgorithm.RSA,
-                            isPublic: true);
-                        SetKey(SecKeyPair.PublicOnly(publicKey));
+                SafeSecKeyRefHandle publicKey = Interop.AppleCrypto.CreateDataKey(
+                    source.Slice(0, localRead),
+                    Interop.AppleCrypto.PAL_KeyAlgorithm.RSA,
+                    isPublic: true);
 
-                        bytesRead = localRead;
-                    }
-                }
+                SetKey(SecKeyPair.PublicOnly(publicKey));
+                bytesRead = localRead;
             }
 
             public override void ImportEncryptedPkcs8PrivateKey(

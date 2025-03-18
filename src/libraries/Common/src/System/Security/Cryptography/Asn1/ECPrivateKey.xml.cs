@@ -9,12 +9,16 @@ using System.Runtime.InteropServices;
 namespace System.Security.Cryptography.Asn1
 {
     [StructLayout(LayoutKind.Sequential)]
-    internal partial struct ECPrivateKey
+    internal ref partial struct ECPrivateKey
     {
         internal int Version;
-        internal ReadOnlyMemory<byte> PrivateKey;
-        internal System.Security.Cryptography.Asn1.ECDomainParameters? Parameters;
-        internal ReadOnlyMemory<byte>? PublicKey;
+        internal ReadOnlySpan<byte> PrivateKey;
+        internal System.Security.Cryptography.Asn1.ECDomainParameters Parameters;
+        internal readonly bool HasParameters => ParametersSet;
+        internal bool ParametersSet;
+        internal ReadOnlySpan<byte> PublicKey;
+        internal bool PublicKeySet;
+        internal readonly bool HasPublicKey => PublicKeySet || PublicKey.Length > 0;
 
         internal readonly void Encode(AsnWriter writer)
         {
@@ -26,36 +30,35 @@ namespace System.Security.Cryptography.Asn1
             writer.PushSequence(tag);
 
             writer.WriteInteger(Version);
-            writer.WriteOctetString(PrivateKey.Span);
-
-            if (Parameters.HasValue)
+            writer.WriteOctetString(PrivateKey);
+            if (HasParameters)
             {
                 writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
-                Parameters.Value.Encode(writer);
+                Parameters.Encode(writer);
                 writer.PopSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
             }
 
 
-            if (PublicKey.HasValue)
+            if (HasPublicKey)
             {
                 writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 1));
-                writer.WriteBitString(PublicKey.Value.Span, 0);
+                writer.WriteBitString(PublicKey, 0);
                 writer.PopSequence(new Asn1Tag(TagClass.ContextSpecific, 1));
             }
 
             writer.PopSequence(tag);
         }
 
-        internal static ECPrivateKey Decode(ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
+        internal static ECPrivateKey Decode(ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet)
         {
             return Decode(Asn1Tag.Sequence, encoded, ruleSet);
         }
 
-        internal static ECPrivateKey Decode(Asn1Tag expectedTag, ReadOnlyMemory<byte> encoded, AsnEncodingRules ruleSet)
+        internal static ECPrivateKey Decode(Asn1Tag expectedTag, ReadOnlySpan<byte> encoded, AsnEncodingRules ruleSet)
         {
             try
             {
-                AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+                AsnValueReader reader = new AsnValueReader(encoded, ruleSet);
 
                 DecodeCore(ref reader, expectedTag, encoded, out ECPrivateKey decoded);
                 reader.ThrowIfNotEmpty();
@@ -67,12 +70,12 @@ namespace System.Security.Cryptography.Asn1
             }
         }
 
-        internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out ECPrivateKey decoded)
+        internal static void Decode(scoped ref AsnValueReader reader, ReadOnlySpan<byte> rebind, out ECPrivateKey decoded)
         {
             Decode(ref reader, Asn1Tag.Sequence, rebind, out decoded);
         }
 
-        internal static void Decode(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out ECPrivateKey decoded)
+        internal static void Decode(scoped ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlySpan<byte> rebind, out ECPrivateKey decoded)
         {
             try
             {
@@ -84,12 +87,12 @@ namespace System.Security.Cryptography.Asn1
             }
         }
 
-        private static void DecodeCore(ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlyMemory<byte> rebind, out ECPrivateKey decoded)
+        private static void DecodeCore(scoped ref AsnValueReader reader, Asn1Tag expectedTag, ReadOnlySpan<byte> rebind, out ECPrivateKey decoded)
         {
             decoded = default;
             AsnValueReader sequenceReader = reader.ReadSequence(expectedTag);
             AsnValueReader explicitReader;
-            ReadOnlySpan<byte> rebindSpan = rebind.Span;
+            ReadOnlySpan<byte> rebindSpan = rebind;
             int offset;
             ReadOnlySpan<byte> tmpSpan;
 
@@ -116,6 +119,7 @@ namespace System.Security.Cryptography.Asn1
                 System.Security.Cryptography.Asn1.ECDomainParameters tmpParameters;
                 System.Security.Cryptography.Asn1.ECDomainParameters.Decode(ref explicitReader, rebind, out tmpParameters);
                 decoded.Parameters = tmpParameters;
+                decoded.ParametersSet = true;
 
                 explicitReader.ThrowIfNotEmpty();
             }
@@ -134,6 +138,7 @@ namespace System.Security.Cryptography.Asn1
                     decoded.PublicKey = explicitReader.ReadBitString(out _);
                 }
 
+                decoded.PublicKeySet = true;
                 explicitReader.ThrowIfNotEmpty();
             }
 
