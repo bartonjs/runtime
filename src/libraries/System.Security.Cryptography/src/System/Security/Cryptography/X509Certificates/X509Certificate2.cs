@@ -778,6 +778,51 @@ namespace System.Security.Cryptography.X509Certificates
             return new X509Certificate2(pal);
         }
 
+        public MLDsa? GetMLDsaPublicKey()
+        {
+            return null;
+        }
+
+        public MLDsa? GetMLDsaPrivateKey()
+        {
+            return null;
+        }
+
+        public X509Certificate2 CopyWithPrivateKey(MLDsa privateKey)
+        {
+            ArgumentNullException.ThrowIfNull(privateKey);
+
+            if (HasPrivateKey)
+                throw new InvalidOperationException(SR.Cryptography_Cert_AlreadyHasPrivateKey);
+
+            using (MLDsa? publicKey = GetMLDsaPublicKey())
+            {
+                if (publicKey is null)
+                {
+                    throw new ArgumentException(SR.Cryptography_PrivateKey_WrongAlgorithm);
+                }
+
+                if (publicKey.Algorithm != privateKey.Algorithm)
+                {
+                    throw new ArgumentException(SR.Cryptography_PrivateKey_DoesNotMatch, nameof(privateKey));
+                }
+
+                byte[] pk1 = new byte[publicKey.Algorithm.PublicKeySizeInBytes];
+                byte[] pk2 = new byte[pk1.Length];
+
+                int w1 = publicKey.ExportMLDsaPublicKey(pk1);
+                int w2 = privateKey.ExportMLDsaPublicKey(pk2);
+
+                if (w1 != w2 || !pk1.AsSpan().SequenceEqual(pk2))
+                {
+                    throw new ArgumentException(SR.Cryptography_PrivateKey_DoesNotMatch, nameof(privateKey));
+                }
+            }
+
+            ICertificatePal pal = Pal.CopyWithPrivateKey(privateKey);
+            return new X509Certificate2(pal);
+        }
+
         /// <summary>
         /// Creates a new X509 certificate from the file contents of an RFC 7468 PEM-encoded
         /// certificate and private key.

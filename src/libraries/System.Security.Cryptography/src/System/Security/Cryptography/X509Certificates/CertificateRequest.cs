@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
 using System.Runtime.Versioning;
 using System.Security.Cryptography.Asn1;
@@ -20,7 +21,7 @@ namespace System.Security.Cryptography.X509Certificates
     [UnsupportedOSPlatform("browser")]
     public sealed partial class CertificateRequest
     {
-        private readonly AsymmetricAlgorithm? _key;
+        private readonly object? _key;
         private readonly X509SignatureGenerator? _generator;
         private readonly RSASignaturePadding? _rsaPadding;
 
@@ -176,6 +177,56 @@ namespace System.Security.Cryptography.X509Certificates
             _rsaPadding = padding;
             PublicKey = _generator.PublicKey;
             HashAlgorithm = hashAlgorithm;
+        }
+
+        /// <summary>
+        /// Create a CertificateRequest for the specified subject name and ML-DSA key.
+        /// </summary>
+        /// <param name="subjectName">
+        ///   The parsed representation of the subject name for the certificate or certificate request.
+        /// </param>
+        /// <param name="key">
+        ///   An ML-DSA key whose public key material will be included in the certificate or certificate request.
+        ///   This key will be used as a private key if <see cref="CreateSelfSigned" /> is called.
+        /// </param>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+        public CertificateRequest(
+            string subjectName,
+            MLDsa key)
+        {
+            ArgumentNullException.ThrowIfNull(subjectName);
+            ArgumentNullException.ThrowIfNull(key);
+
+            SubjectName = new X500DistinguishedName(subjectName);
+
+            _key = key;
+            _generator = X509SignatureGenerator.CreateForMLDsa(key);
+            PublicKey = _generator.PublicKey;
+        }
+
+        /// <summary>
+        /// Create a CertificateRequest for the specified subject name and ML-DSA key.
+        /// </summary>
+        /// <param name="subjectName">
+        ///   The parsed representation of the subject name for the certificate or certificate request.
+        /// </param>
+        /// <param name="key">
+        ///   An ML-DSA key whose public key material will be included in the certificate or certificate request.
+        ///   This key will be used as a private key if <see cref="CreateSelfSigned" /> is called.
+        /// </param>
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
+        public CertificateRequest(
+            X500DistinguishedName subjectName,
+            MLDsa key)
+        {
+            ArgumentNullException.ThrowIfNull(subjectName);
+            ArgumentNullException.ThrowIfNull(key);
+
+            SubjectName = subjectName;
+
+            _key = key;
+            _generator = X509SignatureGenerator.CreateForMLDsa(key);
+            PublicKey = _generator.PublicKey;
         }
 
         /// <summary>
@@ -524,6 +575,13 @@ namespace System.Security.Cryptography.X509Certificates
                 if (ecdsa != null)
                 {
                     return certificate.CopyWithPrivateKey(ecdsa);
+                }
+
+                MLDsa? mldsa = _key as MLDsa;
+
+                if (mldsa is not null)
+                {
+                    return certificate.CopyWithPrivateKey(mldsa);
                 }
             }
 

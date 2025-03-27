@@ -32,5 +32,12 @@ namespace System.Security.Cryptography.X509Certificates
 
             throw new ArgumentException(SR.Cryptography_InvalidPaddingMode);
         }
+
+        public static X509SignatureGenerator CreateForMLDsa(MLDsa key)
+        {
+            ArgumentNullException.ThrowIfNull(key);
+
+            return new MLDsaX509SignatureGenerator(key);
+        }
     }
 }

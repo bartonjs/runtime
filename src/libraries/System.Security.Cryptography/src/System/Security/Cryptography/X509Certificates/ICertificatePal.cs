@@ -37,6 +37,7 @@ namespace System.Security.Cryptography.X509Certificates
         ICertificatePal CopyWithPrivateKey(ECDsa privateKey);
         ICertificatePal CopyWithPrivateKey(RSA privateKey);
         ICertificatePal CopyWithPrivateKey(ECDiffieHellman privateKey);
+        ICertificatePal CopyWithPrivateKey(MLDsa privateKey);
         PolicyData GetPolicyData();
     }
 }
