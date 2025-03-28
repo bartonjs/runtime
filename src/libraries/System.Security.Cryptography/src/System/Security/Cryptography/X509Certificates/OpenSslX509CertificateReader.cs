@@ -250,7 +250,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         public bool HasPrivateKey
         {
-            get { return _privateKey != null; }
+            get { return _privateKey != null || _mldsaPrivateKey != null; }
         }
 
         public IntPtr Handle
