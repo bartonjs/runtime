@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Security.Cryptography.Tests;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreation
@@ -143,6 +144,50 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 AssertExtensions.Throws<ArgumentException>(
                     "hashAlgorithm",
                     () => new CertificateRequest(subjectName, key, new HashAlgorithmName("")));
+            }
+        }
+
+        [Fact]
+        public static void CtorValidation_MLDSA_string()
+        {
+            string subjectName = null;
+            MLDsa key = null;
+
+            AssertExtensions.Throws<ArgumentNullException>(
+                "subjectName",
+                () => new CertificateRequest(subjectName, key));
+
+            subjectName = "";
+
+            AssertExtensions.Throws<ArgumentNullException>(
+                "key",
+                () => new CertificateRequest(subjectName, key));
+        }
+
+        [Fact]
+        public static void CtorValidation_MLDSA_X500DN()
+        {
+            X500DistinguishedName subjectName = null;
+            MLDsa key = null;
+
+            AssertExtensions.Throws<ArgumentNullException>(
+                "subjectName",
+                () => new CertificateRequest(subjectName, key));
+
+            subjectName = new X500DistinguishedName("");
+
+            AssertExtensions.Throws<ArgumentNullException>(
+                "key",
+                () => new CertificateRequest(subjectName, key));
+        }
+
+        [Fact]
+        public static void MLDSA_DoesNotSetHashAlgorithm()
+        {
+            using (MLDsa key = MLDsaTestImplementation.CreateNoOp(MLDsaAlgorithm.MLDsa65))
+            {
+                CertificateRequest req = new CertificateRequest("CN=Test", key);
+                Assert.Null(req.HashAlgorithm.Name);
             }
         }
 
