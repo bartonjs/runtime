@@ -80,6 +80,12 @@ namespace System.Security.Cryptography.X509Certificates
             );
         }
 
+        public MLDsa? GetMLDsaPrivateKey()
+        {
+            // MLDsa is not supported on Windows.
+            return null;
+        }
+
         public ICertificatePal CopyWithPrivateKey(DSA dsa)
         {
             DSACng? dsaCng = dsa as DSACng;

@@ -780,12 +780,26 @@ namespace System.Security.Cryptography.X509Certificates
 
         public MLDsa? GetMLDsaPublicKey()
         {
-            return null;
+            MLDsaAlgorithm? algorithm = MLDsaAlgorithm.GetMLDsaAlgorithmFromOid(GetKeyAlgorithm());
+
+            if (algorithm is null)
+            {
+                return null;
+            }
+
+            return MLDsa.ImportMLDsaPublicKey(algorithm, Pal.PublicKeyValue);
         }
 
         public MLDsa? GetMLDsaPrivateKey()
         {
-            return null;
+            MLDsaAlgorithm? algorithm = MLDsaAlgorithm.GetMLDsaAlgorithmFromOid(GetKeyAlgorithm());
+
+            if (algorithm is null)
+            {
+                return null;
+            }
+
+            return Pal.GetMLDsaPrivateKey();
         }
 
         public X509Certificate2 CopyWithPrivateKey(MLDsa privateKey)
