@@ -214,8 +214,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     using (key)
                     {
                         X500DistinguishedName dn = cert.SubjectName;
+                        X509AuthorityKeyIdentifierExtension akid =
+                            X509AuthorityKeyIdentifierExtension.CreateFromCertificate(cert, true, false);
 
-                        Action genBuild = () => builder.Build(dn, gen, 0, now.AddMinutes(5), hashAlg, null, now);
+                        Action genBuild = () => builder.Build(dn, gen, 0, now.AddMinutes(5), hashAlg, akid, now);
 
                         if (RequiresHashAlgorithm(certKind))
                         {
@@ -264,7 +266,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     using (key)
                     {
                         X500DistinguishedName dn = cert.SubjectName;
-                        Action genAction = () => builder.Build(dn, gen, 0, now.AddMinutes(5), hashAlg, null, now);
+                        X509AuthorityKeyIdentifierExtension akid =
+                            X509AuthorityKeyIdentifierExtension.CreateFromCertificate(cert, true, false);
+
+                        Action genAction = () => builder.Build(dn, gen, 0, now.AddMinutes(5), hashAlg, akid, now);
 
                         if (RequiresHashAlgorithm(certKind))
                         {
