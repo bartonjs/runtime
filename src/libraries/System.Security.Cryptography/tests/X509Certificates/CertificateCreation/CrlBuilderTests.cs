@@ -37,6 +37,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             yield return new object[] { CertKind.RsaPss };
         }
 
+        public static IEnumerable<object[]> NoHashAlgorithmCertKinds()
+        {
+            if (MLDsa.IsSupported)
+            {
+                yield return new object[] { CertKind.MLDsa };
+            }
+        }
+
         [Fact]
         public static void AddEntryArgumentValidation()
         {
@@ -271,6 +279,40 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 });
         }
 
+        [Theory]
+        [MemberData(nameof(NoHashAlgorithmCertKinds))]
+        public static void BuildPqcWithHashAlgorithm(CertKind certKind)
+        {
+            BuildCertificateAndRun(
+                certKind,
+                new X509Extension[]
+                {
+                    X509BasicConstraintsExtension.CreateForCertificateAuthority(),
+                },
+                static (certKind, cert, now) =>
+                {
+                    HashAlgorithmName hashAlg = new HashAlgorithmName("");
+                    CertificateRevocationListBuilder builder = new CertificateRevocationListBuilder();
+
+                    ArgumentOutOfRangeException e = Assert.Throws<ArgumentOutOfRangeException>(
+                        "hashAlgorithm",
+                        () => builder.Build(cert, 0, now.AddMinutes(5), HashAlgorithmName.SHA256));
+
+                    X509SignatureGenerator gen = GetSignatureGenerator(certKind, cert, out IDisposable key);
+
+                    using (key)
+                    {
+                        X500DistinguishedName dn = cert.SubjectName;
+                        X509AuthorityKeyIdentifierExtension akid =
+                            X509AuthorityKeyIdentifierExtension.CreateFromCertificate(cert, true, false);
+
+                        Assert.Throws<ArgumentOutOfRangeException>(
+                            "hashAlgorithm",
+                            () => builder.Build(dn, gen, 0, now.AddMinutes(5), HashAlgorithmName.SHA256, akid));
+                    }
+                });
+        }
+
         [Fact]
         public static void BuildWithNegativeCrlNumber()
         {
@@ -494,7 +536,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     CertificateRevocationListBuilder builder = new CertificateRevocationListBuilder();
 
                     DateTimeOffset nextUpdate = now.AddHours(1);
-                    byte[] crl = builder.Build(cert, 2, nextUpdate, HashAlgorithmName.SHA256, GetRsaPadding(certKind));
+                    HashAlgorithmName hashAlg = RequiresHashAlgorithm(certKind) ? HashAlgorithmName.SHA256 : default;
+
+                    byte[] crl = builder.Build(cert, 2, nextUpdate, hashAlg, GetRsaPadding(certKind));
 
                     AsnReader reader = new AsnReader(crl, AsnEncodingRules.DER);
                     reader = reader.ReadSequence();
@@ -504,7 +548,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     byte[] signature = reader.ReadBitString(out _);
                     reader.ThrowIfNotEmpty();
 
-                    VerifySignature(certKind, cert, tbs.Span, signature, HashAlgorithmName.SHA256);
+                    VerifySignature(certKind, cert, tbs.Span, signature, hashAlg);
 
                     VerifyCrlFields(
                         crl,
@@ -531,12 +575,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     CertificateRevocationListBuilder builder = new CertificateRevocationListBuilder();
                     DateTimeOffset nextUpdate = now.AddHours(1);
                     DateTimeOffset thisUpdate = now;
+                    HashAlgorithmName hashAlg = RequiresHashAlgorithm(certKind) ? HashAlgorithmName.SHA256 : default;
 
                     byte[] crl = builder.Build(
                         cert,
                         2,
                         nextUpdate,
-                        HashAlgorithmName.SHA256,
+                        hashAlg,
                         GetRsaPadding(certKind),
                         thisUpdate);
 
@@ -548,7 +593,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     byte[] signature = reader.ReadBitString(out _);
                     reader.ThrowIfNotEmpty();
 
-                    VerifySignature(certKind, cert, tbs.Span, signature, HashAlgorithmName.SHA256);
+                    VerifySignature(certKind, cert, tbs.Span, signature, hashAlg);
 
                     VerifyCrlFields(
                         crl,
