@@ -343,7 +343,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             }
         }
 
-        private static X509Certificate2 CloneWithPrivateKey(X509Certificate2 cert, object key)
+        internal static X509Certificate2 CloneWithPrivateKey(X509Certificate2 cert, object key)
         {
             return key switch
             {
