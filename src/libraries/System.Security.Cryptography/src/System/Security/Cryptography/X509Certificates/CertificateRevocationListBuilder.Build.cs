@@ -453,7 +453,7 @@ namespace System.Security.Cryptography.X509Certificates
         private static bool HashAlgorithmRequired(X509Certificate2 certificate) =>
             HashAlgorithmRequired(certificate.GetKeyAlgorithm());
 
-        private static bool HashAlgorithmRequired(string? keyAlgorithm)
+        internal static bool HashAlgorithmRequired(string? keyAlgorithm)
         {
             // This list could either be written as "ML-DSA and friends return false",
             // or "RSA and friends return true".

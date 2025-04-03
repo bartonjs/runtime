@@ -245,7 +245,9 @@ namespace System.Security.Cryptography.X509Certificates
         {
             ArgumentNullException.ThrowIfNull(subjectName);
             ArgumentNullException.ThrowIfNull(publicKey);
-            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
+
+            if (CertificateRevocationListBuilder.HashAlgorithmRequired(publicKey.Oid?.Value))
+                ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
 
             SubjectName = subjectName;
             PublicKey = publicKey;
@@ -276,7 +278,9 @@ namespace System.Security.Cryptography.X509Certificates
         {
             ArgumentNullException.ThrowIfNull(subjectName);
             ArgumentNullException.ThrowIfNull(publicKey);
-            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
+
+            if (CertificateRevocationListBuilder.HashAlgorithmRequired(publicKey.Oid?.Value))
+                ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
 
             SubjectName = subjectName;
             PublicKey = publicKey;
