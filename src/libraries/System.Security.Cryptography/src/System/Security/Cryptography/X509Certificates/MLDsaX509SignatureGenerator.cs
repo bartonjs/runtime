@@ -25,7 +25,7 @@ namespace System.Security.Cryptography.X509Certificates
                 throw new ArgumentOutOfRangeException(
                     nameof(hashAlgorithm),
                     hashAlgorithm,
-                    SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name));
+                    SR.Format(SR.Cryptography_CertReq_PureSignForbidsHashAlgorithmName, "ML-DSA"));
             }
 
             AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);

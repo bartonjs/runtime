@@ -282,11 +282,17 @@
   <data name="Cryptography_CertReq_NoKeyProvided" xml:space="preserve">
     <value>This method cannot be used since no signing key was provided via a constructor, use an overload accepting an X509SignatureGenerator instead.</value>
   </data>
+  <data name="Cryptography_CertReq_NoHashAlgorithmProvided" xml:space="preserve">
+    <value>The intended signature algorithm requires a HashAlgorithmName, but one was not provided when building the CertificatRequest object.</value>
+  </data>
   <data name="Cryptography_CertReq_NotAfterNotNested" xml:space="preserve">
     <value>The requested notAfter value ({0}) is later than issuerCertificate.NotAfter ({1}).</value>
   </data>
   <data name="Cryptography_CertReq_NotBeforeNotNested" xml:space="preserve">
     <value>The requested notBefore value ({0}) is earlier than issuerCertificate.NotBefore ({1}).</value>
+  </data>
+  <data name="Cryptography_CertReq_PureSignForbidsHashAlgorithmName" xml:space="preserve">
+    <value>The specified generator is for the Pure variant of {0}, a hash algorithm name must not be provided.</value>
   </data>
   <data name="Cryptography_CertReq_RSAPaddingRequired" xml:space="preserve">
     <value>The issuer certificate uses an RSA key but no RSASignaturePadding was provided to a constructor. If one cannot be provided, use the X509SignatureGenerator overload.</value>

@@ -246,8 +246,9 @@ namespace System.Security.Cryptography.X509Certificates
             ArgumentNullException.ThrowIfNull(subjectName);
             ArgumentNullException.ThrowIfNull(publicKey);
 
-            if (CertificateRevocationListBuilder.HashAlgorithmRequired(publicKey.Oid?.Value))
-                ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
+            // Since ML-DSA (and others) require the hash algorithm to be omitted, but we don't
+            // know what signature algorithm is being used until the call to Create,
+            // we can't check here.
 
             SubjectName = subjectName;
             PublicKey = publicKey;
@@ -279,8 +280,9 @@ namespace System.Security.Cryptography.X509Certificates
             ArgumentNullException.ThrowIfNull(subjectName);
             ArgumentNullException.ThrowIfNull(publicKey);
 
-            if (CertificateRevocationListBuilder.HashAlgorithmRequired(publicKey.Oid?.Value))
-                ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
+            // Since ML-DSA (and others) require the hash algorithm to be omitted, but we don't
+            // know what signature algorithm is being used until the call to Create,
+            // we can't check here.
 
             SubjectName = subjectName;
             PublicKey = publicKey;
@@ -876,6 +878,12 @@ namespace System.Security.Cryptography.X509Certificates
                 throw new ArgumentException(SR.Cryptography_CertReq_DatesReversed);
             if (serialNumber.Length < 1)
                 throw new ArgumentException(SR.Arg_EmptyOrNullArray, nameof(serialNumber));
+
+            if (string.IsNullOrEmpty(HashAlgorithm.Name) &&
+                CertificateRevocationListBuilder.HashAlgorithmRequired(generator.PublicKey.Oid.Value))
+            {
+                throw new InvalidOperationException(SR.Cryptography_CertReq_NoHashAlgorithmProvided);
+            }
 
             byte[] signatureAlgorithm = generator.GetSignatureAlgorithmIdentifier(HashAlgorithm);
             AlgorithmIdentifierAsn signatureAlgorithmAsn;

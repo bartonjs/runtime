@@ -278,14 +278,36 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 X509SignatureGenerator generator = X509SignatureGenerator.CreateForECDsa(ecdsa);
                 publicKey = generator.PublicKey;
             }
+        }
 
-            AssertExtensions.Throws<ArgumentNullException>(
-                "hashAlgorithm",
-                () => new CertificateRequest(subjectName, publicKey, default(HashAlgorithmName)));
+        [Fact]
+        public static void PublicKeyCtor_HashAlgorithm_LateVerification()
+        {
+            X500DistinguishedName name = new X500DistinguishedName("CN=Test");
 
-            AssertExtensions.Throws<ArgumentException>(
-                "hashAlgorithm",
-                () => new CertificateRequest(subjectName, publicKey, new HashAlgorithmName("")));
+            using (ECDsa ecdsa = ECDsa.Create(EccTestData.Secp384r1Data.KeyParameters))
+            {
+                X509SignatureGenerator gen = X509SignatureGenerator.CreateForECDsa(ecdsa);
+
+                CertificateRequest req = new CertificateRequest(name, gen.PublicKey, default);
+                Assert.Null(req.HashAlgorithm.Name);
+                DateTimeOffset now = DateTimeOffset.UtcNow;
+
+                Assert.Throws<InvalidOperationException>(
+                    () => req.Create(name, gen, now.AddMinutes(-1), now.AddMinutes(1), new byte[] { 1, 2, 3 }));
+            }
+
+            using (RSA rsa = RSA.Create(TestData.RsaBigExponentParams))
+            {
+                X509SignatureGenerator gen = X509SignatureGenerator.CreateForRSA(rsa, RSASignaturePadding.Pkcs1);
+
+                CertificateRequest req = new CertificateRequest(name, gen.PublicKey, default);
+                Assert.Null(req.HashAlgorithm.Name);
+                DateTimeOffset now = DateTimeOffset.UtcNow;
+
+                Assert.Throws<InvalidOperationException>(
+                    () => req.Create(name, gen, now.AddMinutes(-1), now.AddMinutes(1), new byte[] { 1, 2, 3 }));
+            }
         }
 
         [Fact]
