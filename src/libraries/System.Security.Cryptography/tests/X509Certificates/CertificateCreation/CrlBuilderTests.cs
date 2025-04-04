@@ -311,9 +311,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                         X509AuthorityKeyIdentifierExtension akid =
                             X509AuthorityKeyIdentifierExtension.CreateFromCertificate(cert, true, false);
 
-                        Assert.Throws<ArgumentOutOfRangeException>(
-                            "hashAlgorithm",
-                            () => builder.Build(dn, gen, 0, now.AddMinutes(5), HashAlgorithmName.SHA256, akid));
+                        // Assert.NoThrow
+                        builder.Build(dn, gen, 0, now.AddMinutes(5), HashAlgorithmName.SHA256, akid);
                     }
                 });
         }
