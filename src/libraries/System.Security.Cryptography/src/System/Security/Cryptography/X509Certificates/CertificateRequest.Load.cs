@@ -408,6 +408,7 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 rsa?.Dispose();
                 ecdsa?.Dispose();
+                mldsa?.Dispose();
             }
         }
     }
