@@ -299,9 +299,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     HashAlgorithmName hashAlg = new HashAlgorithmName("");
                     CertificateRevocationListBuilder builder = new CertificateRevocationListBuilder();
 
-                    ArgumentOutOfRangeException e = Assert.Throws<ArgumentOutOfRangeException>(
-                        "hashAlgorithm",
-                        () => builder.Build(cert, 0, now.AddMinutes(5), HashAlgorithmName.SHA256));
+                    // Assert.NoThrow
+                    builder.Build(cert, 0, now.AddMinutes(5), HashAlgorithmName.SHA256);
 
                     X509SignatureGenerator gen = GetSignatureGenerator(certKind, cert, out IDisposable key);
 
