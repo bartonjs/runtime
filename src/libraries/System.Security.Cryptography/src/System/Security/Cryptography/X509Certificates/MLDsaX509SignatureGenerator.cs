@@ -20,13 +20,9 @@ namespace System.Security.Cryptography.X509Certificates
 
         public override byte[] GetSignatureAlgorithmIdentifier(HashAlgorithmName hashAlgorithm)
         {
-            if (!string.IsNullOrEmpty(hashAlgorithm.Name))
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(hashAlgorithm),
-                    hashAlgorithm,
-                    SR.Format(SR.Cryptography_CertReq_PureSignForbidsHashAlgorithmName, "ML-DSA"));
-            }
+            // Ignore the hashAlgorithm parameter.
+            // This generator only supports ML-DSA "Pure" signatures, but the overall design of
+            // CertificateRequest makes it easy for a hashAlgorithm value to get here.
 
             AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
             writer.PushSequence();
@@ -39,13 +35,9 @@ namespace System.Security.Cryptography.X509Certificates
         {
             ArgumentNullException.ThrowIfNull(data);
 
-            if (!string.IsNullOrEmpty(hashAlgorithm.Name))
-            {
-                throw new ArgumentOutOfRangeException(
-                    nameof(hashAlgorithm),
-                    hashAlgorithm,
-                    SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name));
-            }
+            // Ignore the hashAlgorithm parameter.
+            // This generator only supports ML-DSA "Pure" signatures, but the overall design of
+            // CertificateRequest makes it easy for a hashAlgorithm value to get here.
 
             byte[] signature = new byte[_key.Algorithm.SignatureSizeInBytes];
             int written = _key.SignData(data, signature);

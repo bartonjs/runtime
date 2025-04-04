@@ -246,7 +246,7 @@ namespace System.Security.Cryptography.X509Certificates
             ArgumentNullException.ThrowIfNull(subjectName);
             ArgumentNullException.ThrowIfNull(publicKey);
 
-            // Since ML-DSA (and others) require the hash algorithm to be omitted, but we don't
+            // Since ML-DSA (and others) don't require a hash algorithm, but we don't
             // know what signature algorithm is being used until the call to Create,
             // we can't check here.
 
@@ -280,7 +280,7 @@ namespace System.Security.Cryptography.X509Certificates
             ArgumentNullException.ThrowIfNull(subjectName);
             ArgumentNullException.ThrowIfNull(publicKey);
 
-            // Since ML-DSA (and others) require the hash algorithm to be omitted, but we don't
+            // Since ML-DSA (and others) don't require a hash algorithm, but we don't
             // know what signature algorithm is being used until the call to Create,
             // we can't check here.
 
@@ -377,6 +377,11 @@ namespace System.Security.Cryptography.X509Certificates
         ///   <para>
         ///     This object was created with a constructor which did not accept a signing key.
         ///   </para>
+        ///   <para>- or -</para>
+        ///   <para>
+        ///     The signature generator requires a non-default value for <see cref="HashAlgorithm"/>,
+        ///     but this object was created without one being provided.
+        ///   </para>
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   A cryptographic error occurs while creating the signing request.
@@ -390,6 +395,12 @@ namespace System.Security.Cryptography.X509Certificates
         public byte[] CreateSigningRequest(X509SignatureGenerator signatureGenerator)
         {
             ArgumentNullException.ThrowIfNull(signatureGenerator);
+
+            if (string.IsNullOrEmpty(HashAlgorithm.Name) &&
+                CertificateRevocationListBuilder.HashAlgorithmRequired(signatureGenerator.PublicKey.Oid.Value))
+            {
+                throw new InvalidOperationException(SR.Cryptography_CertReq_NoHashAlgorithmProvided);
+            }
 
             X501Attribute[] attributes = Array.Empty<X501Attribute>();
             bool hasExtensions = CertificateExtensions.Count > 0;
@@ -513,6 +524,11 @@ namespace System.Security.Cryptography.X509Certificates
         ///   <para>
         ///     This object was created with a constructor which did not accept a signing key.
         ///   </para>
+        ///   <para>- or -</para>
+        ///   <para>
+        ///     The signature generator requires a non-default value for <see cref="HashAlgorithm"/>,
+        ///     but this object was created without one being provided.
+        ///   </para>
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   A cryptographic error occurs while creating the signing request.
@@ -632,8 +648,15 @@ namespace System.Security.Cryptography.X509Certificates
         ///   <paramref name="issuerCertificate"/> has a different key algorithm than the requested certificate.
         /// </exception>
         /// <exception cref="InvalidOperationException">
-        ///   <paramref name="issuerCertificate"/> is an RSA certificate and this object was created without
-        ///   specifying an <see cref="RSASignaturePadding"/> value in the constructor.
+        ///   <para>
+        ///     <paramref name="issuerCertificate"/> is an RSA certificate and this object was created via a constructor
+        ///     which does not accept a <see cref="RSASignaturePadding"/> value.
+        ///   </para>
+        ///   <para>- or -</para>
+        ///   <para>
+        ///     <paramref name="issuerCertificate"/> uses a public key algorithm which requires a non-default value
+        ///     for <see cref="HashAlgorithm"/>, but this object was created without one being provided.
+        ///   </para>
         /// </exception>
         public X509Certificate2 Create(
             X509Certificate2 issuerCertificate,
@@ -683,8 +706,15 @@ namespace System.Security.Cryptography.X509Certificates
         ///   <paramref name="issuerCertificate"/> has a different key algorithm than the requested certificate.
         /// </exception>
         /// <exception cref="InvalidOperationException">
-        ///   <paramref name="issuerCertificate"/> is an RSA certificate and this object was created via a constructor
-        ///   which does not accept a <see cref="RSASignaturePadding"/> value.
+        ///   <para>
+        ///     <paramref name="issuerCertificate"/> is an RSA certificate and this object was created via a constructor
+        ///     which does not accept a <see cref="RSASignaturePadding"/> value.
+        ///   </para>
+        ///   <para>- or -</para>
+        ///   <para>
+        ///     <paramref name="issuerCertificate"/> uses a public key algorithm which requires a non-default value
+        ///     for <see cref="HashAlgorithm"/>, but this object was created without one being provided.
+        ///   </para>
         /// </exception>
         public X509Certificate2 Create(
             X509Certificate2 issuerCertificate,
@@ -823,6 +853,10 @@ namespace System.Security.Cryptography.X509Certificates
         /// </exception>
         /// <exception cref="ArgumentException"><paramref name="serialNumber"/> is null or has length 0.</exception>
         /// <exception cref="CryptographicException">Any error occurs during the signing operation.</exception>
+        /// <exception cref="InvalidOperationException">
+        ///   The signature generator requires a non-default value for <see cref="HashAlgorithm"/>,
+        ///   but this object was created without one being provided.
+        /// </exception>
         public X509Certificate2 Create(
             X500DistinguishedName issuerName,
             X509SignatureGenerator generator,
@@ -864,6 +898,10 @@ namespace System.Security.Cryptography.X509Certificates
         /// </exception>
         /// <exception cref="ArgumentException"><paramref name="serialNumber"/> has length 0.</exception>
         /// <exception cref="CryptographicException">Any error occurs during the signing operation.</exception>
+        /// <exception cref="InvalidOperationException">
+        ///   The signature generator requires a non-default value for <see cref="HashAlgorithm"/>,
+        ///   but this object was created without one being provided.
+        /// </exception>
         public X509Certificate2 Create(
             X500DistinguishedName issuerName,
             X509SignatureGenerator generator,

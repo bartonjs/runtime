@@ -36,7 +36,9 @@ namespace System.Security.Cryptography.X509Certificates
             CertificateRequestLoadOptions options = CertificateRequestLoadOptions.Default,
             RSASignaturePadding? signerSignaturePadding = null)
         {
-            ArgumentException.ThrowIfNullOrEmpty(signerHashAlgorithm.Name, nameof(signerHashAlgorithm));
+            // Since ML-DSA (and others) don't require a hash algorithm, but we don't
+            // know what signature algorithm is being used until the call to Create,
+            // we can't check here.
 
             if ((options & ~AllOptions) != 0)
             {
@@ -118,7 +120,9 @@ namespace System.Security.Cryptography.X509Certificates
             CertificateRequestLoadOptions options,
             RSASignaturePadding? signerSignaturePadding)
         {
-            ArgumentException.ThrowIfNullOrEmpty(signerHashAlgorithm.Name, nameof(signerHashAlgorithm));
+            // Since ML-DSA (and others) don't require a hash algorithm, but we don't
+            // know what signature algorithm is being used until the call to Create,
+            // we can't check here.
 
             if ((options & ~AllOptions) != 0)
             {
