@@ -334,7 +334,7 @@ namespace System.Security.Cryptography.X509Certificates
             if (nextUpdate <= thisUpdate)
                 throw new ArgumentException(SR.Cryptography_CRLBuilder_DatesReversed);
 
-            if (HashAlgorithmRequired(generator.PublicKey?.Oid?.Value))
+            if (HashAlgorithmRequired(generator.PublicKey.Oid.Value))
                 ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
 
             ArgumentNullException.ThrowIfNull(authorityKeyIdentifier);
