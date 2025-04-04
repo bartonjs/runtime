@@ -3,6 +3,7 @@
 
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Formats.Asn1;
 using System.IO;
 using System.Net;
@@ -778,6 +779,7 @@ namespace System.Security.Cryptography.X509Certificates
             return new X509Certificate2(pal);
         }
 
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
         public MLDsa? GetMLDsaPublicKey()
         {
             MLDsaAlgorithm? algorithm = MLDsaAlgorithm.GetMLDsaAlgorithmFromOid(GetKeyAlgorithm());
@@ -790,6 +792,7 @@ namespace System.Security.Cryptography.X509Certificates
             return MLDsa.ImportMLDsaPublicKey(algorithm, Pal.PublicKeyValue);
         }
 
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
         public MLDsa? GetMLDsaPrivateKey()
         {
             MLDsaAlgorithm? algorithm = MLDsaAlgorithm.GetMLDsaAlgorithmFromOid(GetKeyAlgorithm());
@@ -802,6 +805,7 @@ namespace System.Security.Cryptography.X509Certificates
             return Pal.GetMLDsaPrivateKey();
         }
 
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
         public X509Certificate2 CopyWithPrivateKey(MLDsa privateKey)
         {
             ArgumentNullException.ThrowIfNull(privateKey);

@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Security.Cryptography.X509Certificates
 {
     public abstract class X509SignatureGenerator
@@ -33,6 +35,7 @@ namespace System.Security.Cryptography.X509Certificates
             throw new ArgumentException(SR.Cryptography_InvalidPaddingMode);
         }
 
+        [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
         public static X509SignatureGenerator CreateForMLDsa(MLDsa key)
         {
             ArgumentNullException.ThrowIfNull(key);
