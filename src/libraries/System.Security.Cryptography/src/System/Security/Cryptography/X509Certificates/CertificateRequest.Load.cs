@@ -298,6 +298,7 @@ namespace System.Security.Cryptography.X509Certificates
         {
             RSA? rsa = publicKey.GetRSAPublicKey();
             ECDsa? ecdsa = publicKey.GetECDsaPublicKey();
+            MLDsa? mldsa = publicKey.GetMLDsaPublicKey();
 
             try
             {
@@ -342,6 +343,11 @@ namespace System.Security.Cryptography.X509Certificates
                     case Oids.ECDsaWithSha1:
                         hashAlg = HashAlgorithmName.SHA1;
                         break;
+                    case Oids.MLDsa44:
+                    case Oids.MLDsa65:
+                    case Oids.MLDsa87:
+                        hashAlg = default;
+                        break;
                     default:
                         throw new NotSupportedException(
                             SR.Format(SR.Cryptography_UnknownKeyAlgorithm, algorithmIdentifier.Algorithm));
@@ -375,6 +381,15 @@ namespace System.Security.Cryptography.X509Certificates
                         }
 
                         return ecdsa.VerifyData(toBeSigned, signature, hashAlg, DSASignatureFormat.Rfc3279DerSequence);
+                    case Oids.MLDsa44:
+                    case Oids.MLDsa65:
+                    case Oids.MLDsa87:
+                        if (mldsa is null)
+                        {
+                            return false;
+                        }
+
+                        return mldsa.VerifyData(toBeSigned, signature);
                     default:
                         Debug.Fail(
                             $"Algorithm ID {algorithmIdentifier.Algorithm} was in the first switch, but not the second");

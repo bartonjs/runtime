@@ -3098,6 +3098,9 @@ namespace System.Security.Cryptography.X509Certificates
         public System.Security.Cryptography.ECDsa? GetECDsaPublicKey() { throw null; }
         [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        public System.Security.Cryptography.MLDsa? GetMLDsaPublicKey() { throw null; }
+        [System.Diagnostics.CodeAnalysis.ExperimentalAttribute("SYSLIB5006")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public System.Security.Cryptography.MLKem? GetMLKemPublicKey() { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public System.Security.Cryptography.RSA? GetRSAPublicKey() { throw null; }
