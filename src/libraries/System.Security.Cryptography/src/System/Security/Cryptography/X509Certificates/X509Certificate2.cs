@@ -779,6 +779,18 @@ namespace System.Security.Cryptography.X509Certificates
             return new X509Certificate2(pal);
         }
 
+        /// <summary>
+        ///   Get the <see cref="MLDsa"/> public key from this certificate.
+        /// </summary>
+        /// <returns>
+        ///   The public key, or <see langword="null"/> if this certificate does not have an ML-DSA public key.
+        /// </returns>
+        /// <exception cref="PlatformNotSupportedException">
+        ///   The certificate has an ML-DSA public key, but the platform does not support ML-DSA.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   The public key was invalid, or otherwise could not be imported.
+        /// </exception>
         [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
         public MLDsa? GetMLDsaPublicKey()
         {
@@ -789,9 +801,25 @@ namespace System.Security.Cryptography.X509Certificates
                 return null;
             }
 
+            byte[] publicKey = Pal.PublicKeyValue;
+
+            if (publicKey.Length != algorithm.PublicKeySizeInBytes)
+            {
+                throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+            }
+
             return MLDsa.ImportMLDsaPublicKey(algorithm, Pal.PublicKeyValue);
         }
 
+        /// <summary>
+        ///   Get the <see cref="MLDsa"/> private key from this certificate.
+        /// </summary>
+        /// <returns>
+        ///   The private key, or <see langword="null"/> if this certificate does not have an ML-DSA private key.
+        /// </returns>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred accessing the private key.
+        /// </exception>
         [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
         public MLDsa? GetMLDsaPrivateKey()
         {
@@ -805,6 +833,26 @@ namespace System.Security.Cryptography.X509Certificates
             return Pal.GetMLDsaPrivateKey();
         }
 
+        /// <summary>
+        ///   Combines a private key with a certificate containing the associated public key into a
+        ///   new instance that can access the private key.
+        /// </summary>
+        /// <param name="privateKey">
+        ///   The ML-DSA private key that corresponds to the ML-DSA public key in this certificate.
+        /// </param>
+        /// <returns>
+        ///   A new certificate with the <see cref="HasPrivateKey" /> property set to <see langword="true"/>.
+        ///   The current certificate isn't modified.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="privateKey"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   The specified private key doesn't match the public key for this certificate.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        ///   The certificate already has an associated private key.
+        /// </exception>
         [Experimental(Experimentals.PostQuantumCryptographyDiagId)]
         public X509Certificate2 CopyWithPrivateKey(MLDsa privateKey)
         {
