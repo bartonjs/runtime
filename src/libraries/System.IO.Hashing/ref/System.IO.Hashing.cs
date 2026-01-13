@@ -23,6 +23,24 @@ namespace System.IO.Hashing
         public override void Reset() { }
         public static bool TryHash(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
+    [System.CLSCompliantAttribute(false)]
+    public sealed partial class Crc32ParameterSet
+    {
+        internal Crc32ParameterSet() { }
+        public bool BigEndianOutput { get { throw null; } }
+        public uint FinalXorValue { get { throw null; } }
+        public uint InitialValue { get { throw null; } }
+        public uint Polynomial { get { throw null; } }
+        public bool ReflectInput { get { throw null; } }
+        public bool ReflectOutput { get { throw null; } }
+        public uint Residue { get { throw null; } }
+        public uint Compute(System.ReadOnlySpan<byte> data) { throw null; }
+        public void ComputeBytes(System.ReadOnlySpan<byte> data, System.Span<byte> destination) { }
+        [System.CLSCompliantAttribute(false)]
+        public static System.IO.Hashing.Crc32ParameterSet Create(uint polynomial, uint initialValue, uint finalXorValue, bool reflectInput, bool reflectOutput) { throw null; }
+        public uint Finalize(uint value) { throw null; }
+        public uint Update(uint value, System.ReadOnlySpan<byte> data) { throw null; }
+    }
     public sealed partial class Crc64 : System.IO.Hashing.NonCryptographicHashAlgorithm
     {
         public Crc64() : base (default(int)) { }
