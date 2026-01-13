@@ -6,10 +6,8 @@ using System.Buffers.Binary;
 namespace System.IO.Hashing
 {
     [CLSCompliant(false)]
-    public sealed partial class Crc32ParameterSet
+    public abstract partial class Crc32ParameterSet
     {
-        private readonly uint[] _lookupTable;
-
         /// <summary>Gets the polynomial value used for the CRC calculation.</summary>
         /// <value>The polynomial value used for the CRC calculation.</value>
         public uint Polynomial { get; }
@@ -52,15 +50,13 @@ namespace System.IO.Hashing
         /// <seealso cref="BigEndianOutput"/>
         public uint Residue { get; private set; }
 
-        private Crc32ParameterSet(uint polynomial, uint initialValue, uint finalXorValue, bool reflectInput, bool reflectOutput)
+        private protected Crc32ParameterSet(uint polynomial, uint initialValue, uint finalXorValue, bool reflectInput, bool reflectOutput)
         {
             Polynomial = polynomial;
             InitialValue = initialValue;
             FinalXorValue = finalXorValue;
             ReflectInput = reflectInput;
             ReflectOutput = reflectOutput;
-
-            _lookupTable = GenerateLookupTable();
         }
 
         /// <summary>Creates a new <see cref="Crc32ParameterSet"/> with the specified parameters.</summary>
@@ -78,7 +74,12 @@ namespace System.IO.Hashing
             bool reflectInput,
             bool reflectOutput)
         {
-            Crc32ParameterSet set = new Crc32ParameterSet(polynomial, initialValue, finalXorValue, reflectInput, reflectOutput);
+            Crc32ParameterSet set = reflectInput switch
+            {
+                false => new ForwardTableBasedCrc32(polynomial, initialValue, finalXorValue, reflectOutput),
+                _ => new ReflectedTableBasedCrc32(polynomial, initialValue, finalXorValue, reflectOutput),
+            };
+
             Span<byte> buf = stackalloc byte[12];
 
             static void Test(
@@ -136,29 +137,9 @@ namespace System.IO.Hashing
             }
         }
 
-        public uint Update(uint value, ReadOnlySpan<byte> data)
-        {
-            uint[] lookupTable = _lookupTable;
-            uint crc = value;
+        public abstract uint Update(uint value, ReadOnlySpan<byte> data);
 
-            foreach (byte dataByte in data)
-            {
-                if (ReflectInput)
-                {
-                    byte idx = (byte)(crc ^ dataByte);
-                    crc = lookupTable[idx] ^ (crc >> 8);
-                }
-                else
-                {
-                    byte idx = (byte)((crc >> 24) ^ dataByte);
-                    crc = lookupTable[idx] ^ (crc << 8);
-                }
-            }
-
-            return crc;
-        }
-
-        public uint Finalize(uint value)
+        public virtual uint Finalize(uint value)
         {
             uint crc = value;
 
@@ -170,26 +151,9 @@ namespace System.IO.Hashing
             return crc ^ FinalXorValue;
         }
 
-        public uint Compute(ReadOnlySpan<byte> data)
+        public virtual uint Compute(ReadOnlySpan<byte> data)
         {
-            uint[] lookupTable = _lookupTable;
-            uint crc = InitialValue;
-
-            for (int i = 0; i < data.Length; i++)
-            {
-                byte dataByte = data[i];
-
-                if (ReflectInput)
-                {
-                    byte idx = (byte)(crc ^ dataByte);
-                    crc = lookupTable[idx] ^ (crc >> 8);
-                }
-                else
-                {
-                    byte idx = (byte)((crc >> 24) ^ dataByte);
-                    crc = lookupTable[idx] ^ (crc << 8);
-                }
-            }
+            uint crc = Update(InitialValue, data);
 
             if (ReflectOutput != ReflectInput)
             {
@@ -197,59 +161,6 @@ namespace System.IO.Hashing
             }
 
             return crc ^ FinalXorValue;
-        }
-
-        private uint[] GenerateLookupTable()
-        {
-            uint[] table = new uint[256];
-
-            if (!ReflectInput)
-            {
-                uint crc = 0x80000000u;
-
-                for (int i = 1; i < 256; i <<= 1)
-                {
-                    if ((crc & 0x80000000u) != 0)
-                    {
-                        crc = (crc << 1) ^ Polynomial;
-                    }
-                    else
-                    {
-                        crc <<= 1;
-                    }
-
-                    for (int j = 0; j < i; j++)
-                    {
-                        table[i + j] = crc ^ table[j];
-                    }
-                }
-            }
-            else
-            {
-
-                for (int i = 1; i < 256; i++)
-                {
-                    uint r = ReverseBits((uint)i);
-
-                    const uint LastBit = 0x80000000u;
-
-                    for (int j = 0; j < 8; j++)
-                    {
-                        if ((r & LastBit) != 0)
-                        {
-                            r = (r << 1) ^ Polynomial;
-                        }
-                        else
-                        {
-                            r <<= 1;
-                        }
-                    }
-
-                    table[i] = ReverseBits(r);
-                }
-            }
-
-            return table;
         }
 
         private static uint ReverseBits(uint value)
