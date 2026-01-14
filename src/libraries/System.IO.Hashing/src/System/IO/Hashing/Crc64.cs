@@ -172,7 +172,7 @@ namespace System.IO.Hashing
         public static ulong HashToUInt64(ReadOnlySpan<byte> source) =>
             Update(InitialState, source);
 
-        private static ulong Update(ulong crc, ReadOnlySpan<byte> source)
+        internal static ulong Update(ulong crc, ReadOnlySpan<byte> source)
         {
 #if NET
             if (CanBeVectorized(source))

@@ -70,6 +70,31 @@ namespace System.IO.Hashing
         public override void Reset() { }
         public static bool TryHash(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
+    [System.CLSCompliantAttribute(false)]
+    public abstract partial class Crc64ParameterSet
+    {
+        internal Crc64ParameterSet() { }
+        public bool BigEndianOutput { get { throw null; } }
+        public static System.IO.Hashing.Crc64ParameterSet Ecma182 { get { throw null; } }
+        public ulong FinalXorValue { get { throw null; } }
+        public static System.IO.Hashing.Crc64ParameterSet GoIso { get { throw null; } }
+        public ulong InitialValue { get { throw null; } }
+        public static System.IO.Hashing.Crc64ParameterSet Ms { get { throw null; } }
+        public static System.IO.Hashing.Crc64ParameterSet Nvme { get { throw null; } }
+        public ulong Polynomial { get { throw null; } }
+        public static System.IO.Hashing.Crc64ParameterSet Redis { get { throw null; } }
+        public bool ReflectInput { get { throw null; } }
+        public bool ReflectOutput { get { throw null; } }
+        public ulong Residue { get { throw null; } }
+        public static System.IO.Hashing.Crc64ParameterSet We { get { throw null; } }
+        public static System.IO.Hashing.Crc64ParameterSet Xz { get { throw null; } }
+        public virtual ulong Compute(System.ReadOnlySpan<byte> data) { throw null; }
+        public void ComputeBytes(System.ReadOnlySpan<byte> data, System.Span<byte> destination) { }
+        [System.CLSCompliantAttribute(false)]
+        public static System.IO.Hashing.Crc64ParameterSet Create(ulong polynomial, ulong initialValue, ulong finalXorValue, bool reflectInput, bool reflectOutput) { throw null; }
+        public virtual ulong Finalize(ulong value) { throw null; }
+        public abstract ulong Update(ulong value, System.ReadOnlySpan<byte> data);
+    }
     public abstract partial class NonCryptographicHashAlgorithm
     {
         protected NonCryptographicHashAlgorithm(int hashLengthInBytes) { }
