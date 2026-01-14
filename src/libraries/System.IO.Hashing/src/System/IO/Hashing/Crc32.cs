@@ -174,7 +174,7 @@ namespace System.IO.Hashing
         public static uint HashToUInt32(ReadOnlySpan<byte> source) =>
             ~Update(InitialState, source);
 
-        private static uint Update(uint crc, ReadOnlySpan<byte> source)
+        internal static uint Update(uint crc, ReadOnlySpan<byte> source)
         {
 #if NET
             if (CanBeVectorized(source))

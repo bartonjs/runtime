@@ -27,13 +27,25 @@ namespace System.IO.Hashing
     public abstract partial class Crc32ParameterSet
     {
         internal Crc32ParameterSet() { }
+        public static System.IO.Hashing.Crc32ParameterSet Aixm { get { throw null; } }
+        public static System.IO.Hashing.Crc32ParameterSet Autosar { get { throw null; } }
+        public static System.IO.Hashing.Crc32ParameterSet Base91D { get { throw null; } }
         public bool BigEndianOutput { get { throw null; } }
+        public static System.IO.Hashing.Crc32ParameterSet Bzip2 { get { throw null; } }
+        public static System.IO.Hashing.Crc32ParameterSet CdRomEdc { get { throw null; } }
+        public static System.IO.Hashing.Crc32ParameterSet Cksum { get { throw null; } }
         public uint FinalXorValue { get { throw null; } }
         public uint InitialValue { get { throw null; } }
+        public static System.IO.Hashing.Crc32ParameterSet IscsiCrc { get { throw null; } }
+        public static System.IO.Hashing.Crc32ParameterSet IsoHdlc { get { throw null; } }
+        public static System.IO.Hashing.Crc32ParameterSet Jamcrc { get { throw null; } }
+        public static System.IO.Hashing.Crc32ParameterSet Mef { get { throw null; } }
+        public static System.IO.Hashing.Crc32ParameterSet Mpeg2 { get { throw null; } }
         public uint Polynomial { get { throw null; } }
         public bool ReflectInput { get { throw null; } }
         public bool ReflectOutput { get { throw null; } }
         public uint Residue { get { throw null; } }
+        public static System.IO.Hashing.Crc32ParameterSet Xfer { get { throw null; } }
         public virtual uint Compute(System.ReadOnlySpan<byte> data) { throw null; }
         public void ComputeBytes(System.ReadOnlySpan<byte> data, System.Span<byte> destination) { }
         [System.CLSCompliantAttribute(false)]
