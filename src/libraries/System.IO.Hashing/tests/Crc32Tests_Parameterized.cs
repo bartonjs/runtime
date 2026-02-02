@@ -10,7 +10,7 @@ namespace System.IO.Hashing.Tests
         where T : Crc32DriverBase, new()
     {
         private static readonly Crc32DriverBase s_driver = new T();
-        private static readonly Crc32ParameterSet s_parameterSet = s_driver.ParameterSet;
+        private protected static readonly Crc32ParameterSet s_parameterSet = s_driver.ParameterSet;
 
         public Crc32Tests_Parameterized()
             : base(TestCaseBase.FromHexString(s_driver.EmptyOutput))
