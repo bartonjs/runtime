@@ -9,6 +9,8 @@ namespace System.IO.Hashing
     public sealed partial class Crc32 : System.IO.Hashing.NonCryptographicHashAlgorithm
     {
         public Crc32() : base (default(int)) { }
+        public Crc32(System.IO.Hashing.Crc32ParameterSet parameters) : base (default(int)) { }
+        public System.IO.Hashing.Crc32ParameterSet ParameterSet { get { throw null; } }
         public override void Append(System.ReadOnlySpan<byte> source) { }
         public System.IO.Hashing.Crc32 Clone() { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -16,42 +18,34 @@ namespace System.IO.Hashing
         protected override void GetCurrentHashCore(System.Span<byte> destination) { }
         protected override void GetHashAndResetCore(System.Span<byte> destination) { }
         public static byte[] Hash(byte[] source) { throw null; }
+        public static byte[] Hash(System.IO.Hashing.Crc32ParameterSet parameterSet, byte[] source) { throw null; }
+        public static byte[] Hash(System.IO.Hashing.Crc32ParameterSet parameterSet, System.ReadOnlySpan<byte> source) { throw null; }
+        public static int Hash(System.IO.Hashing.Crc32ParameterSet parameterSet, System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
         public static byte[] Hash(System.ReadOnlySpan<byte> source) { throw null; }
         public static int Hash(System.ReadOnlySpan<byte> source, System.Span<byte> destination) { throw null; }
         [System.CLSCompliantAttribute(false)]
+        public static uint HashToUInt32(System.IO.Hashing.Crc32ParameterSet parameterSet, System.ReadOnlySpan<byte> source) { throw null; }
+        [System.CLSCompliantAttribute(false)]
         public static uint HashToUInt32(System.ReadOnlySpan<byte> source) { throw null; }
         public override void Reset() { }
+        public static bool TryHash(System.IO.Hashing.Crc32ParameterSet parameterSet, System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
         public static bool TryHash(System.ReadOnlySpan<byte> source, System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
-    [System.CLSCompliantAttribute(false)]
     public abstract partial class Crc32ParameterSet
     {
         internal Crc32ParameterSet() { }
-        public static System.IO.Hashing.Crc32ParameterSet Aixm { get { throw null; } }
-        public static System.IO.Hashing.Crc32ParameterSet Autosar { get { throw null; } }
-        public static System.IO.Hashing.Crc32ParameterSet Base91D { get { throw null; } }
-        public bool BigEndianOutput { get { throw null; } }
-        public static System.IO.Hashing.Crc32ParameterSet Bzip2 { get { throw null; } }
-        public static System.IO.Hashing.Crc32ParameterSet CdRomEdc { get { throw null; } }
-        public static System.IO.Hashing.Crc32ParameterSet Cksum { get { throw null; } }
+        public static System.IO.Hashing.Crc32ParameterSet Crc32 { get { throw null; } }
+        public static System.IO.Hashing.Crc32ParameterSet Crc32C { get { throw null; } }
+        [System.CLSCompliantAttribute(false)]
         public uint FinalXorValue { get { throw null; } }
+        [System.CLSCompliantAttribute(false)]
         public uint InitialValue { get { throw null; } }
-        public static System.IO.Hashing.Crc32ParameterSet IscsiCrc { get { throw null; } }
-        public static System.IO.Hashing.Crc32ParameterSet IsoHdlc { get { throw null; } }
-        public static System.IO.Hashing.Crc32ParameterSet Jamcrc { get { throw null; } }
-        public static System.IO.Hashing.Crc32ParameterSet Mef { get { throw null; } }
-        public static System.IO.Hashing.Crc32ParameterSet Mpeg2 { get { throw null; } }
+        [System.CLSCompliantAttribute(false)]
         public uint Polynomial { get { throw null; } }
         public bool ReflectInput { get { throw null; } }
         public bool ReflectOutput { get { throw null; } }
-        public uint Residue { get { throw null; } }
-        public static System.IO.Hashing.Crc32ParameterSet Xfer { get { throw null; } }
-        public virtual uint Compute(System.ReadOnlySpan<byte> data) { throw null; }
-        public void ComputeBytes(System.ReadOnlySpan<byte> data, System.Span<byte> destination) { }
         [System.CLSCompliantAttribute(false)]
         public static System.IO.Hashing.Crc32ParameterSet Create(uint polynomial, uint initialValue, uint finalXorValue, bool reflectInput, bool reflectOutput) { throw null; }
-        public virtual uint Finalize(uint value) { throw null; }
-        public abstract uint Update(uint value, System.ReadOnlySpan<byte> data);
     }
     public sealed partial class Crc64 : System.IO.Hashing.NonCryptographicHashAlgorithm
     {

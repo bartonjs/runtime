@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+
 namespace System.IO.Hashing
 {
     public abstract partial class Crc32ParameterSet
@@ -80,12 +82,14 @@ namespace System.IO.Hashing
             {
             }
 
-            public override uint Update(uint value, ReadOnlySpan<byte> data)
+            internal override uint Update(uint value, ReadOnlySpan<byte> source)
             {
                 uint[] lookupTable = _lookupTable;
                 uint crc = value;
 
-                foreach (byte dataByte in data)
+                Debug.Assert(lookupTable.Length == 256);
+
+                foreach (byte dataByte in source)
                 {
                     byte idx = (byte)(crc ^ dataByte);
                     crc = lookupTable[idx] ^ (crc >> 8);
@@ -94,12 +98,14 @@ namespace System.IO.Hashing
                 return crc;
             }
 
-            public override uint Compute(ReadOnlySpan<byte> data)
+            private protected override uint Compute(ReadOnlySpan<byte> source)
             {
                 uint[] lookupTable = _lookupTable;
                 uint crc = InitialValue;
 
-                foreach (byte dataByte in data)
+                Debug.Assert(lookupTable.Length == 256);
+
+                foreach (byte dataByte in source)
                 {
                     byte idx = (byte)(crc ^ dataByte);
                     crc = lookupTable[idx] ^ (crc >> 8);
@@ -121,37 +127,25 @@ namespace System.IO.Hashing
             {
             }
 
-            public override uint Update(uint value, ReadOnlySpan<byte> data)
+            internal override uint Update(uint value, ReadOnlySpan<byte> source)
+            {
+                return UpdateScalar(value, source);
+            }
+
+            private uint UpdateScalar(uint value, ReadOnlySpan<byte> source)
             {
                 uint[] lookupTable = _lookupTable;
                 uint crc = value;
 
-                foreach (byte dataByte in data)
+                Debug.Assert(lookupTable.Length == 256);
+
+                foreach (byte dataByte in source)
                 {
                     byte idx = (byte)((crc >> 24) ^ dataByte);
                     crc = lookupTable[idx] ^ (crc << 8);
                 }
 
                 return crc;
-            }
-
-            public override uint Compute(ReadOnlySpan<byte> data)
-            {
-                uint[] lookupTable = _lookupTable;
-                uint crc = InitialValue;
-
-                foreach (byte dataByte in data)
-                {
-                    byte idx = (byte)((crc >> 24) ^ dataByte);
-                    crc = lookupTable[idx] ^ (crc << 8);
-                }
-
-                if (ReflectOutput != ReflectInput)
-                {
-                    crc = ReverseBits(crc);
-                }
-
-                return crc ^ FinalXorValue;
             }
         }
     }

@@ -5,50 +5,36 @@ using System.Buffers.Binary;
 
 namespace System.IO.Hashing
 {
-    [CLSCompliant(false)]
-    public abstract partial class Crc32ParameterSet
+    public partial class Crc32ParameterSet
     {
         /// <summary>Gets the polynomial value used for the CRC calculation.</summary>
         /// <value>The polynomial value used for the CRC calculation.</value>
+        [CLSCompliant(false)]
         public uint Polynomial { get; }
 
         /// <summary>Gets the initial value (seed) for the CRC calculation.</summary>
         /// <value>The initial value (seed) for the CRC calculation.</value>
+        [CLSCompliant(false)]
         public uint InitialValue { get; }
 
         /// <summary>Gets the value to XOR with the final CRC result.</summary>
         /// <value>The value to XOR with the final CRC result.</value>
         /// <remarks>For reflected-output CRC values, the final XOR is done after the bit-reflection.</remarks>
+        [CLSCompliant(false)]
         public uint FinalXorValue { get; }
 
-        /// <summary>Gets a value indicating whether the input bytes are reflected (reversed bit order) before processing.</summary>
-        /// <value><see langword="true"/> if the input bytes are reflected; otherwise, <see langword="false"/>.</value>
+        /// <summary>
+        ///   Gets a value indicating whether the input value is treated as most significant bit (MSB) first, or last.
+        /// </summary>
+        /// <value>
+        ///   <see langword="true"/> if the MSB is the least significant bit of the last byte;
+        ///   <see langword="false"/> if the MSB is the most significant bit of the first byte.
+        /// </value>
         public bool ReflectInput { get; }
 
         /// <summary>Gets a value indicating whether the output CRC is reflected (reversed bit order) before applying the final XOR.</summary>
         /// <value><see langword="true"/> if the output CRC is reflected; otherwise, <see langword="false"/>.</value>
         public bool ReflectOutput { get; }
-
-        /// <summary>
-        ///   Gets a value indicating whether the output CRC bytes use the big-endian byte order.
-        /// </summary>
-        /// <value><see langword="true"/> if the output CRC bytes use the big-endian byte order; otherwise, <see langword="false"/>.</value>
-        /// <seealso cref="Residue"/>
-        public bool BigEndianOutput { get; private set; }
-
-        /// <summary>
-        ///   Gets the residue value used for the CRC calculation.
-        /// </summary>
-        /// <value>The residue value used for the CRC calculation.</value>
-        /// <remarks>
-        ///   The Cyclic Redundancy Check (CRC) residue is the value obtained by
-        ///   the computation <c>CRC(data concat CRC(data))</c>, which is the same value
-        ///   for any data input.
-        ///   The residue value differs across different parameter sets, and the residue is
-        ///   only valid under either a big-endian or little-endian output encoding.
-        /// </remarks>
-        /// <seealso cref="BigEndianOutput"/>
-        public uint Residue { get; private set; }
 
         private protected Crc32ParameterSet(uint polynomial, uint initialValue, uint finalXorValue, bool reflectInput, bool reflectOutput)
         {
@@ -80,66 +66,25 @@ namespace System.IO.Hashing
                 _ => new ReflectedTableBasedCrc32(polynomial, initialValue, finalXorValue, reflectOutput),
             };
 
-            Span<byte> buf = stackalloc byte[12];
-
-            static void Test(
-                Crc32ParameterSet set,
-                ReadOnlySpan<byte> data,
-                Span<byte> buf,
-                out uint bigEndian,
-                out uint littleEndian)
-            {
-                data.CopyTo(buf);
-
-                Span<byte> dest = buf.Slice(data.Length, sizeof(uint));
-                ReadOnlySpan<byte> full = buf.Slice(0, data.Length + sizeof(uint));
-
-                uint crc = set.Compute(data);
-                BinaryPrimitives.WriteUInt32BigEndian(dest, crc);
-                bigEndian = set.Compute(full);
-                BinaryPrimitives.WriteUInt32LittleEndian(dest, crc);
-                littleEndian = set.Compute(full);
-            }
-
-            Test(set, "12345678"u8, buf, out uint r1BE, out uint r1LE);
-            Test(set, "SHORTER"u8, buf, out uint r2BE, out uint r2LE);
-
-            // Determine which encoding produces a consistent residue
-            if (r1LE == r2LE)
-            {
-                set.BigEndianOutput = false;
-                set.Residue = r1LE;
-            }
-            else if (r1BE == r2BE)
-            {
-                set.BigEndianOutput = true;
-                set.Residue = r1BE;
-            }
-            else
-            {
-                throw new ArgumentException("The provided CRC-32 parameters do not produce a consistent residue for either little-endian or big-endian output.");
-            }
-
             return set;
         }
 
-        public void ComputeBytes(ReadOnlySpan<byte> data, Span<byte> destination)
+        internal void WriteCrcToSpan(uint crc, Span<byte> destination)
         {
-            uint crc = Compute(data);
-
-            if (BigEndianOutput)
-            {
-                BinaryPrimitives.WriteUInt32BigEndian(destination, crc);
-            }
-            else
+            if (ReflectOutput)
             {
                 BinaryPrimitives.WriteUInt32LittleEndian(destination, crc);
             }
+            else
+            {
+                BinaryPrimitives.WriteUInt32BigEndian(destination, crc);
+            }
         }
 
-        public abstract uint Update(uint value, ReadOnlySpan<byte> data);
+        internal virtual uint Update(uint value, ReadOnlySpan<byte> source) =>
+            throw new NotImplementedException();
 
-        public virtual uint Finalize(uint value)
+        internal uint Finalize(uint value)
         {
             uint crc = value;
 
@@ -151,9 +96,9 @@ namespace System.IO.Hashing
             return crc ^ FinalXorValue;
         }
 
-        public virtual uint Compute(ReadOnlySpan<byte> data)
+        private protected virtual uint Compute(ReadOnlySpan<byte> source)
         {
-            uint crc = Update(InitialValue, data);
+            uint crc = Update(InitialValue, source);
 
             if (ReflectOutput != ReflectInput)
             {

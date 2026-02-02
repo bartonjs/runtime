@@ -38,69 +38,14 @@ namespace System.IO.Hashing.Tests
             Assert.Equal(refOut, crc32.ReflectOutput);
             Assert.Equal(xorOut, crc32.FinalXorValue);
 
-            // https://reveng.sourceforge.io/crc-catalogue/17plus.htm uses the residue value as
-            // the value in the register between a final reflection (if applicable) and the final XOR.
-            // Since our version of residue includes the final XOR, we need to merge that in here
-            // before checking the expected result.
-            residue ^= xorOut;
-            Assert.Equal(residue, crc32.Residue);
-
-            uint crc = crc32.Compute("123456789"u8);
-            Assert.Equal(check, crc);
-        }
-
-        [Fact]
-        public static void IsoHdlcIsCrc32()
-        {
-            Span<byte> data = stackalloc byte[95];
-            data.Fill((byte)DateTime.Now.Ticks);
-
-            uint fromSet = Crc32ParameterSet.IsoHdlc.Compute(data);
-            uint fromCrc32 = Crc32.HashToUInt32(data);
-
-            Assert.Equal(fromCrc32, fromSet);
-            byte[] bytesFromSet = new byte[4];
-            byte[] bytesFromCrc32 = new byte[4];
-
-            Crc32.Hash(data, bytesFromCrc32);
-            Crc32ParameterSet.IsoHdlc.ComputeBytes(data, bytesFromSet);
-
-            AssertExtensions.SequenceEqual(bytesFromCrc32, bytesFromSet);
-        }
-
-        [Fact]
-        public static void IsoHdlcFromParametersIsMatch()
-        {
-            Crc32ParameterSet preDefined = Crc32ParameterSet.IsoHdlc;
-            Crc32ParameterSet fromParameters = Crc32ParameterSet.Create(
-                polynomial: 0x04C11DB7,
-                initialValue: 0xFFFFFFFF,
-                finalXorValue: 0xFFFFFFFF,
-                reflectInput: true,
-                reflectOutput: true);
-
-            Assert.Equal(fromParameters.Polynomial, preDefined.Polynomial);
-            Assert.Equal(fromParameters.InitialValue, preDefined.InitialValue);
-            Assert.Equal(fromParameters.ReflectInput, preDefined.ReflectInput);
-            Assert.Equal(fromParameters.ReflectOutput, preDefined.ReflectOutput);
-            Assert.Equal(fromParameters.FinalXorValue, preDefined.FinalXorValue);
-            Assert.Equal(fromParameters.BigEndianOutput, preDefined.BigEndianOutput);
-            Assert.Equal(fromParameters.Residue, preDefined.Residue);
-
-            Span<byte> data = stackalloc byte[95];
-            data.Fill((byte)DateTime.Now.Ticks);
-
-            uint fromCreate = fromParameters.Compute(data);
-            uint fromPreDef = preDefined.Compute(data);
-
-            Assert.Equal(fromCreate, fromPreDef);
-            byte[] bytesFromCreate = new byte[4];
-            byte[] bytesFromPreDef = new byte[4];
-
-            fromParameters.ComputeBytes(data, bytesFromCreate);
-            preDefined.ComputeBytes(data, bytesFromPreDef);
-
-            AssertExtensions.SequenceEqual(bytesFromCreate, bytesFromPreDef);
+            Crc32 hasher = new Crc32(crc32);
+            hasher.Append("123456789"u8);
+            Assert.Equal(check, hasher.GetCurrentHashAsUInt32());
+            byte[] ret = hasher.GetCurrentHash();
+            hasher.Append(ret);
+            uint final = hasher.GetCurrentHashAsUInt32();
+            uint finalResidue = final ^ xorOut;
+            Assert.Equal(residue, finalResidue);
         }
     }
 }

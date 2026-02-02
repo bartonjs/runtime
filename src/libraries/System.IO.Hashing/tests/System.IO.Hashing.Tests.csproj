@@ -8,6 +8,10 @@
   <ItemGroup>
     <Compile Include="Crc32ParameterSetTests.cs" />
     <Compile Include="Crc32Tests.cs" />
+    <Compile Include="Crc32Tests_Parameterized.cs" />
+    <Compile Include="Crc32Tests_ParameterSet_Crc32.cs" />
+    <Compile Include="Crc32Tests_ParameterSet_Crc32C.cs" />
+    <Compile Include="Crc32Tests_ParameterSet_Custom_Cksum.cs" />
     <Compile Include="Crc64ParameterSetTests.cs" />
     <Compile Include="Crc64Tests.cs" />
     <Compile Include="NonCryptoHashBaseTests.cs" />
