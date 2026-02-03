@@ -9,7 +9,7 @@ namespace System.IO.Hashing
     public sealed partial class Crc32 : System.IO.Hashing.NonCryptographicHashAlgorithm
     {
         public Crc32() : base (default(int)) { }
-        public Crc32(System.IO.Hashing.Crc32ParameterSet parameters) : base (default(int)) { }
+        public Crc32(System.IO.Hashing.Crc32ParameterSet parameterSet) : base (default(int)) { }
         public System.IO.Hashing.Crc32ParameterSet ParameterSet { get { throw null; } }
         public override void Append(System.ReadOnlySpan<byte> source) { }
         public System.IO.Hashing.Crc32 Clone() { throw null; }

@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers.Binary;
-
 namespace System.IO.Hashing
 {
     /// <summary>
@@ -46,26 +44,26 @@ namespace System.IO.Hashing
         /// <summary>
         ///   Initializes a new instance of the <see cref="Crc32"/> class using the specified parameters.
         /// </summary>
-        /// <param name="parameters">
+        /// <param name="parameterSet">
         ///   The parameters to use for the CRC computation.
         /// </param>
         /// <exception cref="ArgumentNullException">
-        ///   <paramref name="parameters"/> is <see langword="null"/>.
+        ///   <paramref name="parameterSet"/> is <see langword="null"/>.
         /// </exception>
-        public Crc32(Crc32ParameterSet parameters)
+        public Crc32(Crc32ParameterSet parameterSet)
             : base(Size)
         {
-            ArgumentNullException.ThrowIfNull(parameters);
+            ArgumentNullException.ThrowIfNull(parameterSet);
 
-            ParameterSet = parameters;
-            _crc = parameters.InitialValue;
+            ParameterSet = parameterSet;
+            _crc = parameterSet.InitialValue;
         }
 
         /// <summary>Initializes a new instance of the <see cref="Crc32"/> class using the state from another instance.</summary>
-        private Crc32(uint crc, Crc32ParameterSet parameters) : base(Size)
+        private Crc32(uint crc, Crc32ParameterSet parameterSet) : base(Size)
         {
             _crc = crc;
-            ParameterSet = parameters;
+            ParameterSet = parameterSet;
         }
 
         /// <summary>Returns a clone of the current instance, with a copy of the current instance's internal state.</summary>
@@ -152,13 +150,8 @@ namespace System.IO.Hashing
         /// </summary>
         /// <param name="source">The data to hash.</param>
         /// <returns>The CRC-32 hash of the provided data.</returns>
-        public static byte[] Hash(ReadOnlySpan<byte> source)
-        {
-            byte[] ret = new byte[Size];
-            uint hash = HashToUInt32(source);
-            BinaryPrimitives.WriteUInt32LittleEndian(ret, hash);
-            return ret;
-        }
+        public static byte[] Hash(ReadOnlySpan<byte> source) =>
+            HashCore(Crc32ParameterSet.Crc32, source);
 
         /// <summary>
         ///   Computes the CRC32 hash value for the provided data using the specified parameter set.
@@ -173,6 +166,11 @@ namespace System.IO.Hashing
         {
             ArgumentNullException.ThrowIfNull(parameterSet);
 
+            return HashCore(parameterSet, source);
+        }
+
+        private static byte[] HashCore(Crc32ParameterSet parameterSet, ReadOnlySpan<byte> source)
+        {
             byte[] ret = new byte[Size];
             uint hash = HashToUInt32(parameterSet, source);
             parameterSet.WriteCrcToSpan(hash, ret);
@@ -192,19 +190,8 @@ namespace System.IO.Hashing
         ///   <see langword="true"/> if <paramref name="destination"/> is long enough to receive
         ///   the computed hash value (4 bytes); otherwise, <see langword="false"/>.
         /// </returns>
-        public static bool TryHash(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
-        {
-            if (destination.Length < Size)
-            {
-                bytesWritten = 0;
-                return false;
-            }
-
-            uint hash = HashToUInt32(source);
-            BinaryPrimitives.WriteUInt32LittleEndian(destination, hash);
-            bytesWritten = Size;
-            return true;
-        }
+        public static bool TryHash(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten) =>
+            TryHashCore(Crc32ParameterSet.Crc32, source, destination, out bytesWritten);
 
         /// <summary>
         ///   Attempts to compute the CRC-32 hash of the provided data, using the specified parameter set,
@@ -231,6 +218,15 @@ namespace System.IO.Hashing
         {
             ArgumentNullException.ThrowIfNull(parameterSet);
 
+            return TryHashCore(parameterSet, source, destination, out bytesWritten);
+        }
+
+        private static bool TryHashCore(
+            Crc32ParameterSet parameterSet,
+            ReadOnlySpan<byte> source,
+            Span<byte> destination,
+            out int bytesWritten)
+        {
             if (destination.Length < Size)
             {
                 bytesWritten = 0;
@@ -252,17 +248,8 @@ namespace System.IO.Hashing
         /// <returns>
         ///   The number of bytes written to <paramref name="destination"/>.
         /// </returns>
-        public static int Hash(ReadOnlySpan<byte> source, Span<byte> destination)
-        {
-            if (destination.Length < Size)
-            {
-                ThrowDestinationTooShort();
-            }
-
-            uint hash = HashToUInt32(source);
-            BinaryPrimitives.WriteUInt32LittleEndian(destination, hash);
-            return Size;
-        }
+        public static int Hash(ReadOnlySpan<byte> source, Span<byte> destination) =>
+            HashCore(Crc32ParameterSet.Crc32, source, destination);
 
         /// <summary>
         ///   Computes the CRC-32 hash of the provided data, using the specified parameters,
@@ -279,6 +266,13 @@ namespace System.IO.Hashing
         /// </exception>
         public static int Hash(Crc32ParameterSet parameterSet, ReadOnlySpan<byte> source, Span<byte> destination)
         {
+            ArgumentNullException.ThrowIfNull(parameterSet);
+
+            return HashCore(parameterSet, source, destination);
+        }
+
+        private static int HashCore(Crc32ParameterSet parameterSet, ReadOnlySpan<byte> source, Span<byte> destination)
+        {
             if (destination.Length < Size)
             {
                 ThrowDestinationTooShort();
@@ -293,8 +287,13 @@ namespace System.IO.Hashing
         /// <param name="source">The data to hash.</param>
         /// <returns>The computed CRC-32 hash.</returns>
         [CLSCompliant(false)]
-        public static uint HashToUInt32(ReadOnlySpan<byte> source) =>
-            ~Update(Crc32ParameterSet.Crc32.InitialValue, source);
+        public static uint HashToUInt32(ReadOnlySpan<byte> source)
+        {
+            // Rather than go through Crc32ParameterSet.Crc32 to end up in the optimized Update method here,
+            // just call the Update method directly.
+            // ITU-T V.42 / IEEE 802.3 uses a final XOR of 0xFFFFFFFF, so accelerate that as ~.
+            return ~Update(Crc32ParameterSet.Crc32.InitialValue, source);
+        }
 
         /// <summary>Computes the CRC-32 hash of the provided data, using the ITU-T V.42 / IEEE 802.3 parameters.</summary>
         /// <param name="parameterSet">The parameters to use for the CRC computation.</param>
@@ -307,6 +306,7 @@ namespace System.IO.Hashing
         public static uint HashToUInt32(Crc32ParameterSet parameterSet, ReadOnlySpan<byte> source)
         {
             ArgumentNullException.ThrowIfNull(parameterSet);
+
             uint crc = parameterSet.Update(parameterSet.InitialValue, source);
             return parameterSet.Finalize(crc);
         }
