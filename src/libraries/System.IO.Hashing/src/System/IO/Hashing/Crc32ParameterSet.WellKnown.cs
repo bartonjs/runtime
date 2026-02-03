@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.IO.Hashing
 {
@@ -100,27 +102,31 @@ namespace System.IO.Hashing
                 else
                 {
                     Debug.Assert(System.Runtime.Intrinsics.Arm.Crc32.IsSupported);
+                    ref byte ptr = ref MemoryMarshal.GetReference(source);
+                    int offset = 0;
 
                     if (System.Runtime.Intrinsics.Arm.Crc32.Arm64.IsSupported)
                     {
-                        ReadOnlySpan<ulong> ulongData = System.Runtime.InteropServices.MemoryMarshal.Cast<byte, ulong>(source);
+                        int longLength = source.Length & ~0x7; // Exclude trailing bytes not a multiple of 8
 
-                        foreach (ulong value in ulongData)
+                        for (; offset < longLength; offset += sizeof(ulong))
                         {
-                            crc = System.Runtime.Intrinsics.Arm.Crc32.Arm64.ComputeCrc32C(crc, value);
+                            crc = System.Runtime.Intrinsics.Arm.Crc32.Arm64.ComputeCrc32C(
+                                crc,
+                                Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref ptr, offset)));
                         }
-
-                        source = source.Slice(ulongData.Length * sizeof(ulong));
                     }
 
-                    ReadOnlySpan<uint> uintData = System.Runtime.InteropServices.MemoryMarshal.Cast<byte, uint>(source);
+                    int intLength = source.Length & ~0x3; // Exclude trailing bytes not a multiple of 4
 
-                    foreach (uint value in uintData)
+                    for (; offset < intLength; offset += sizeof(uint))
                     {
-                        crc = System.Runtime.Intrinsics.Arm.Crc32.Arm64.ComputeCrc32C(crc, value);
+                        crc = System.Runtime.Intrinsics.Arm.Crc32.ComputeCrc32C(
+                            crc,
+                            Unsafe.ReadUnaligned<uint>(ref Unsafe.Add(ref ptr, offset)));
                     }
 
-                    ReadOnlySpan<byte> remainingBytes = source.Slice(uintData.Length * sizeof(uint));
+                    ReadOnlySpan<byte> remainingBytes = source.Slice(offset);
 
                     foreach (byte value in remainingBytes)
                     {
