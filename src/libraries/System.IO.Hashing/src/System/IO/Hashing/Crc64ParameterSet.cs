@@ -5,20 +5,22 @@ using System.Buffers.Binary;
 
 namespace System.IO.Hashing
 {
-    [CLSCompliant(false)]
     public abstract partial class Crc64ParameterSet
     {
         /// <summary>Gets the polynomial value used for the CRC calculation.</summary>
         /// <value>The polynomial value used for the CRC calculation.</value>
+        [CLSCompliant(false)]
         public ulong Polynomial { get; }
 
         /// <summary>Gets the initial value (seed) for the CRC calculation.</summary>
         /// <value>The initial value (seed) for the CRC calculation.</value>
+        [CLSCompliant(false)]
         public ulong InitialValue { get; }
 
         /// <summary>Gets the value to XOR with the final CRC result.</summary>
         /// <value>The value to XOR with the final CRC result.</value>
         /// <remarks>For reflected-output CRC values, the final XOR is done after the bit-reflection.</remarks>
+        [CLSCompliant(false)]
         public ulong FinalXorValue { get; }
 
         /// <summary>Gets a value indicating whether the input bytes are reflected (reversed bit order) before processing.</summary>
@@ -28,27 +30,6 @@ namespace System.IO.Hashing
         /// <summary>Gets a value indicating whether the output CRC is reflected (reversed bit order) before applying the final XOR.</summary>
         /// <value><see langword="true"/> if the output CRC is reflected; otherwise, <see langword="false"/>.</value>
         public bool ReflectOutput { get; }
-
-        /// <summary>
-        ///   Gets a value indicating whether the output CRC bytes use the big-endian byte order.
-        /// </summary>
-        /// <value><see langword="true"/> if the output CRC bytes use the big-endian byte order; otherwise, <see langword="false"/>.</value>
-        /// <seealso cref="Residue"/>
-        public bool BigEndianOutput { get; private set; }
-
-        /// <summary>
-        ///   Gets the residue value used for the CRC calculation.
-        /// </summary>
-        /// <value>The residue value used for the CRC calculation.</value>
-        /// <remarks>
-        ///   The Cyclic Redundancy Check (CRC) residue is the value obtained by
-        ///   the computation <c>CRC(data concat CRC(data))</c>, which is the same value
-        ///   for any data input.
-        ///   The residue value differs across different parameter sets, and the residue is
-        ///   only valid under either a big-endian or little-endian output encoding.
-        /// </remarks>
-        /// <seealso cref="BigEndianOutput"/>
-        public ulong Residue { get; private set; }
 
         private protected Crc64ParameterSet(ulong polynomial, ulong initialValue, ulong finalXorValue, bool reflectInput, bool reflectOutput)
         {
@@ -80,66 +61,25 @@ namespace System.IO.Hashing
                 _ => new ReflectedTableBasedCrc64(polynomial, initialValue, finalXorValue, reflectOutput),
             };
 
-            Span<byte> buf = stackalloc byte[16];
-
-            static void Test(
-                Crc64ParameterSet set,
-                ReadOnlySpan<byte> data,
-                Span<byte> buf,
-                out ulong bigEndian,
-                out ulong littleEndian)
-            {
-                data.CopyTo(buf);
-
-                Span<byte> dest = buf.Slice(data.Length, sizeof(ulong));
-                ReadOnlySpan<byte> full = buf.Slice(0, data.Length + sizeof(ulong));
-
-                ulong crc = set.Compute(data);
-                BinaryPrimitives.WriteUInt64BigEndian(dest, crc);
-                bigEndian = set.Compute(full);
-                BinaryPrimitives.WriteUInt64LittleEndian(dest, crc);
-                littleEndian = set.Compute(full);
-            }
-
-            Test(set, "12345678"u8, buf, out ulong r1BE, out ulong r1LE);
-            Test(set, "SHORTER"u8, buf, out ulong r2BE, out ulong r2LE);
-
-            // Determine which encoding produces a consistent residue
-            if (r1LE == r2LE)
-            {
-                set.BigEndianOutput = false;
-                set.Residue = r1LE;
-            }
-            else if (r1BE == r2BE)
-            {
-                set.BigEndianOutput = true;
-                set.Residue = r1BE;
-            }
-            else
-            {
-                throw new ArgumentException("The provided CRC-64 parameters do not produce a consistent residue for either little-endian or big-endian output.");
-            }
-
             return set;
         }
 
-        public void ComputeBytes(ReadOnlySpan<byte> data, Span<byte> destination)
+        internal void WriteCrcToSpan(ulong crc, Span<byte> destination)
         {
-            ulong crc = Compute(data);
-
-            if (BigEndianOutput)
-            {
-                BinaryPrimitives.WriteUInt64BigEndian(destination, crc);
-            }
-            else
+            if (ReflectOutput)
             {
                 BinaryPrimitives.WriteUInt64LittleEndian(destination, crc);
             }
+            else
+            {
+                BinaryPrimitives.WriteUInt64BigEndian(destination, crc);
+            }
         }
 
-        public abstract ulong Update(ulong value, ReadOnlySpan<byte> data);
+        internal virtual ulong Update(ulong value, ReadOnlySpan<byte> source) =>
+            throw new NotImplementedException();
 
-        public virtual ulong Finalize(ulong value)
+        internal ulong Finalize(ulong value)
         {
             ulong crc = value;
 
@@ -151,9 +91,9 @@ namespace System.IO.Hashing
             return crc ^ FinalXorValue;
         }
 
-        public virtual ulong Compute(ReadOnlySpan<byte> data)
+        private protected virtual ulong Compute(ReadOnlySpan<byte> source)
         {
-            ulong crc = Update(InitialValue, data);
+            ulong crc = Update(InitialValue, source);
 
             if (ReflectOutput != ReflectInput)
             {

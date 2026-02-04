@@ -58,7 +58,7 @@ namespace System.IO.Hashing.Tests
         }
     }
 
-    public sealed class Crc32Tests_ParameterSet_CustomCrc32 : Crc32Tests_Parameterized<CustomCrc32Driver>
+    public sealed class Crc32Tests_ParameterSet_Custom_Crc32 : Crc32Tests_Parameterized<CustomCrc32Driver>
     {
         [Fact]
         public void CreateIsNotSingleton()

@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+
 namespace System.IO.Hashing
 {
     public abstract partial class Crc64ParameterSet
@@ -80,10 +82,12 @@ namespace System.IO.Hashing
             {
             }
 
-            public override ulong Update(ulong value, ReadOnlySpan<byte> data)
+            internal override ulong Update(ulong value, ReadOnlySpan<byte> data)
             {
                 ulong[] lookupTable = _lookupTable;
                 ulong crc = value;
+
+                Debug.Assert(lookupTable.Length == 256);
 
                 foreach (byte dataByte in data)
                 {
@@ -94,10 +98,12 @@ namespace System.IO.Hashing
                 return crc;
             }
 
-            public override ulong Compute(ReadOnlySpan<byte> data)
+            private protected override ulong Compute(ReadOnlySpan<byte> data)
             {
                 ulong[] lookupTable = _lookupTable;
                 ulong crc = InitialValue;
+
+                Debug.Assert(lookupTable.Length == 256);
 
                 foreach (byte dataByte in data)
                 {
@@ -121,7 +127,7 @@ namespace System.IO.Hashing
             {
             }
 
-            public override ulong Update(ulong value, ReadOnlySpan<byte> data)
+            internal override ulong Update(ulong value, ReadOnlySpan<byte> data)
             {
                 ulong[] lookupTable = _lookupTable;
                 ulong crc = value;
@@ -135,7 +141,7 @@ namespace System.IO.Hashing
                 return crc;
             }
 
-            public override ulong Compute(ReadOnlySpan<byte> data)
+            private protected override ulong Compute(ReadOnlySpan<byte> data)
             {
                 ulong[] lookupTable = _lookupTable;
                 ulong crc = InitialValue;
