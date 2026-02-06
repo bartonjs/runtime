@@ -53,7 +53,6 @@ namespace System.IO.Hashing
             {
             }
 
-            private protected override uint Compute(ReadOnlySpan<byte> source) => Hashing.Crc32.HashToUInt32(source);
             internal override uint Update(uint value, ReadOnlySpan<byte> source) => Hashing.Crc32.Update(value, source);
         }
 
@@ -63,17 +62,6 @@ namespace System.IO.Hashing
             public Crc32CParameterSet()
                 : base(0x1edc6f41, 0xffffffff, 0xffffffff, true, true)
             {
-            }
-
-            private protected override uint Compute(ReadOnlySpan<byte> data)
-            {
-                if (data.Length == 0)
-                {
-                    return 0;
-                }
-
-                uint crc = UpdateIntrinsic(InitialValue, data);
-                return crc ^ FinalXorValue;
             }
 
             internal override uint Update(uint value, ReadOnlySpan<byte> source) => UpdateIntrinsic(value, source);

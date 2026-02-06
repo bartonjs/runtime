@@ -18,7 +18,6 @@ namespace System.IO.Hashing
             {
             }
 
-            private protected override ulong Compute(ReadOnlySpan<byte> data) => Hashing.Crc64.HashToUInt64(data);
             internal override ulong Update(ulong value, ReadOnlySpan<byte> data) => Hashing.Crc64.Update(value, data);
         }
     }

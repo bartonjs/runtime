@@ -7,79 +7,66 @@ namespace System.IO.Hashing
 {
     public abstract partial class Crc64ParameterSet
     {
-        private abstract class TableBasedCrc64 : Crc64ParameterSet
+        private static ulong[] GenerateLookupTable(ulong polynomial, bool reflectInput)
         {
-            protected readonly ulong[] _lookupTable;
+            ulong[] table = new ulong[256];
 
-            protected TableBasedCrc64(
-                ulong polynomial,
-                ulong initialValue,
-                ulong finalXorValue,
-                bool reflectInput,
-                bool reflectOutput)
-                : base(polynomial, initialValue, finalXorValue, reflectInput, reflectOutput)
+            if (!reflectInput)
             {
-                _lookupTable = GenerateLookupTable();
-            }
+                ulong crc = 0x8000000000000000ul;
 
-            private ulong[] GenerateLookupTable()
-            {
-                ulong[] table = new ulong[256];
-
-                if (!ReflectInput)
+                for (int i = 1; i < 256; i <<= 1)
                 {
-                    ulong crc = 0x8000000000000000ul;
-
-                    for (int i = 1; i < 256; i <<= 1)
+                    if ((crc & 0x8000000000000000ul) != 0)
                     {
-                        if ((crc & 0x8000000000000000ul) != 0)
+                        crc = (crc << 1) ^ polynomial;
+                    }
+                    else
+                    {
+                        crc <<= 1;
+                    }
+
+                    for (int j = 0; j < i; j++)
+                    {
+                        table[i + j] = crc ^ table[j];
+                    }
+                }
+            }
+            else
+            {
+                for (int i = 1; i < 256; i++)
+                {
+                    ulong r = ReverseBits((ulong)i);
+
+                    const ulong LastBit = 0x8000000000000000ul;
+
+                    for (int j = 0; j < 8; j++)
+                    {
+                        if ((r & LastBit) != 0)
                         {
-                            crc = (crc << 1) ^ Polynomial;
+                            r = (r << 1) ^ polynomial;
                         }
                         else
                         {
-                            crc <<= 1;
-                        }
-
-                        for (int j = 0; j < i; j++)
-                        {
-                            table[i + j] = crc ^ table[j];
+                            r <<= 1;
                         }
                     }
+
+                    table[i] = ReverseBits(r);
                 }
-                else
-                {
-                    for (int i = 1; i < 256; i++)
-                    {
-                        ulong r = ReverseBits((ulong)i);
-
-                        const ulong LastBit = 0x8000000000000000ul;
-
-                        for (int j = 0; j < 8; j++)
-                        {
-                            if ((r & LastBit) != 0)
-                            {
-                                r = (r << 1) ^ Polynomial;
-                            }
-                            else
-                            {
-                                r <<= 1;
-                            }
-                        }
-
-                        table[i] = ReverseBits(r);
-                    }
-                }
-
-                return table;
             }
+
+            return table;
         }
 
-        private sealed class ReflectedTableBasedCrc64 : TableBasedCrc64
+        private sealed class ReflectedTableBasedCrc64 : Crc64ParameterSet
         {
+            private readonly ulong[] _lookupTable;
+
             internal ReflectedTableBasedCrc64(ulong polynomial, ulong initialValue, ulong finalXorValue, bool reflectOutput)
                 : base(polynomial, initialValue, finalXorValue, reflectInput: true, reflectOutput)
             {
+                _lookupTable = GenerateLookupTable(polynomial, reflectInput: true);
             }
 
             internal override ulong Update(ulong value, ReadOnlySpan<byte> data)
@@ -96,35 +83,17 @@ namespace System.IO.Hashing
                 }
 
                 return crc;
-            }
-
-            private protected override ulong Compute(ReadOnlySpan<byte> data)
-            {
-                ulong[] lookupTable = _lookupTable;
-                ulong crc = InitialValue;
-
-                Debug.Assert(lookupTable.Length == 256);
-
-                foreach (byte dataByte in data)
-                {
-                    byte idx = (byte)(crc ^ dataByte);
-                    crc = lookupTable[idx] ^ (crc >> 8);
-                }
-
-                if (ReflectOutput != ReflectInput)
-                {
-                    crc = ReverseBits(crc);
-                }
-
-                return crc ^ FinalXorValue;
             }
         }
 
-        private sealed class ForwardTableBasedCrc64 : TableBasedCrc64
+        private sealed class ForwardTableBasedCrc64 : Crc64ParameterSet
         {
+            private readonly ulong[] _lookupTable;
+
             internal ForwardTableBasedCrc64(ulong polynomial, ulong initialValue, ulong finalXorValue, bool reflectOutput)
                 : base(polynomial, initialValue, finalXorValue, reflectInput: false, reflectOutput)
             {
+                _lookupTable = GenerateLookupTable(polynomial, reflectInput: false);
             }
 
             internal override ulong Update(ulong value, ReadOnlySpan<byte> data)
@@ -139,25 +108,6 @@ namespace System.IO.Hashing
                 }
 
                 return crc;
-            }
-
-            private protected override ulong Compute(ReadOnlySpan<byte> data)
-            {
-                ulong[] lookupTable = _lookupTable;
-                ulong crc = InitialValue;
-
-                foreach (byte dataByte in data)
-                {
-                    byte idx = (byte)((crc >> 56) ^ dataByte);
-                    crc = lookupTable[idx] ^ (crc << 8);
-                }
-
-                if (ReflectOutput != ReflectInput)
-                {
-                    crc = ReverseBits(crc);
-                }
-
-                return crc ^ FinalXorValue;
             }
         }
     }

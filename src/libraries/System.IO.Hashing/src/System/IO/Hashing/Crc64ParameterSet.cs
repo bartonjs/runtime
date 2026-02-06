@@ -31,7 +31,7 @@ namespace System.IO.Hashing
         /// <value><see langword="true"/> if the output CRC is reflected; otherwise, <see langword="false"/>.</value>
         public bool ReflectOutput { get; }
 
-        private protected Crc64ParameterSet(ulong polynomial, ulong initialValue, ulong finalXorValue, bool reflectInput, bool reflectOutput)
+        private Crc64ParameterSet(ulong polynomial, ulong initialValue, ulong finalXorValue, bool reflectInput, bool reflectOutput)
         {
             Polynomial = polynomial;
             InitialValue = initialValue;
@@ -82,18 +82,6 @@ namespace System.IO.Hashing
         internal ulong Finalize(ulong value)
         {
             ulong crc = value;
-
-            if (ReflectOutput != ReflectInput)
-            {
-                crc = ReverseBits(crc);
-            }
-
-            return crc ^ FinalXorValue;
-        }
-
-        private protected virtual ulong Compute(ReadOnlySpan<byte> source)
-        {
-            ulong crc = Update(InitialValue, source);
 
             if (ReflectOutput != ReflectInput)
             {

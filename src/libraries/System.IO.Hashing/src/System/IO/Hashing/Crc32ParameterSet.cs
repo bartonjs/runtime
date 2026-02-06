@@ -36,7 +36,7 @@ namespace System.IO.Hashing
         /// <value><see langword="true"/> if the output CRC is reflected; otherwise, <see langword="false"/>.</value>
         public bool ReflectOutput { get; }
 
-        private protected Crc32ParameterSet(uint polynomial, uint initialValue, uint finalXorValue, bool reflectInput, bool reflectOutput)
+        private Crc32ParameterSet(uint polynomial, uint initialValue, uint finalXorValue, bool reflectInput, bool reflectOutput)
         {
             Polynomial = polynomial;
             InitialValue = initialValue;
@@ -87,18 +87,6 @@ namespace System.IO.Hashing
         internal uint Finalize(uint value)
         {
             uint crc = value;
-
-            if (ReflectOutput != ReflectInput)
-            {
-                crc = ReverseBits(crc);
-            }
-
-            return crc ^ FinalXorValue;
-        }
-
-        private protected virtual uint Compute(ReadOnlySpan<byte> source)
-        {
-            uint crc = Update(InitialValue, source);
 
             if (ReflectOutput != ReflectInput)
             {
