@@ -11,6 +11,11 @@ namespace System.DirectoryServices.Protocols
     {
         static partial void PALCertFreeCRLContext(IntPtr certPtr);
 
+        partial void SetServerCertificateOption()
+        {
+            SetLinuxServerCertificateVerification();
+        }
+
         private bool _secureSocketLayer;
 
         /// <summary>

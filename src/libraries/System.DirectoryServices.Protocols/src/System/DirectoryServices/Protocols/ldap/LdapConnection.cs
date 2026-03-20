@@ -1157,6 +1157,8 @@ namespace System.DirectoryServices.Protocols
                 }
             }
 
+            DisposeSessionOptionsResources(disposing);
+
             // Close the ldap connection.
             if (_needDispose && _ldapHandle != null && !_ldapHandle.IsInvalid)
             {
@@ -1166,6 +1168,8 @@ namespace System.DirectoryServices.Protocols
             _ldapHandle = null;
             _disposed = true;
         }
+
+        partial void DisposeSessionOptionsResources(bool disposing);
 
         internal static LdapControl[] BuildControlArray(DirectoryControlCollection controls, bool serverControl)
         {

@@ -67,6 +67,8 @@ internal static partial class Interop
 
     internal static partial class Ldap
     {
+        internal static IntPtr s_ldapLibraryHandle;
+
         static Ldap()
         {
             Assembly currentAssembly = typeof(Ldap).Assembly;
@@ -85,6 +87,7 @@ internal static partial class Interop
                     NativeLibrary.TryLoad("libldap-2.5.so.0", out handle) ||
                     NativeLibrary.TryLoad("libldap-2.4.so.2", out handle))
                 {
+                    s_ldapLibraryHandle = handle;
                     return handle;
                 }
 
@@ -173,6 +176,9 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option")]
         public static partial int ldap_set_option_timeval(ConnectionHandle ldapHandle, LdapOption option, ref LDAP_TIMEVAL inValue);
+
+        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_set_option")]
+        public static unsafe partial int ldap_set_option_funcptr(ConnectionHandle ldapHandle, LdapOption option, void* inValue);
 
         // Note that ldap_start_tls_s has a different signature across Windows LDAP and OpenLDAP
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_start_tls_s")]

@@ -10,6 +10,12 @@ namespace System.DirectoryServices.Protocols
     {
         private static void PALCertFreeCRLContext(IntPtr certPtr) => Interop.Ldap.CertFreeCRLContext(certPtr);
 
+        partial void SetServerCertificateOption()
+        {
+            int error = LdapPal.SetServerCertOption(_connection._ldapHandle, LdapOption.LDAP_OPT_SERVER_CERTIFICATE, _serverCertificateRoutine);
+            ErrorChecking.CheckAndSetLdapError(error);
+        }
+
         [UnsupportedOSPlatform("windows")]
         public string TrustedCertificatesDirectory
         {

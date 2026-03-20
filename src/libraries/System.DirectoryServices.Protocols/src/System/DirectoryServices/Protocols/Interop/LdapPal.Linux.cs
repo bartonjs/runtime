@@ -120,6 +120,8 @@ namespace System.DirectoryServices.Protocols
         // This option is not supported in Linux, so it would most likely throw.
         internal static int SetServerCertOption(ConnectionHandle ldapHandle, LdapOption option, VERIFYSERVERCERT outValue) => Interop.Ldap.ldap_set_option_servercert(ldapHandle, option, outValue);
 
+        internal static unsafe int SetFunctionPtrOption(ConnectionHandle ldapHandle, LdapOption option, void* inValue) => Interop.Ldap.ldap_set_option_funcptr(ldapHandle, option, inValue);
+
         internal static unsafe int BindToDirectory(ConnectionHandle ld, string who, string passwd)
         {
             IntPtr passwordPtr = IntPtr.Zero;

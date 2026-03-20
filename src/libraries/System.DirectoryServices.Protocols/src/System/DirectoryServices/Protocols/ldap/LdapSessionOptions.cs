@@ -514,13 +514,14 @@ namespace System.DirectoryServices.Protocols
 
                 if (value != null)
                 {
-                    int error = LdapPal.SetServerCertOption(_connection._ldapHandle, LdapOption.LDAP_OPT_SERVER_CERTIFICATE, _serverCertificateRoutine);
-                    ErrorChecking.CheckAndSetLdapError(error);
+                    SetServerCertificateOption();
                 }
 
                 _serverCertificateDelegate = value;
             }
         }
+
+        partial void SetServerCertificateOption();
 
         internal DereferenceAlias DerefAlias
         {
