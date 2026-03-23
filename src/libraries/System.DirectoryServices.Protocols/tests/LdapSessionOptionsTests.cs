@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using Xunit;
 
@@ -694,7 +695,6 @@ namespace System.DirectoryServices.Protocols.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public void VerifyServerCertificate_Set_GetReturnsExpected()
         {
             using (var connection = new LdapConnection("server"))
@@ -702,7 +702,17 @@ namespace System.DirectoryServices.Protocols.Tests
                 LdapSessionOptions options = connection.SessionOptions;
                 Assert.Null(options.VerifyServerCertificate);
 
-                options.VerifyServerCertificate = VerifyServerCertificate;
+                try
+                {
+                    options.VerifyServerCertificate = VerifyServerCertificate;
+                }
+                catch (PlatformNotSupportedException) when (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    // On Linux, this may throw if OpenLDAP was not built with a
+                    // recognized TLS provider (OpenSSL, GnuTLS, or MozNSS).
+                    return;
+                }
+
                 Assert.Equal(VerifyServerCertificate, options.VerifyServerCertificate);
 
                 options.VerifyServerCertificate = null;
