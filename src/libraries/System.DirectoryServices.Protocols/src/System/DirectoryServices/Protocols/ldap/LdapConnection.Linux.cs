@@ -176,7 +176,7 @@ namespace System.DirectoryServices.Protocols
 
         partial void DisposeSessionOptionsResources(bool disposing)
         {
-            SessionOptions.FreeTlsCallbackResources(disposing);
+            SessionOptions.FreeTlsCallbackResources();
         }
     }
 }

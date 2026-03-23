@@ -130,6 +130,9 @@ internal static partial class Interop
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_get_option")]
         public static partial int ldap_get_option_ptr(ConnectionHandle ldapHandle, LdapOption option, ref IntPtr outValue);
 
+        [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_get_option")]
+        internal static partial int ldap_get_option_ptr(IntPtr ldapHandle, LdapOption option, ref IntPtr outValue);
+
         [LibraryImport(Libraries.OpenLdap, EntryPoint = "ldap_get_values_len")]
         public static partial IntPtr ldap_get_values_len(ConnectionHandle ldapHandle, IntPtr result, [MarshalAs(UnmanagedType.LPUTF8Str)] string name);
 

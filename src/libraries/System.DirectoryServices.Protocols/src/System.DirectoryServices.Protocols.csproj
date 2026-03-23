@@ -79,6 +79,8 @@
     <Compile Include="System\DirectoryServices\Protocols\Interop\BerPal.Linux.cs" />
     <Compile Include="System\DirectoryServices\Protocols\ldap\LdapConnection.Linux.cs" />
     <Compile Include="System\DirectoryServices\Protocols\ldap\LdapSessionOptions.Linux.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\ldap\LdapSessionOptions.Linux.GnuTls.cs" />
+    <Compile Include="System\DirectoryServices\Protocols\ldap\LdapSessionOptions.Linux.MozNss.cs" />
     <Compile Include="System\DirectoryServices\Protocols\ldap\LdapSessionOptions.Linux.OpenSsl.cs" />
     <Compile Include="System\DirectoryServices\Protocols\ldap\LocalAppContextSwitches.cs" />
     <Compile Include="System\DirectoryServices\Protocols\Interop\SafeHandles.Linux.cs" />

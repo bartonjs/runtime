@@ -3,6 +3,8 @@
 
 using System.ComponentModel;
 using System.IO;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
 namespace System.DirectoryServices.Protocols
@@ -14,6 +16,161 @@ namespace System.DirectoryServices.Protocols
         partial void SetServerCertificateOption()
         {
             SetLinuxServerCertificateVerification();
+        }
+
+        private enum TlsProvider
+        {
+            Unknown,
+            OpenSsl,
+            GnuTls,
+            MozNss,
+        }
+
+        private static volatile bool s_tlsProviderInitialized;
+        private static volatile bool s_tlsProviderAvailable;
+        private static readonly object s_tlsProviderInitLock = new object();
+        private static TlsProvider s_tlsProvider;
+
+        /// <summary>
+        /// One-time initialization: detect the TLS provider used by OpenLDAP via
+        /// LDAP_OPT_X_TLS_PACKAGE, then delegate to the appropriate provider-specific
+        /// initializer to resolve its function pointers.
+        /// </summary>
+        private static bool InitializeTlsVerificationProvider()
+        {
+            if (s_tlsProviderInitialized)
+            {
+                return s_tlsProviderAvailable;
+            }
+
+            lock (s_tlsProviderInitLock)
+            {
+                if (s_tlsProviderInitialized)
+                {
+                    return s_tlsProviderAvailable;
+                }
+
+                IntPtr ldapHandle = Interop.Ldap.s_ldapLibraryHandle;
+
+                if (ldapHandle == IntPtr.Zero)
+                {
+                    s_tlsProviderInitialized = true;
+                    return false;
+                }
+
+                // Determine the TLS provider before attempting any provider-specific symbol resolution.
+                // LDAP_OPT_X_TLS_PACKAGE is a global option that doesn't require a connection handle.
+                IntPtr packagePtr = IntPtr.Zero;
+                int error = Interop.Ldap.ldap_get_option_ptr(IntPtr.Zero, LdapOption.LDAP_OPT_X_TLS_PACKAGE, ref packagePtr);
+
+                string tlsPackageName = null;
+
+                if (error == 0 && packagePtr != IntPtr.Zero)
+                {
+                    tlsPackageName = Marshal.PtrToStringAnsi(packagePtr);
+                }
+
+                bool available;
+
+                if (string.Equals(tlsPackageName, "OpenSSL", StringComparison.OrdinalIgnoreCase))
+                {
+                    s_tlsProvider = TlsProvider.OpenSsl;
+                    available = InitializeOpenSsl(ldapHandle);
+                }
+                else if (string.Equals(tlsPackageName, "GnuTLS", StringComparison.OrdinalIgnoreCase))
+                {
+                    s_tlsProvider = TlsProvider.GnuTls;
+                    available = InitializeGnuTls(ldapHandle);
+                }
+                else if (string.Equals(tlsPackageName, "MozNSS", StringComparison.OrdinalIgnoreCase))
+                {
+                    s_tlsProvider = TlsProvider.MozNss;
+                    available = InitializeMozNss(ldapHandle);
+                }
+                else
+                {
+                    available = false;
+                }
+
+                s_tlsProviderAvailable = available;
+                s_tlsProviderInitialized = true;
+
+                return available;
+            }
+        }
+
+        /// <summary>
+        /// Callback registered via LDAP_OPT_X_TLS_CONNECT_CB. Called by OpenLDAP during TLS handshake.
+        /// Dispatches to the provider-specific setup method based on the detected TLS provider.
+        /// </summary>
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
+        private static unsafe void TlsConnectCallback(IntPtr ldapHandle, IntPtr ssl, IntPtr ctx, IntPtr arg)
+        {
+            if (arg == IntPtr.Zero || ssl == IntPtr.Zero)
+            {
+                return;
+            }
+
+            if (!s_tlsProviderAvailable)
+            {
+                return;
+            }
+
+            GCHandle gcHandle = GCHandle.FromIntPtr(arg);
+            LdapSessionOptions options = (LdapSessionOptions)gcHandle.Target;
+
+            if (options?._serverCertificateDelegate is null)
+            {
+                return;
+            }
+
+            switch (s_tlsProvider)
+            {
+                case TlsProvider.OpenSsl:
+                    OpenSslSetupVerification(ssl, arg);
+                    break;
+                case TlsProvider.GnuTls:
+                    GnuTlsSetupVerification(ssl, ctx, arg);
+                    break;
+                case TlsProvider.MozNss:
+                    MozNssSetupVerification(ssl, arg);
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// Registers the TLS connect callback on the given LDAP connection handle
+        /// so that server certificate verification works on Linux.
+        /// </summary>
+        private unsafe void SetLinuxServerCertificateVerification()
+        {
+            if (!InitializeTlsVerificationProvider())
+            {
+                throw new PlatformNotSupportedException(SR.DirectoryServicesProtocols_PlatformNotSupported);
+            }
+
+            if (!_tlsConnectCallbackGCHandle.IsAllocated)
+            {
+                _tlsConnectCallbackGCHandle = GCHandle.Alloc(this);
+            }
+
+            delegate* unmanaged[Cdecl]<IntPtr, IntPtr, IntPtr, IntPtr, void> callbackPtr = &TlsConnectCallback;
+            int error = LdapPal.SetFunctionPtrOption(_connection._ldapHandle, LdapOption.LDAP_OPT_X_TLS_CONNECT_CB, callbackPtr);
+            ErrorChecking.CheckAndSetLdapError(error);
+
+            IntPtr argValue = GCHandle.ToIntPtr(_tlsConnectCallbackGCHandle);
+            error = LdapPal.SetPtrOption(_connection._ldapHandle, LdapOption.LDAP_OPT_X_TLS_CONNECT_ARG, ref argValue);
+            ErrorChecking.CheckAndSetLdapError(error);
+        }
+
+        private GCHandle _tlsConnectCallbackGCHandle;
+
+        internal void FreeTlsCallbackResources()
+        {
+            if (_tlsConnectCallbackGCHandle.IsAllocated)
+            {
+                _tlsConnectCallbackGCHandle.Free();
+            }
         }
 
         private bool _secureSocketLayer;
