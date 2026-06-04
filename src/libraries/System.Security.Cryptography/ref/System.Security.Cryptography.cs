@@ -1503,6 +1503,84 @@ namespace System.Security.Cryptography
         public static byte[] Extract(System.Security.Cryptography.HashAlgorithmName hashAlgorithmName, byte[] ikm, byte[]? salt = null) { throw null; }
         public static int Extract(System.Security.Cryptography.HashAlgorithmName hashAlgorithmName, System.ReadOnlySpan<byte> ikm, System.ReadOnlySpan<byte> salt, System.Span<byte> prk) { throw null; }
     }
+    public abstract partial class HPKE : System.IDisposable
+    {
+        protected HPKE(System.Security.Cryptography.HpkeSuite suite) { }
+        public static bool IsSupported { get { throw null; } }
+        public System.Security.Cryptography.HpkeSuite Suite { get { throw null; } }
+        public void Dispose() { }
+        protected virtual void Dispose(bool disposing) { }
+        public byte[] ExportDecapsulationKey() { throw null; }
+        public void ExportDecapsulationKey(System.Span<byte> destination) { }
+        protected abstract void ExportDecapsulationKeyCore(System.Span<byte> destination);
+        public byte[] ExportEncapsulationKey() { throw null; }
+        public void ExportEncapsulationKey(System.Span<byte> destination) { }
+        protected abstract void ExportEncapsulationKeyCore(System.Span<byte> destination);
+        public static System.Security.Cryptography.HPKE GenerateKey(System.Security.Cryptography.HpkeSuite suite) { throw null; }
+        public static System.Security.Cryptography.HPKE ImportDecapsulationKey(System.Security.Cryptography.HpkeSuite suite, byte[] source) { throw null; }
+        public static System.Security.Cryptography.HPKE ImportDecapsulationKey(System.Security.Cryptography.HpkeSuite suite, System.ReadOnlySpan<byte> source) { throw null; }
+        public static System.Security.Cryptography.HPKE ImportEncapsulationKey(System.Security.Cryptography.HpkeSuite suite, byte[] source) { throw null; }
+        public static System.Security.Cryptography.HPKE ImportEncapsulationKey(System.Security.Cryptography.HpkeSuite suite, System.ReadOnlySpan<byte> source) { throw null; }
+        public byte[] Open(System.ReadOnlySpan<byte> kemCiphertext, System.ReadOnlySpan<byte> ciphertext, System.ReadOnlySpan<byte> aad = default(System.ReadOnlySpan<byte>), System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
+        public void Open(System.ReadOnlySpan<byte> kemCiphertext, System.ReadOnlySpan<byte> ciphertext, System.Span<byte> plaintext, System.ReadOnlySpan<byte> aad = default(System.ReadOnlySpan<byte>), System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { }
+        protected abstract void OpenCore(System.ReadOnlySpan<byte> kemCiphertext, System.ReadOnlySpan<byte> ciphertext, System.Span<byte> plaintext, System.ReadOnlySpan<byte> aad, System.ReadOnlySpan<byte> info);
+        public (byte[] KemCiphertext, byte[] Ciphertext) Seal(System.ReadOnlySpan<byte> plaintext, System.ReadOnlySpan<byte> aad = default(System.ReadOnlySpan<byte>), System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
+        public void Seal(System.ReadOnlySpan<byte> plaintext, System.Span<byte> kemCiphertext, System.Span<byte> ciphertext, System.ReadOnlySpan<byte> aad = default(System.ReadOnlySpan<byte>), System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { }
+        protected abstract void SealCore(System.ReadOnlySpan<byte> plaintext, System.Span<byte> kemCiphertext, System.Span<byte> ciphertext, System.ReadOnlySpan<byte> aad, System.ReadOnlySpan<byte> info);
+        public (byte[] KemCiphertext, System.Security.Cryptography.HpkeSenderContext Context) SetupSender(System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
+        public System.Security.Cryptography.HpkeSenderContext SetupSender(System.Span<byte> kemCiphertext, System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
+        protected abstract System.Security.Cryptography.HpkeSenderContext SetupSenderCore(System.Span<byte> kemCiphertext, System.ReadOnlySpan<byte> info);
+        public System.Security.Cryptography.HpkeReceiverContext SetupReceiver(System.ReadOnlySpan<byte> kemCiphertext, System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
+        protected abstract System.Security.Cryptography.HpkeReceiverContext SetupReceiverCore(System.ReadOnlySpan<byte> kemCiphertext, System.ReadOnlySpan<byte> info);
+    }
+    public abstract partial class HpkeReceiverContext : System.IDisposable
+    {
+        protected HpkeReceiverContext() { }
+        public void Dispose() { }
+        protected virtual void Dispose(bool disposing) { }
+        public byte[] Export(System.ReadOnlySpan<byte> exporterContext, int length) { throw null; }
+        public void Export(System.ReadOnlySpan<byte> exporterContext, System.Span<byte> destination) { }
+        protected abstract void ExportCore(System.ReadOnlySpan<byte> exporterContext, System.Span<byte> destination);
+        protected abstract int GetAeadTagSizeInBytes();
+        public byte[] Open(long sequenceNumber, System.ReadOnlySpan<byte> ciphertext, System.ReadOnlySpan<byte> aad = default(System.ReadOnlySpan<byte>)) { throw null; }
+        public byte[] Open(System.ReadOnlySpan<byte> ciphertext, System.ReadOnlySpan<byte> aad = default(System.ReadOnlySpan<byte>)) { throw null; }
+        public void Open(long sequenceNumber, System.ReadOnlySpan<byte> ciphertext, System.Span<byte> plaintext, System.ReadOnlySpan<byte> aad = default(System.ReadOnlySpan<byte>)) { }
+        public void Open(System.ReadOnlySpan<byte> ciphertext, System.Span<byte> plaintext, System.ReadOnlySpan<byte> aad = default(System.ReadOnlySpan<byte>)) { }
+        protected abstract void OpenCore(long sequenceNumber, System.ReadOnlySpan<byte> ciphertext, System.Span<byte> plaintext, System.ReadOnlySpan<byte> aad);
+        protected abstract void OpenCore(System.ReadOnlySpan<byte> ciphertext, System.Span<byte> plaintext, System.ReadOnlySpan<byte> aad);
+    }
+    public abstract partial class HpkeSenderContext : System.IDisposable
+    {
+        protected HpkeSenderContext() { }
+        public void Dispose() { }
+        protected virtual void Dispose(bool disposing) { }
+        public byte[] Export(System.ReadOnlySpan<byte> exporterContext, int length) { throw null; }
+        public void Export(System.ReadOnlySpan<byte> exporterContext, System.Span<byte> destination) { }
+        protected abstract void ExportCore(System.ReadOnlySpan<byte> exporterContext, System.Span<byte> destination);
+        protected abstract int GetAeadTagSizeInBytes();
+        public byte[] Seal(System.ReadOnlySpan<byte> plaintext, System.ReadOnlySpan<byte> aad = default(System.ReadOnlySpan<byte>)) { throw null; }
+        public void Seal(System.ReadOnlySpan<byte> plaintext, System.Span<byte> ciphertext, System.ReadOnlySpan<byte> aad = default(System.ReadOnlySpan<byte>)) { }
+        protected abstract void SealCore(System.ReadOnlySpan<byte> plaintext, System.Span<byte> ciphertext, System.ReadOnlySpan<byte> aad);
+    }
+    public sealed partial class HpkeSuite : System.IEquatable<System.Security.Cryptography.HpkeSuite>
+    {
+        internal HpkeSuite() { }
+        public int AeadTagSizeInBytes { get { throw null; } }
+        public int DecapsulationKeySizeInBytes { get { throw null; } }
+        public static System.Security.Cryptography.HpkeSuite DHKEM_P256_HKDF_SHA256_AES_128_GCM { get { throw null; } }
+        public static System.Security.Cryptography.HpkeSuite DHKEM_P384_HKDF_SHA384_AES_256_GCM { get { throw null; } }
+        public static System.Security.Cryptography.HpkeSuite DHKEM_X25519_HKDF_SHA256_AES_128_GCM { get { throw null; } }
+        public static System.Security.Cryptography.HpkeSuite DHKEM_X25519_HKDF_SHA256_ChaCha20Poly1305 { get { throw null; } }
+        public int EncapsulatedKeySizeInBytes { get { throw null; } }
+        public int EncapsulationKeySizeInBytes { get { throw null; } }
+        public string Name { get { throw null; } }
+        public bool Equals(System.Security.Cryptography.HpkeSuite? other) { throw null; }
+        public override bool Equals(object? obj) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public static bool operator ==(System.Security.Cryptography.HpkeSuite? left, System.Security.Cryptography.HpkeSuite? right) { throw null; }
+        public static bool operator !=(System.Security.Cryptography.HpkeSuite? left, System.Security.Cryptography.HpkeSuite? right) { throw null; }
+        public override string ToString() { throw null; }
+    }
     public abstract partial class HMAC : System.Security.Cryptography.KeyedHashAlgorithm
     {
         protected HMAC() { }

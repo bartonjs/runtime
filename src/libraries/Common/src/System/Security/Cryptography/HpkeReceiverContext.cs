@@ -1,0 +1,285 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+namespace System.Security.Cryptography
+{
+    /// <summary>
+    ///   Represents the receiver side of an established HPKE encryption context,
+    ///   providing sequential decryption, out-of-order decryption, and secret export operations.
+    /// </summary>
+    /// <remarks>
+    ///   <para>
+    ///     Each call to <see cref="Open(ReadOnlySpan{byte}, Span{byte}, ReadOnlySpan{byte})" />
+    ///     uses a nonce derived from the context's base nonce and an internal sequence number,
+    ///     which is incremented after each operation. Messages must be decrypted in the same order
+    ///     they were encrypted.
+    ///   </para>
+    ///   <para>
+    ///     The overloads accepting a <c>sequenceNumber</c> parameter allow decryption of messages
+    ///     out of order, using an explicit sequence number to compute the nonce. These overloads
+    ///     do not affect the internal sequence counter used by the sequential overloads.
+    ///   </para>
+    /// </remarks>
+    public abstract class HpkeReceiverContext : IDisposable
+    {
+        private bool _disposed;
+
+        /// <summary>
+        ///   Initializes a new instance of the <see cref="HpkeReceiverContext" /> class.
+        /// </summary>
+        protected HpkeReceiverContext()
+        {
+        }
+
+        /// <summary>
+        ///   Decrypts and authenticates the ciphertext, writing the plaintext into the provided buffer,
+        ///   and advances the internal sequence number.
+        /// </summary>
+        /// <param name="ciphertext">
+        ///   The AEAD ciphertext and authentication tag to decrypt.
+        /// </param>
+        /// <param name="plaintext">
+        ///   The buffer to receive the decrypted plaintext.
+        ///   This must be exactly <paramref name="ciphertext" />.Length - the suite's AEAD tag size in bytes.
+        /// </param>
+        /// <param name="aad">
+        ///   The additional authenticated data.
+        /// </param>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="plaintext" /> is not the correct size, or
+        ///   <paramref name="ciphertext" /> is too small to contain a valid authentication tag.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   Decryption failed, or the message limit has been reached.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        public void Open(ReadOnlySpan<byte> ciphertext, Span<byte> plaintext, ReadOnlySpan<byte> aad = default)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            OpenCore(ciphertext, plaintext, aad);
+        }
+
+        /// <summary>
+        ///   Decrypts and authenticates the ciphertext, and advances the internal sequence number.
+        /// </summary>
+        /// <param name="ciphertext">
+        ///   The AEAD ciphertext and authentication tag to decrypt.
+        /// </param>
+        /// <param name="aad">
+        ///   The additional authenticated data.
+        /// </param>
+        /// <returns>
+        ///   A byte array containing the decrypted plaintext.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="ciphertext" /> is too small to contain a valid authentication tag.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   Decryption failed, or the message limit has been reached.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        public byte[] Open(ReadOnlySpan<byte> ciphertext, ReadOnlySpan<byte> aad = default)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+
+            int tagSize = GetAeadTagSizeInBytes();
+
+            if (ciphertext.Length < tagSize)
+            {
+                throw new ArgumentException(SR.Argument_CiphertextTooSmall, nameof(ciphertext));
+            }
+
+            byte[] plaintext = new byte[ciphertext.Length - tagSize];
+            OpenCore(ciphertext, plaintext, aad);
+
+            return plaintext;
+        }
+
+        /// <summary>
+        ///   Decrypts and authenticates the ciphertext using an explicit sequence number,
+        ///   writing the plaintext into the provided buffer.
+        ///   The internal sequence counter is not affected.
+        /// </summary>
+        /// <param name="sequenceNumber">
+        ///   The sequence number to use for nonce computation.
+        /// </param>
+        /// <param name="ciphertext">
+        ///   The AEAD ciphertext and authentication tag to decrypt.
+        /// </param>
+        /// <param name="plaintext">
+        ///   The buffer to receive the decrypted plaintext.
+        ///   This must be exactly <paramref name="ciphertext" />.Length - the suite's AEAD tag size in bytes.
+        /// </param>
+        /// <param name="aad">
+        ///   The additional authenticated data.
+        /// </param>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="sequenceNumber" /> is negative.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="plaintext" /> is not the correct size, or
+        ///   <paramref name="ciphertext" /> is too small to contain a valid authentication tag.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   Decryption failed.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        public void Open(long sequenceNumber, ReadOnlySpan<byte> ciphertext, Span<byte> plaintext, ReadOnlySpan<byte> aad = default)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            ArgumentOutOfRangeException.ThrowIfNegative(sequenceNumber);
+            OpenCore(sequenceNumber, ciphertext, plaintext, aad);
+        }
+
+        /// <summary>
+        ///   Decrypts and authenticates the ciphertext using an explicit sequence number.
+        ///   The internal sequence counter is not affected.
+        /// </summary>
+        /// <param name="sequenceNumber">
+        ///   The sequence number to use for nonce computation.
+        /// </param>
+        /// <param name="ciphertext">
+        ///   The AEAD ciphertext and authentication tag to decrypt.
+        /// </param>
+        /// <param name="aad">
+        ///   The additional authenticated data.
+        /// </param>
+        /// <returns>
+        ///   A byte array containing the decrypted plaintext.
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="sequenceNumber" /> is negative.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="ciphertext" /> is too small to contain a valid authentication tag.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   Decryption failed.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        public byte[] Open(long sequenceNumber, ReadOnlySpan<byte> ciphertext, ReadOnlySpan<byte> aad = default)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            ArgumentOutOfRangeException.ThrowIfNegative(sequenceNumber);
+
+            int tagSize = GetAeadTagSizeInBytes();
+
+            if (ciphertext.Length < tagSize)
+            {
+                throw new ArgumentException(SR.Argument_CiphertextTooSmall, nameof(ciphertext));
+            }
+
+            byte[] plaintext = new byte[ciphertext.Length - tagSize];
+            OpenCore(sequenceNumber, ciphertext, plaintext, aad);
+
+            return plaintext;
+        }
+
+        /// <summary>
+        ///   When overridden in a derived class, decrypts using the internal sequence number.
+        /// </summary>
+        /// <param name="ciphertext">The AEAD ciphertext and tag.</param>
+        /// <param name="plaintext">The buffer to receive the plaintext.</param>
+        /// <param name="aad">The additional authenticated data.</param>
+        protected abstract void OpenCore(ReadOnlySpan<byte> ciphertext, Span<byte> plaintext, ReadOnlySpan<byte> aad);
+
+        /// <summary>
+        ///   When overridden in a derived class, decrypts using an explicit sequence number
+        ///   without affecting the internal sequence counter.
+        /// </summary>
+        /// <param name="sequenceNumber">The sequence number to use for nonce computation.</param>
+        /// <param name="ciphertext">The AEAD ciphertext and tag.</param>
+        /// <param name="plaintext">The buffer to receive the plaintext.</param>
+        /// <param name="aad">The additional authenticated data.</param>
+        protected abstract void OpenCore(long sequenceNumber, ReadOnlySpan<byte> ciphertext, Span<byte> plaintext, ReadOnlySpan<byte> aad);
+
+        /// <summary>
+        ///   When overridden in a derived class, gets the AEAD tag size for this context, in bytes.
+        /// </summary>
+        /// <returns>The AEAD tag size in bytes.</returns>
+        protected abstract int GetAeadTagSizeInBytes();
+
+        /// <summary>
+        ///   Exports a secret from this HPKE context.
+        /// </summary>
+        /// <param name="exporterContext">
+        ///   The exporter context string, which binds the exported secret to a specific purpose.
+        /// </param>
+        /// <param name="destination">
+        ///   The buffer to receive the exported secret.
+        /// </param>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="destination" /> has a length of zero.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        public void Export(ReadOnlySpan<byte> exporterContext, Span<byte> destination)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+
+            if (destination.Length == 0)
+            {
+                throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
+            }
+
+            ExportCore(exporterContext, destination);
+        }
+
+        /// <summary>
+        ///   Exports a secret from this HPKE context.
+        /// </summary>
+        /// <param name="exporterContext">
+        ///   The exporter context string, which binds the exported secret to a specific purpose.
+        /// </param>
+        /// <param name="length">
+        ///   The desired length of the exported secret, in bytes.
+        /// </param>
+        /// <returns>
+        ///   A byte array containing the exported secret.
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="length" /> is less than 1.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        public byte[] Export(ReadOnlySpan<byte> exporterContext, int length)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(length);
+
+            byte[] destination = new byte[length];
+            ExportCore(exporterContext, destination);
+
+            return destination;
+        }
+
+        /// <summary>
+        ///   When overridden in a derived class, exports a secret from the HPKE context.
+        /// </summary>
+        /// <param name="exporterContext">The exporter context string.</param>
+        /// <param name="destination">
+        ///   The buffer to receive the exported secret.
+        ///   The buffer is guaranteed to have a non-zero length.
+        /// </param>
+        protected abstract void ExportCore(ReadOnlySpan<byte> exporterContext, Span<byte> destination);
+
+        /// <summary>
+        ///   Releases the resources used by this <see cref="HpkeReceiverContext" /> instance.
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        ///   Releases the resources used by this <see cref="HpkeReceiverContext" /> instance.
+        /// </summary>
+        /// <param name="disposing">
+        ///   <see langword="true" /> to release both managed and unmanaged resources;
+        ///   <see langword="false" /> to release only unmanaged resources.
+        /// </param>
+        protected virtual void Dispose(bool disposing)
+        {
+            _disposed = true;
+        }
+    }
+}

@@ -96,6 +96,15 @@
   <data name="Argument_DestinationImprecise" xml:space="preserve">
     <value>Destination must be exactly {0} bytes.</value>
   </data>
+  <data name="Argument_CiphertextLengthPlaintextPlusTag" xml:space="preserve">
+    <value>Ciphertext must be exactly plaintext length plus the AEAD tag size in bytes.</value>
+  </data>
+  <data name="Argument_CiphertextTooSmall" xml:space="preserve">
+    <value>Ciphertext is too small to contain a valid authentication tag.</value>
+  </data>
+  <data name="Argument_PlaintextLengthCiphertextMinusTag" xml:space="preserve">
+    <value>Plaintext must be exactly ciphertext length minus the AEAD tag size in bytes.</value>
+  </data>
   <data name="Argument_EmptyString" xml:space="preserve">
     <value>The value cannot be an empty string.</value>
   </data>

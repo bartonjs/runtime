@@ -428,6 +428,14 @@
              Link="Common\System\Security\Cryptography\MLKemCng.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\MLKemPkcs8.cs"
             Link="Common\System\Security\Cryptography\MLKemPkcs8.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\HPKE.cs"
+             Link="Common\System\Security\Cryptography\HPKE.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\HpkeReceiverContext.cs"
+             Link="Common\System\Security\Cryptography\HpkeReceiverContext.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\HpkeSenderContext.cs"
+             Link="Common\System\Security\Cryptography\HpkeSenderContext.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\HpkeSuite.cs"
+             Link="Common\System\Security\Cryptography\HpkeSuite.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Oids.cs"
              Link="Common\System\Security\Cryptography\Oids.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Oids.Shared.cs"
@@ -1101,6 +1109,7 @@
     <Compile Include="System\Security\Cryptography\HashProviderDispenser.Unix.cs" />
     <Compile Include="System\Security\Cryptography\HashProviderDispenser.OpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\HKDF.OpenSsl.cs" />
+    <Compile Include="System\Security\Cryptography\HpkeManaged.cs" />
     <Compile Include="System\Security\Cryptography\LiteHash.Unix.cs" />
     <Compile Include="System\Security\Cryptography\LiteHash.OpenSsl.cs" />
     <Compile Include="System\Security\Cryptography\MLDsaImplementation.OpenSsl.cs" />
@@ -1271,6 +1280,7 @@
     <Compile Include="System\Security\Cryptography\HashProviderDispenser.Unix.cs" />
     <Compile Include="System\Security\Cryptography\HashProviderDispenser.Android.cs" />
     <Compile Include="System\Security\Cryptography\HKDF.Managed.cs" />
+    <Compile Include="System\Security\Cryptography\HpkeManaged.cs" />
     <Compile Include="System\Security\Cryptography\LiteHash.Unix.cs" />
     <Compile Include="System\Security\Cryptography\LiteHash.Kmac.Unsupported.cs" />
     <Compile Include="System\Security\Cryptography\MLDsaOpenSsl.NotSupported.cs" />
@@ -1421,6 +1431,7 @@
     <Compile Include="System\Security\Cryptography\HashAlgorithmNames.Apple.cs" />
     <Compile Include="System\Security\Cryptography\HashProviderDispenser.Apple.cs" />
     <Compile Include="System\Security\Cryptography\HKDF.Apple.cs" />
+    <Compile Include="System\Security\Cryptography\HpkeManaged.cs" />
     <Compile Include="System\Security\Cryptography\LiteHash.Apple.cs" />
     <Compile Include="System\Security\Cryptography\LiteHash.Kmac.Unsupported.cs" />
     <Compile Include="System\Security\Cryptography\MLDsaOpenSsl.NotSupported.cs" />
@@ -2011,6 +2022,7 @@
     <Compile Include="System\Security\Cryptography\HashProviderCng.cs" />
     <Compile Include="System\Security\Cryptography\HashProviderDispenser.Windows.cs" />
     <Compile Include="System\Security\Cryptography\HKDF.Windows.cs" />
+    <Compile Include="System\Security\Cryptography\HpkeManaged.cs" />
     <Compile Include="System\Security\Cryptography\ICngSymmetricAlgorithm.cs" />
     <Compile Include="System\Security\Cryptography\LiteHash.Windows.cs" />
     <Compile Include="System\Security\Cryptography\MLDsaOpenSsl.NotSupported.cs" />

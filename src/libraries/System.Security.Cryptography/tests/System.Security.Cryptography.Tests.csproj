@@ -246,6 +246,8 @@
              Link="CommonTest\System\Security\Cryptography\MLKemTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\MLKemKeyTests.cs"
              Link="CommonTest\System\Security\Cryptography\MLKemKeyTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\HpkeTests.cs"
+             Link="CommonTest\System\Security\Cryptography\HpkeTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\PbeParametersTests.cs"
              Link="CommonTest\System\Security\Cryptography\PbeParametersTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\SP800108HmacCounterKdfTests.ArgValidation.cs"
