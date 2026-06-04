@@ -19,22 +19,78 @@ namespace System.Security.Cryptography
     public sealed class HpkeSuite : IEquatable<HpkeSuite>
     {
         /// <summary>
+        ///   Specifies the Key Encapsulation Mechanism (KEM) algorithm for an HPKE ciphersuite.
+        /// </summary>
+        public enum Kem
+        {
+            /// <summary>
+            ///   DHKEM using NIST P-256 and HKDF-SHA256. IANA value 0x0010.
+            /// </summary>
+            DHKEM_P256_HKDF_SHA256 = 0x0010,
+
+            /// <summary>
+            ///   DHKEM using NIST P-384 and HKDF-SHA384. IANA value 0x0011.
+            /// </summary>
+            DHKEM_P384_HKDF_SHA384 = 0x0011,
+
+            /// <summary>
+            ///   DHKEM using X25519 and HKDF-SHA256. IANA value 0x0020.
+            /// </summary>
+            DHKEM_X25519_HKDF_SHA256 = 0x0020,
+        }
+
+        /// <summary>
+        ///   Specifies the Key Derivation Function (KDF) algorithm for an HPKE ciphersuite.
+        /// </summary>
+        public enum Kdf
+        {
+            /// <summary>
+            ///   HKDF using SHA-256. IANA value 0x0001.
+            /// </summary>
+            HKDF_SHA256 = 0x0001,
+
+            /// <summary>
+            ///   HKDF using SHA-384. IANA value 0x0002.
+            /// </summary>
+            HKDF_SHA384 = 0x0002,
+
+            /// <summary>
+            ///   HKDF using SHA-512. IANA value 0x0003.
+            /// </summary>
+            HKDF_SHA512 = 0x0003,
+        }
+
+        /// <summary>
+        ///   Specifies the Authenticated Encryption with Associated Data (AEAD) algorithm for an HPKE ciphersuite.
+        /// </summary>
+        public enum Aead
+        {
+            /// <summary>
+            ///   AES-128-GCM. IANA value 0x0001.
+            /// </summary>
+            Aes128Gcm = 0x0001,
+
+            /// <summary>
+            ///   AES-256-GCM. IANA value 0x0002.
+            /// </summary>
+            Aes256Gcm = 0x0002,
+
+            /// <summary>
+            ///   ChaCha20-Poly1305. IANA value 0x0003.
+            /// </summary>
+            ChaCha20Poly1305 = 0x0003,
+        }
+
+        /// <summary>
         ///   Gets an HPKE suite using DHKEM(P-256, HKDF-SHA256), HKDF-SHA256, and AES-128-GCM.
         /// </summary>
         /// <value>
         ///   An HPKE suite using DHKEM(P-256, HKDF-SHA256), HKDF-SHA256, and AES-128-GCM.
         /// </value>
         public static HpkeSuite DHKEM_P256_HKDF_SHA256_AES_128_GCM { get; } = new(
-            "DHKEM(P-256, HKDF-SHA256), HKDF-SHA256, AES-128-GCM",
-            kemId: 0x0010,
-            kdfId: 0x0001,
-            aeadId: 0x0001,
-            encapsulationKeySizeInBytes: 65,
-            decapsulationKeySizeInBytes: 32,
-            encapsulatedKeySizeInBytes: 65,
-            aeadKeySizeInBytes: 16,
-            aeadNonceSizeInBytes: 12,
-            aeadTagSizeInBytes: 16);
+            Kem.DHKEM_P256_HKDF_SHA256,
+            Kdf.HKDF_SHA256,
+            Aead.Aes128Gcm);
 
         /// <summary>
         ///   Gets an HPKE suite using DHKEM(P-384, HKDF-SHA384), HKDF-SHA384, and AES-256-GCM.
@@ -43,16 +99,9 @@ namespace System.Security.Cryptography
         ///   An HPKE suite using DHKEM(P-384, HKDF-SHA384), HKDF-SHA384, and AES-256-GCM.
         /// </value>
         public static HpkeSuite DHKEM_P384_HKDF_SHA384_AES_256_GCM { get; } = new(
-            "DHKEM(P-384, HKDF-SHA384), HKDF-SHA384, AES-256-GCM",
-            kemId: 0x0011,
-            kdfId: 0x0002,
-            aeadId: 0x0002,
-            encapsulationKeySizeInBytes: 97,
-            decapsulationKeySizeInBytes: 48,
-            encapsulatedKeySizeInBytes: 97,
-            aeadKeySizeInBytes: 32,
-            aeadNonceSizeInBytes: 12,
-            aeadTagSizeInBytes: 16);
+            Kem.DHKEM_P384_HKDF_SHA384,
+            Kdf.HKDF_SHA384,
+            Aead.Aes256Gcm);
 
         /// <summary>
         ///   Gets an HPKE suite using DHKEM(X25519, HKDF-SHA256), HKDF-SHA256, and AES-128-GCM.
@@ -61,16 +110,9 @@ namespace System.Security.Cryptography
         ///   An HPKE suite using DHKEM(X25519, HKDF-SHA256), HKDF-SHA256, and AES-128-GCM.
         /// </value>
         public static HpkeSuite DHKEM_X25519_HKDF_SHA256_AES_128_GCM { get; } = new(
-            "DHKEM(X25519, HKDF-SHA256), HKDF-SHA256, AES-128-GCM",
-            kemId: 0x0020,
-            kdfId: 0x0001,
-            aeadId: 0x0001,
-            encapsulationKeySizeInBytes: 32,
-            decapsulationKeySizeInBytes: 32,
-            encapsulatedKeySizeInBytes: 32,
-            aeadKeySizeInBytes: 16,
-            aeadNonceSizeInBytes: 12,
-            aeadTagSizeInBytes: 16);
+            Kem.DHKEM_X25519_HKDF_SHA256,
+            Kdf.HKDF_SHA256,
+            Aead.Aes128Gcm);
 
         /// <summary>
         ///   Gets an HPKE suite using DHKEM(X25519, HKDF-SHA256), HKDF-SHA256, and ChaCha20Poly1305.
@@ -79,40 +121,63 @@ namespace System.Security.Cryptography
         ///   An HPKE suite using DHKEM(X25519, HKDF-SHA256), HKDF-SHA256, and ChaCha20Poly1305.
         /// </value>
         public static HpkeSuite DHKEM_X25519_HKDF_SHA256_ChaCha20Poly1305 { get; } = new(
-            "DHKEM(X25519, HKDF-SHA256), HKDF-SHA256, ChaCha20Poly1305",
-            kemId: 0x0020,
-            kdfId: 0x0001,
-            aeadId: 0x0003,
-            encapsulationKeySizeInBytes: 32,
-            decapsulationKeySizeInBytes: 32,
-            encapsulatedKeySizeInBytes: 32,
-            aeadKeySizeInBytes: 32,
-            aeadNonceSizeInBytes: 12,
-            aeadTagSizeInBytes: 16);
+            Kem.DHKEM_X25519_HKDF_SHA256,
+            Kdf.HKDF_SHA256,
+            Aead.ChaCha20Poly1305);
 
-        private HpkeSuite(
-            string name,
-            ushort kemId,
-            ushort kdfId,
-            ushort aeadId,
-            int encapsulationKeySizeInBytes,
-            int decapsulationKeySizeInBytes,
-            int encapsulatedKeySizeInBytes,
-            int aeadKeySizeInBytes,
-            int aeadNonceSizeInBytes,
-            int aeadTagSizeInBytes)
+        /// <summary>
+        ///   Initializes a new instance of the <see cref="HpkeSuite" /> class with the specified
+        ///   KEM, KDF, and AEAD algorithms.
+        /// </summary>
+        /// <param name="kem">
+        ///   The Key Encapsulation Mechanism (KEM) algorithm to use.
+        /// </param>
+        /// <param name="kdf">
+        ///   The Key Derivation Function (KDF) algorithm to use.
+        /// </param>
+        /// <param name="aead">
+        ///   The Authenticated Encryption with Associated Data (AEAD) algorithm to use.
+        /// </param>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="kem" />, <paramref name="kdf" />, or <paramref name="aead" /> is not a defined enum value.
+        /// </exception>
+        public HpkeSuite(Kem kem, Kdf kdf, Aead aead)
         {
-            Name = name;
-            KemId = kemId;
-            KdfId = kdfId;
-            AeadId = aeadId;
-            EncapsulationKeySizeInBytes = encapsulationKeySizeInBytes;
-            DecapsulationKeySizeInBytes = decapsulationKeySizeInBytes;
-            EncapsulatedKeySizeInBytes = encapsulatedKeySizeInBytes;
-            AeadKeySizeInBytes = aeadKeySizeInBytes;
-            AeadNonceSizeInBytes = aeadNonceSizeInBytes;
-            AeadTagSizeInBytes = aeadTagSizeInBytes;
+            if (!Enum.IsDefined(kem))
+                throw new ArgumentOutOfRangeException(nameof(kem));
+            if (!Enum.IsDefined(kdf))
+                throw new ArgumentOutOfRangeException(nameof(kdf));
+            if (!Enum.IsDefined(aead))
+                throw new ArgumentOutOfRangeException(nameof(aead));
+
+            KemAlgorithm = kem;
+            KdfAlgorithm = kdf;
+            AeadAlgorithm = aead;
         }
+
+        /// <summary>
+        ///   Gets the Key Encapsulation Mechanism (KEM) algorithm for this suite.
+        /// </summary>
+        /// <value>
+        ///   The KEM algorithm for this suite.
+        /// </value>
+        public Kem KemAlgorithm { get; }
+
+        /// <summary>
+        ///   Gets the Key Derivation Function (KDF) algorithm for this suite.
+        /// </summary>
+        /// <value>
+        ///   The KDF algorithm for this suite.
+        /// </value>
+        public Kdf KdfAlgorithm { get; }
+
+        /// <summary>
+        ///   Gets the Authenticated Encryption with Associated Data (AEAD) algorithm for this suite.
+        /// </summary>
+        /// <value>
+        ///   The AEAD algorithm for this suite.
+        /// </value>
+        public Aead AeadAlgorithm { get; }
 
         /// <summary>
         ///   Gets the name of the HPKE ciphersuite.
@@ -120,7 +185,7 @@ namespace System.Security.Cryptography
         /// <value>
         ///   A string representing the HPKE ciphersuite name.
         /// </value>
-        public string Name { get; }
+        public string Name => GetName(KemAlgorithm, KdfAlgorithm, AeadAlgorithm);
 
         /// <summary>
         ///   Gets the IANA-registered KEM identifier for this suite.
@@ -128,7 +193,7 @@ namespace System.Security.Cryptography
         /// <value>
         ///   The two-byte KEM identifier as defined in RFC 9180, Section 7.1.
         /// </value>
-        internal ushort KemId { get; }
+        internal ushort KemId => (ushort)KemAlgorithm;
 
         /// <summary>
         ///   Gets the IANA-registered KDF identifier for this suite.
@@ -136,7 +201,7 @@ namespace System.Security.Cryptography
         /// <value>
         ///   The two-byte KDF identifier as defined in RFC 9180, Section 7.2.
         /// </value>
-        internal ushort KdfId { get; }
+        internal ushort KdfId => (ushort)KdfAlgorithm;
 
         /// <summary>
         ///   Gets the IANA-registered AEAD identifier for this suite.
@@ -144,7 +209,7 @@ namespace System.Security.Cryptography
         /// <value>
         ///   The two-byte AEAD identifier as defined in RFC 9180, Section 7.3.
         /// </value>
-        internal ushort AeadId { get; }
+        internal ushort AeadId => (ushort)AeadAlgorithm;
 
         /// <summary>
         ///   Gets the size of the KEM encapsulation key (public key) for this suite, in bytes.
@@ -152,7 +217,13 @@ namespace System.Security.Cryptography
         /// <value>
         ///   The size of the KEM encapsulation key for this suite, in bytes.
         /// </value>
-        public int EncapsulationKeySizeInBytes { get; }
+        public int EncapsulationKeySizeInBytes => KemAlgorithm switch
+        {
+            Kem.DHKEM_P256_HKDF_SHA256 => 65,
+            Kem.DHKEM_P384_HKDF_SHA384 => 97,
+            Kem.DHKEM_X25519_HKDF_SHA256 => 32,
+            _ => throw new CryptographicException(),
+        };
 
         /// <summary>
         ///   Gets the size of the KEM decapsulation key (private key) for this suite, in bytes.
@@ -160,7 +231,13 @@ namespace System.Security.Cryptography
         /// <value>
         ///   The size of the KEM decapsulation key for this suite, in bytes.
         /// </value>
-        public int DecapsulationKeySizeInBytes { get; }
+        public int DecapsulationKeySizeInBytes => KemAlgorithm switch
+        {
+            Kem.DHKEM_P256_HKDF_SHA256 => 32,
+            Kem.DHKEM_P384_HKDF_SHA384 => 48,
+            Kem.DHKEM_X25519_HKDF_SHA256 => 32,
+            _ => throw new CryptographicException(),
+        };
 
         /// <summary>
         ///   Gets the size of the KEM encapsulated key (KEM ciphertext) for this suite, in bytes.
@@ -168,7 +245,13 @@ namespace System.Security.Cryptography
         /// <value>
         ///   The size of the KEM encapsulated key for this suite, in bytes.
         /// </value>
-        public int EncapsulatedKeySizeInBytes { get; }
+        public int EncapsulatedKeySizeInBytes => KemAlgorithm switch
+        {
+            Kem.DHKEM_P256_HKDF_SHA256 => 65,
+            Kem.DHKEM_P384_HKDF_SHA384 => 97,
+            Kem.DHKEM_X25519_HKDF_SHA256 => 32,
+            _ => throw new CryptographicException(),
+        };
 
         /// <summary>
         ///   Gets the size of the AEAD key for this suite, in bytes.
@@ -176,7 +259,13 @@ namespace System.Security.Cryptography
         /// <value>
         ///   The size of the AEAD key for this suite, in bytes.
         /// </value>
-        internal int AeadKeySizeInBytes { get; }
+        internal int AeadKeySizeInBytes => AeadAlgorithm switch
+        {
+            Aead.Aes128Gcm => 16,
+            Aead.Aes256Gcm => 32,
+            Aead.ChaCha20Poly1305 => 32,
+            _ => throw new CryptographicException(),
+        };
 
         /// <summary>
         ///   Gets the size of the AEAD nonce for this suite, in bytes.
@@ -184,7 +273,7 @@ namespace System.Security.Cryptography
         /// <value>
         ///   The size of the AEAD nonce for this suite, in bytes.
         /// </value>
-        internal int AeadNonceSizeInBytes { get; }
+        internal int AeadNonceSizeInBytes => 12;
 
         /// <summary>
         ///   Gets the size of the AEAD authentication tag for this suite, in bytes.
@@ -192,7 +281,7 @@ namespace System.Security.Cryptography
         /// <value>
         ///   The size of the AEAD authentication tag for this suite, in bytes.
         /// </value>
-        public int AeadTagSizeInBytes { get; }
+        public int AeadTagSizeInBytes => 16;
 
         /// <summary>
         ///   Compares two <see cref="HpkeSuite" /> objects.
@@ -204,13 +293,16 @@ namespace System.Security.Cryptography
         ///   <see langword="true" /> if the objects are considered equal; otherwise, <see langword="false" />.
         /// </returns>
         public bool Equals([NotNullWhen(true)] HpkeSuite? other) =>
-            other is not null && other.KemId == KemId && other.KdfId == KdfId && other.AeadId == AeadId;
+            other is not null &&
+            other.KemAlgorithm == KemAlgorithm &&
+            other.KdfAlgorithm == KdfAlgorithm &&
+            other.AeadAlgorithm == AeadAlgorithm;
 
         /// <inheritdoc />
         public override bool Equals([NotNullWhen(true)] object? obj) => obj is HpkeSuite suite && Equals(suite);
 
         /// <inheritdoc />
-        public override int GetHashCode() => HashCode.Combine(KemId, KdfId, AeadId);
+        public override int GetHashCode() => HashCode.Combine(KemAlgorithm, KdfAlgorithm, AeadAlgorithm);
 
         /// <inheritdoc />
         public override string ToString() => Name;
@@ -247,6 +339,35 @@ namespace System.Security.Cryptography
         public static bool operator !=(HpkeSuite? left, HpkeSuite? right)
         {
             return !(left == right);
+        }
+
+        private static string GetName(Kem kem, Kdf kdf, Aead aead)
+        {
+            string kemName = kem switch
+            {
+                Kem.DHKEM_P256_HKDF_SHA256 => "DHKEM(P-256, HKDF-SHA256)",
+                Kem.DHKEM_P384_HKDF_SHA384 => "DHKEM(P-384, HKDF-SHA384)",
+                Kem.DHKEM_X25519_HKDF_SHA256 => "DHKEM(X25519, HKDF-SHA256)",
+                _ => kem.ToString(),
+            };
+
+            string kdfName = kdf switch
+            {
+                Kdf.HKDF_SHA256 => "HKDF-SHA256",
+                Kdf.HKDF_SHA384 => "HKDF-SHA384",
+                Kdf.HKDF_SHA512 => "HKDF-SHA512",
+                _ => kdf.ToString(),
+            };
+
+            string aeadName = aead switch
+            {
+                Aead.Aes128Gcm => "AES-128-GCM",
+                Aead.Aes256Gcm => "AES-256-GCM",
+                Aead.ChaCha20Poly1305 => "ChaCha20Poly1305",
+                _ => aead.ToString(),
+            };
+
+            return $"{kemName}, {kdfName}, {aeadName}";
         }
     }
 }

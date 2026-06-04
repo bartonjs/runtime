@@ -1564,7 +1564,8 @@ namespace System.Security.Cryptography
     }
     public sealed partial class HpkeSuite : System.IEquatable<System.Security.Cryptography.HpkeSuite>
     {
-        internal HpkeSuite() { }
+        public HpkeSuite(System.Security.Cryptography.HpkeSuite.Kem kem, System.Security.Cryptography.HpkeSuite.Kdf kdf, System.Security.Cryptography.HpkeSuite.Aead aead) { }
+        public System.Security.Cryptography.HpkeSuite.Aead AeadAlgorithm { get { throw null; } }
         public int AeadTagSizeInBytes { get { throw null; } }
         public int DecapsulationKeySizeInBytes { get { throw null; } }
         public static System.Security.Cryptography.HpkeSuite DHKEM_P256_HKDF_SHA256_AES_128_GCM { get { throw null; } }
@@ -1573,6 +1574,8 @@ namespace System.Security.Cryptography
         public static System.Security.Cryptography.HpkeSuite DHKEM_X25519_HKDF_SHA256_ChaCha20Poly1305 { get { throw null; } }
         public int EncapsulatedKeySizeInBytes { get { throw null; } }
         public int EncapsulationKeySizeInBytes { get { throw null; } }
+        public System.Security.Cryptography.HpkeSuite.Kdf KdfAlgorithm { get { throw null; } }
+        public System.Security.Cryptography.HpkeSuite.Kem KemAlgorithm { get { throw null; } }
         public string Name { get { throw null; } }
         public bool Equals(System.Security.Cryptography.HpkeSuite? other) { throw null; }
         public override bool Equals(object? obj) { throw null; }
@@ -1580,6 +1583,24 @@ namespace System.Security.Cryptography
         public static bool operator ==(System.Security.Cryptography.HpkeSuite? left, System.Security.Cryptography.HpkeSuite? right) { throw null; }
         public static bool operator !=(System.Security.Cryptography.HpkeSuite? left, System.Security.Cryptography.HpkeSuite? right) { throw null; }
         public override string ToString() { throw null; }
+        public enum Aead
+        {
+            Aes128Gcm = 1,
+            Aes256Gcm = 2,
+            ChaCha20Poly1305 = 3,
+        }
+        public enum Kdf
+        {
+            HKDF_SHA256 = 1,
+            HKDF_SHA384 = 2,
+            HKDF_SHA512 = 3,
+        }
+        public enum Kem
+        {
+            DHKEM_P256_HKDF_SHA256 = 16,
+            DHKEM_P384_HKDF_SHA384 = 17,
+            DHKEM_X25519_HKDF_SHA256 = 32,
+        }
     }
     public abstract partial class HMAC : System.Security.Cryptography.KeyedHashAlgorithm
     {

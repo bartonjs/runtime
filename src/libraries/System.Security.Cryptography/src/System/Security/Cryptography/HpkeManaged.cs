@@ -210,27 +210,27 @@ namespace System.Security.Cryptography
         // ----------------------------------------------------------------
 
         private static ECCurve GetCurve(HpkeSuite suite) =>
-            suite.KemId switch
+            suite.KemAlgorithm switch
             {
-                0x0010 => ECCurve.NamedCurves.nistP256,
-                0x0011 => ECCurve.NamedCurves.nistP384,
+                HpkeSuite.Kem.DHKEM_P256_HKDF_SHA256 => ECCurve.NamedCurves.nistP256,
+                HpkeSuite.Kem.DHKEM_P384_HKDF_SHA384 => ECCurve.NamedCurves.nistP384,
                 _ => throw new CryptographicException(SR.Cryptography_CurveNotSupported),
             };
 
         private static HashAlgorithmName GetKemHash(HpkeSuite suite) =>
-            suite.KemId switch
+            suite.KemAlgorithm switch
             {
-                0x0010 => HashAlgorithmName.SHA256,
-                0x0011 => HashAlgorithmName.SHA384,
+                HpkeSuite.Kem.DHKEM_P256_HKDF_SHA256 => HashAlgorithmName.SHA256,
+                HpkeSuite.Kem.DHKEM_P384_HKDF_SHA384 => HashAlgorithmName.SHA384,
                 _ => throw new CryptographicException(),
             };
 
         private static HashAlgorithmName GetKdfHash(HpkeSuite suite) =>
-            suite.KdfId switch
+            suite.KdfAlgorithm switch
             {
-                0x0001 => HashAlgorithmName.SHA256,
-                0x0002 => HashAlgorithmName.SHA384,
-                0x0003 => HashAlgorithmName.SHA512,
+                HpkeSuite.Kdf.HKDF_SHA256 => HashAlgorithmName.SHA256,
+                HpkeSuite.Kdf.HKDF_SHA384 => HashAlgorithmName.SHA384,
+                HpkeSuite.Kdf.HKDF_SHA512 => HashAlgorithmName.SHA512,
                 _ => throw new CryptographicException(),
             };
 
@@ -465,17 +465,17 @@ namespace System.Security.Cryptography
             Span<byte> ciphertext = ciphertextWithTag.Slice(0, plaintext.Length);
             Span<byte> tag = ciphertextWithTag.Slice(plaintext.Length);
 
-            switch (suite.AeadId)
+            switch (suite.AeadAlgorithm)
             {
-                case 0x0001: // AES-128-GCM
-                case 0x0002: // AES-256-GCM
+                case HpkeSuite.Aead.Aes128Gcm:
+                case HpkeSuite.Aead.Aes256Gcm:
                     using (AesGcm aesGcm = new AesGcm(key, suite.AeadTagSizeInBytes))
                     {
                         aesGcm.Encrypt(nonce, plaintext, ciphertext, tag, aad);
                     }
                     break;
 
-                case 0x0003: // ChaCha20Poly1305
+                case HpkeSuite.Aead.ChaCha20Poly1305:
                     using (ChaCha20Poly1305 chacha = new ChaCha20Poly1305(key))
                     {
                         chacha.Encrypt(nonce, plaintext, ciphertext, tag, aad);
@@ -498,17 +498,17 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> ciphertext = ciphertextWithTag.Slice(0, plaintext.Length);
             ReadOnlySpan<byte> tag = ciphertextWithTag.Slice(plaintext.Length);
 
-            switch (suite.AeadId)
+            switch (suite.AeadAlgorithm)
             {
-                case 0x0001:
-                case 0x0002:
+                case HpkeSuite.Aead.Aes128Gcm:
+                case HpkeSuite.Aead.Aes256Gcm:
                     using (AesGcm aesGcm = new AesGcm(key, suite.AeadTagSizeInBytes))
                     {
                         aesGcm.Decrypt(nonce, ciphertext, tag, plaintext, aad);
                     }
                     break;
 
-                case 0x0003:
+                case HpkeSuite.Aead.ChaCha20Poly1305:
                     using (ChaCha20Poly1305 chacha = new ChaCha20Poly1305(key))
                     {
                         chacha.Decrypt(nonce, ciphertext, tag, plaintext, aad);
