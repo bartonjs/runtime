@@ -81,7 +81,11 @@ namespace System.Security.Cryptography
         {
             ArgumentNullException.ThrowIfNull(suite);
 
+#if BROWSER
+            throw new PlatformNotSupportedException();
+#else
             return HpkeManaged.GenerateKeyManaged(suite);
+#endif
         }
 
         /// <summary>
@@ -109,7 +113,11 @@ namespace System.Security.Cryptography
         {
             ArgumentNullException.ThrowIfNull(suite);
 
+#if BROWSER
+            throw new PlatformNotSupportedException();
+#else
             return HpkeManaged.ImportEncapsulationKeyManaged(suite, source);
+#endif
         }
 
         /// <summary>
@@ -166,7 +174,11 @@ namespace System.Security.Cryptography
         {
             ArgumentNullException.ThrowIfNull(suite);
 
+#if BROWSER
+            throw new PlatformNotSupportedException();
+#else
             return HpkeManaged.ImportDecapsulationKeyManaged(suite, source);
+#endif
         }
 
         /// <summary>

@@ -469,6 +469,7 @@ namespace System.Security.Cryptography
             {
                 case HpkeSuite.Aead.Aes128Gcm:
                 case HpkeSuite.Aead.Aes256Gcm:
+#pragma warning disable CA1416
                     using (AesGcm aesGcm = new AesGcm(key, suite.AeadTagSizeInBytes))
                     {
                         aesGcm.Encrypt(nonce, plaintext, ciphertext, tag, aad);
@@ -481,6 +482,7 @@ namespace System.Security.Cryptography
                         chacha.Encrypt(nonce, plaintext, ciphertext, tag, aad);
                     }
                     break;
+#pragma warning restore CA1416
 
                 default:
                     throw new CryptographicException();
@@ -502,6 +504,7 @@ namespace System.Security.Cryptography
             {
                 case HpkeSuite.Aead.Aes128Gcm:
                 case HpkeSuite.Aead.Aes256Gcm:
+#pragma warning disable CA1416
                     using (AesGcm aesGcm = new AesGcm(key, suite.AeadTagSizeInBytes))
                     {
                         aesGcm.Decrypt(nonce, ciphertext, tag, plaintext, aad);
@@ -514,6 +517,7 @@ namespace System.Security.Cryptography
                         chacha.Decrypt(nonce, ciphertext, tag, plaintext, aad);
                     }
                     break;
+#pragma warning restore CA1416
 
                 default:
                     throw new CryptographicException();
@@ -524,7 +528,7 @@ namespace System.Security.Cryptography
         // Nonce computation: xor(base_nonce, I2OSP(seq, Nn))
         // ----------------------------------------------------------------
 
-        private static byte[] ComputeNonce(byte[] baseNonce, long seq)
+        private static unsafe byte[] ComputeNonce(byte[] baseNonce, long seq)
         {
             byte[] nonce = new byte[baseNonce.Length];
             baseNonce.CopyTo(nonce.AsSpan());

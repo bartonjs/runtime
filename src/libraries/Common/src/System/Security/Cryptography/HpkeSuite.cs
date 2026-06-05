@@ -273,7 +273,9 @@ namespace System.Security.Cryptography
         /// <value>
         ///   The size of the AEAD nonce for this suite, in bytes.
         /// </value>
+#pragma warning disable CA1822
         internal int AeadNonceSizeInBytes => 12;
+#pragma warning restore CA1822
 
         /// <summary>
         ///   Gets the size of the AEAD authentication tag for this suite, in bytes.
