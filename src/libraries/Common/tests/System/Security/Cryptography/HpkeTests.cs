@@ -6,6 +6,16 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
+    public class HpkeTests_IsSupported
+    {
+        [Fact]
+        public static void IsSupported_AgreesWithPlatform()
+        {
+            Assert.Equal(!PlatformDetection.IsBrowser, HPKE.IsSupported);
+        }
+    }
+
+    [ConditionalClass(typeof(HPKE), nameof(HPKE.IsSupported))]
     public class HpkeTests
     {
         public static TheoryData<HpkeSuite> NistSuites => new()
