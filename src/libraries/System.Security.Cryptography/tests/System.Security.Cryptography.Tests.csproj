@@ -248,6 +248,8 @@
              Link="CommonTest\System\Security\Cryptography\MLKemKeyTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\HpkeTests.cs"
              Link="CommonTest\System\Security\Cryptography\HpkeTests.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\HpkeContractTests.cs"
+             Link="CommonTest\System\Security\Cryptography\HpkeContractTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\HpkeNotSupportedTests.cs"
              Link="CommonTest\System\Security\Cryptography\HpkeNotSupportedTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\HpkeSuiteTests.cs"

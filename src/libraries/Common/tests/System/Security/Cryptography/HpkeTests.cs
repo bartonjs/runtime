@@ -24,6 +24,80 @@ namespace System.Security.Cryptography.Tests
             HpkeSuite.DHKEM_P384_HKDF_SHA384_AES_256_GCM,
         };
 
+        [Fact]
+        public void GenerateKey_NullSuite()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("suite", static () => HPKE.GenerateKey(null));
+        }
+
+        [Fact]
+        public void ImportEncapsulationKey_NullSuite_Span()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("suite", static () =>
+                HPKE.ImportEncapsulationKey(null, new ReadOnlySpan<byte>(new byte[65])));
+        }
+
+        [Fact]
+        public void ImportEncapsulationKey_NullSuite_Array()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("suite", static () =>
+                HPKE.ImportEncapsulationKey(null, new byte[65]));
+        }
+
+        [Fact]
+        public void ImportEncapsulationKey_NullSource()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("source", static () =>
+                HPKE.ImportEncapsulationKey(HpkeSuite.DHKEM_P256_HKDF_SHA256_AES_128_GCM, (byte[])null));
+        }
+
+        [Fact]
+        public void ImportDecapsulationKey_NullSuite_Span()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("suite", static () =>
+                HPKE.ImportDecapsulationKey(null, new ReadOnlySpan<byte>(new byte[32])));
+        }
+
+        [Fact]
+        public void ImportDecapsulationKey_NullSuite_Array()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("suite", static () =>
+                HPKE.ImportDecapsulationKey(null, new byte[32]));
+        }
+
+        [Fact]
+        public void ImportDecapsulationKey_NullSource()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("source", static () =>
+                HPKE.ImportDecapsulationKey(HpkeSuite.DHKEM_P256_HKDF_SHA256_AES_128_GCM, (byte[])null));
+        }
+
+        [Theory]
+        [MemberData(nameof(NistSuites))]
+        public void ExportEncapsulationKey_WrongSize(HpkeSuite suite)
+        {
+            using HPKE key = HPKE.GenerateKey(suite);
+
+            AssertExtensions.Throws<ArgumentException>("destination", () =>
+                key.ExportEncapsulationKey(new byte[suite.EncapsulationKeySizeInBytes - 1]));
+
+            AssertExtensions.Throws<ArgumentException>("destination", () =>
+                key.ExportEncapsulationKey(new byte[suite.EncapsulationKeySizeInBytes + 1]));
+        }
+
+        [Theory]
+        [MemberData(nameof(NistSuites))]
+        public void ExportDecapsulationKey_WrongSize(HpkeSuite suite)
+        {
+            using HPKE key = HPKE.GenerateKey(suite);
+
+            AssertExtensions.Throws<ArgumentException>("destination", () =>
+                key.ExportDecapsulationKey(new byte[suite.DecapsulationKeySizeInBytes - 1]));
+
+            AssertExtensions.Throws<ArgumentException>("destination", () =>
+                key.ExportDecapsulationKey(new byte[suite.DecapsulationKeySizeInBytes + 1]));
+        }
+
         [Theory]
         [MemberData(nameof(NistSuites))]
         public void SingleShotSealOpen_RoundTrip(HpkeSuite suite)
