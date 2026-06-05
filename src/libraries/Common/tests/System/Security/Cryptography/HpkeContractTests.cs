@@ -41,7 +41,7 @@ namespace System.Security.Cryptography.Tests
             hpke.Dispose();
             hpke.Dispose();
 
-            Assert.Equal(3, count);
+            Assert.Equal(1, count);
         }
 
         [Fact]

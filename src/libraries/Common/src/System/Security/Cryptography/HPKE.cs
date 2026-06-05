@@ -659,8 +659,11 @@ namespace System.Security.Cryptography
         /// </summary>
         public void Dispose()
         {
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
+            if (!_disposed)
+            {
+                Dispose(disposing: true);
+                GC.SuppressFinalize(this);
+            }
         }
 
         /// <summary>
