@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
-
 namespace System.Security.Cryptography
 {
     /// <summary>
@@ -33,7 +31,7 @@ namespace System.Security.Cryptography
         /// <value>
         ///   <see langword="true" /> if HPKE is supported; otherwise, <see langword="false" />.
         /// </value>
-        public static bool IsSupported => throw new NotImplementedException();
+        public static bool IsSupported { get; } = HpkeImplementation.SupportsAny();
 
         /// <summary>
         ///   Gets the HPKE ciphersuite for this instance.
@@ -81,11 +79,7 @@ namespace System.Security.Cryptography
         {
             ArgumentNullException.ThrowIfNull(suite);
 
-#if BROWSER
-            throw new PlatformNotSupportedException();
-#else
-            return HpkeManaged.GenerateKeyManaged(suite);
-#endif
+            return HpkeImplementation.GenerateKeyCore(suite);
         }
 
         /// <summary>
@@ -113,11 +107,7 @@ namespace System.Security.Cryptography
         {
             ArgumentNullException.ThrowIfNull(suite);
 
-#if BROWSER
-            throw new PlatformNotSupportedException();
-#else
-            return HpkeManaged.ImportEncapsulationKeyManaged(suite, source);
-#endif
+            return HpkeImplementation.ImportEncapsulationKeyCore(suite, source);
         }
 
         /// <summary>
@@ -174,11 +164,7 @@ namespace System.Security.Cryptography
         {
             ArgumentNullException.ThrowIfNull(suite);
 
-#if BROWSER
-            throw new PlatformNotSupportedException();
-#else
-            return HpkeManaged.ImportDecapsulationKeyManaged(suite, source);
-#endif
+            return HpkeImplementation.ImportDecapsulationKeyCore(suite, source);
         }
 
         /// <summary>
