@@ -144,7 +144,18 @@ namespace System.Security.Cryptography
             }
         }
 
-        protected override HpkeSenderContext SetupSenderCore(Span<byte> kemCiphertext, ReadOnlySpan<byte> info)
+        protected override HpkeSenderContext SetupSenderCore(
+            Span<byte> kemCiphertext,
+            ReadOnlySpan<byte> info)
+        {
+            return SetupSenderPskCore(kemCiphertext, info, default, default);
+        }
+
+        protected override HpkeSenderContext SetupSenderPskCore(
+            Span<byte> kemCiphertext,
+            ReadOnlySpan<byte> info,
+            ReadOnlySpan<byte> psk,
+            ReadOnlySpan<byte> pskId)
         {
             ECCurve curve = GetCurve(Suite);
             using (ECDiffieHellman ephemeral = ECDiffieHellman.Create(curve))
@@ -165,12 +176,24 @@ namespace System.Security.Cryptography
 
                     byte[] sharedSecret = ExtractAndExpand(Suite, dh, kemContext);
 
-                    return CreateSenderContext(Suite, sharedSecret, info);
+                    byte mode = psk.IsEmpty ? (byte)0x00 : (byte)0x01;
+                    return CreateSenderContext(Suite, sharedSecret, info, mode, psk, pskId);
                 }
             }
         }
 
-        protected override HpkeReceiverContext SetupReceiverCore(ReadOnlySpan<byte> kemCiphertext, ReadOnlySpan<byte> info)
+        protected override HpkeReceiverContext SetupReceiverCore(
+            ReadOnlySpan<byte> kemCiphertext,
+            ReadOnlySpan<byte> info)
+        {
+            return SetupReceiverPskCore(kemCiphertext, info, default, default);
+        }
+
+        protected override HpkeReceiverContext SetupReceiverPskCore(
+            ReadOnlySpan<byte> kemCiphertext,
+            ReadOnlySpan<byte> info,
+            ReadOnlySpan<byte> psk,
+            ReadOnlySpan<byte> pskId)
         {
             if (_privateKey is null)
             {
@@ -191,7 +214,8 @@ namespace System.Security.Cryptography
 
                 byte[] sharedSecret = ExtractAndExpand(Suite, dh, kemContext);
 
-                return CreateReceiverContext(Suite, sharedSecret, info);
+                byte mode = psk.IsEmpty ? (byte)0x00 : (byte)0x01;
+                return CreateReceiverContext(Suite, sharedSecret, info, mode, psk, pskId);
             }
         }
 
@@ -383,17 +407,17 @@ namespace System.Security.Cryptography
         private static (byte[] Key, byte[] BaseNonce, byte[] ExporterSecret) KeySchedule(
             HpkeSuite suite,
             byte[] sharedSecret,
-            ReadOnlySpan<byte> info)
+            ReadOnlySpan<byte> info,
+            byte mode = 0x00,
+            ReadOnlySpan<byte> psk = default,
+            ReadOnlySpan<byte> pskId = default)
         {
             HashAlgorithmName kdfHash = GetKdfHash(suite);
             byte[] hpkeSuiteId = BuildHpkeSuiteId(suite);
             int nh = GetHashLength(kdfHash);
 
-            // mode = 0x00 (base)
-            byte mode = 0x00;
-
-            // psk_id_hash = LabeledExtract("", "psk_id_hash", "")
-            byte[] pskIdHash = LabeledExtract(kdfHash, hpkeSuiteId, ReadOnlySpan<byte>.Empty, "psk_id_hash"u8, ReadOnlySpan<byte>.Empty);
+            // psk_id_hash = LabeledExtract("", "psk_id_hash", psk_id)
+            byte[] pskIdHash = LabeledExtract(kdfHash, hpkeSuiteId, ReadOnlySpan<byte>.Empty, "psk_id_hash"u8, pskId);
 
             // info_hash = LabeledExtract("", "info_hash", info)
             byte[] infoHash = LabeledExtract(kdfHash, hpkeSuiteId, ReadOnlySpan<byte>.Empty, "info_hash"u8, info);
@@ -404,8 +428,8 @@ namespace System.Security.Cryptography
             pskIdHash.CopyTo(ksCtx.AsSpan(1));
             infoHash.CopyTo(ksCtx.AsSpan(1 + pskIdHash.Length));
 
-            // secret = LabeledExtract(shared_secret, "secret", psk="")
-            byte[] secret = LabeledExtract(kdfHash, hpkeSuiteId, sharedSecret, "secret"u8, ReadOnlySpan<byte>.Empty);
+            // secret = LabeledExtract(shared_secret, "secret", psk)
+            byte[] secret = LabeledExtract(kdfHash, hpkeSuiteId, sharedSecret, "secret"u8, psk);
 
             // key = LabeledExpand(secret, "key", key_schedule_context, Nk)
             byte[] key = LabeledExpand(kdfHash, hpkeSuiteId, secret, "key"u8, ksCtx, suite.AeadKeySizeInBytes);
@@ -559,9 +583,12 @@ namespace System.Security.Cryptography
         private static HpkeManagedSenderContext CreateSenderContext(
             HpkeSuite suite,
             byte[] sharedSecret,
-            ReadOnlySpan<byte> info)
+            ReadOnlySpan<byte> info,
+            byte mode = 0x00,
+            ReadOnlySpan<byte> psk = default,
+            ReadOnlySpan<byte> pskId = default)
         {
-            (byte[] key, byte[] baseNonce, byte[] exporterSecret) = KeySchedule(suite, sharedSecret, info);
+            (byte[] key, byte[] baseNonce, byte[] exporterSecret) = KeySchedule(suite, sharedSecret, info, mode, psk, pskId);
 
             return new HpkeManagedSenderContext(suite, key, baseNonce, exporterSecret);
         }
@@ -569,9 +596,12 @@ namespace System.Security.Cryptography
         private static HpkeManagedReceiverContext CreateReceiverContext(
             HpkeSuite suite,
             byte[] sharedSecret,
-            ReadOnlySpan<byte> info)
+            ReadOnlySpan<byte> info,
+            byte mode = 0x00,
+            ReadOnlySpan<byte> psk = default,
+            ReadOnlySpan<byte> pskId = default)
         {
-            (byte[] key, byte[] baseNonce, byte[] exporterSecret) = KeySchedule(suite, sharedSecret, info);
+            (byte[] key, byte[] baseNonce, byte[] exporterSecret) = KeySchedule(suite, sharedSecret, info, mode, psk, pskId);
 
             return new HpkeManagedReceiverContext(suite, key, baseNonce, exporterSecret);
         }

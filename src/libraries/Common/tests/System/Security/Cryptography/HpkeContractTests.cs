@@ -495,6 +495,520 @@ namespace System.Security.Cryptography.Tests
             HpkeReceiverContext ctx = hpke.SetupReceiver(kemCt);
             Assert.Same(returnedCtx, ctx);
         }
+
+        [Fact]
+        public static void Seal_ByteArray_NullPlaintext_Throws()
+        {
+            using HpkeContract hpke = new(s_suite);
+            Assert.Throws<ArgumentNullException>(() =>
+                hpke.Seal(
+                    plaintext: (byte[])null,
+                    kemCiphertext: new byte[s_suite.EncapsulatedKeySizeInBytes],
+                    ciphertext: new byte[s_suite.AeadTagSizeInBytes]));
+        }
+
+        [Fact]
+        public static void Seal_ByteArray_NullKemCiphertext_Throws()
+        {
+            using HpkeContract hpke = new(s_suite);
+            Assert.Throws<ArgumentNullException>(() =>
+                hpke.Seal(
+                    plaintext: new byte[10],
+                    kemCiphertext: (byte[])null,
+                    ciphertext: new byte[10 + s_suite.AeadTagSizeInBytes]));
+        }
+
+        [Fact]
+        public static void Seal_ByteArray_NullCiphertext_Throws()
+        {
+            using HpkeContract hpke = new(s_suite);
+            Assert.Throws<ArgumentNullException>(() =>
+                hpke.Seal(
+                    plaintext: new byte[10],
+                    kemCiphertext: new byte[s_suite.EncapsulatedKeySizeInBytes],
+                    ciphertext: (byte[])null));
+        }
+
+        [Fact]
+        public static void Seal_ByteArray_FunnelsToCore()
+        {
+            byte[] plaintext = new byte[10];
+            byte[] kemCt = new byte[s_suite.EncapsulatedKeySizeInBytes];
+            byte[] ciphertext = new byte[10 + s_suite.AeadTagSizeInBytes];
+            byte[] aad = new byte[3];
+            byte[] info = new byte[4];
+
+            using HpkeContract hpke = new(s_suite)
+            {
+                OnSealCore = (ReadOnlySpan<byte> pt, Span<byte> kemDest, Span<byte> ctDest, ReadOnlySpan<byte> a, ReadOnlySpan<byte> i) =>
+                {
+                    AssertExtensions.Same(plaintext, pt);
+                    AssertExtensions.Same(kemCt, kemDest);
+                    AssertExtensions.Same(ciphertext, ctDest);
+                    AssertExtensions.Same(aad, a);
+                    AssertExtensions.Same(info, i);
+                }
+            };
+
+            hpke.Seal(plaintext, kemCt, ciphertext, aad, info);
+        }
+
+        [Fact]
+        public static void Seal_ByteArray_Allocated_NullPlaintext_Throws()
+        {
+            using HpkeContract hpke = new(s_suite);
+            Assert.Throws<ArgumentNullException>(() =>
+                hpke.Seal((byte[])null, aad: null, info: null));
+        }
+
+        [Fact]
+        public static void Seal_ByteArray_Allocated_FunnelsToCore()
+        {
+            byte[] plaintext = "hello"u8.ToArray();
+
+            using HpkeContract hpke = new(s_suite)
+            {
+                OnSealCore = (ReadOnlySpan<byte> pt, Span<byte> kemDest, Span<byte> ctDest, ReadOnlySpan<byte> a, ReadOnlySpan<byte> i) =>
+                {
+                    AssertExtensions.Same(plaintext, pt);
+                    Assert.Equal(s_suite.EncapsulatedKeySizeInBytes, kemDest.Length);
+                    Assert.Equal(plaintext.Length + s_suite.AeadTagSizeInBytes, ctDest.Length);
+                    kemDest.Fill(0x11);
+                    ctDest.Fill(0x22);
+                }
+            };
+
+            (byte[] kemCiphertext, byte[] ciphertext) = hpke.Seal(plaintext, aad: null, info: null);
+            Assert.Equal(s_suite.EncapsulatedKeySizeInBytes, kemCiphertext.Length);
+            AssertExtensions.FilledWith<byte>(0x11, kemCiphertext);
+            Assert.Equal(plaintext.Length + s_suite.AeadTagSizeInBytes, ciphertext.Length);
+            AssertExtensions.FilledWith<byte>(0x22, ciphertext);
+        }
+
+        [Fact]
+        public static void Open_ByteArray_NullKemCiphertext_Throws()
+        {
+            using HpkeContract hpke = new(s_suite);
+            Assert.Throws<ArgumentNullException>(() =>
+                hpke.Open(
+                    kemCiphertext: (byte[])null,
+                    ciphertext: new byte[s_suite.AeadTagSizeInBytes],
+                    plaintext: Array.Empty<byte>()));
+        }
+
+        [Fact]
+        public static void Open_ByteArray_NullCiphertext_Throws()
+        {
+            using HpkeContract hpke = new(s_suite);
+            Assert.Throws<ArgumentNullException>(() =>
+                hpke.Open(
+                    kemCiphertext: new byte[s_suite.EncapsulatedKeySizeInBytes],
+                    ciphertext: (byte[])null,
+                    plaintext: Array.Empty<byte>()));
+        }
+
+        [Fact]
+        public static void Open_ByteArray_NullPlaintext_Throws()
+        {
+            using HpkeContract hpke = new(s_suite);
+            Assert.Throws<ArgumentNullException>(() =>
+                hpke.Open(
+                    kemCiphertext: new byte[s_suite.EncapsulatedKeySizeInBytes],
+                    ciphertext: new byte[s_suite.AeadTagSizeInBytes],
+                    plaintext: (byte[])null));
+        }
+
+        [Fact]
+        public static void Open_ByteArray_FunnelsToCore()
+        {
+            byte[] kemCt = new byte[s_suite.EncapsulatedKeySizeInBytes];
+            byte[] ciphertext = new byte[10 + s_suite.AeadTagSizeInBytes];
+            byte[] plaintext = new byte[10];
+            byte[] aad = new byte[3];
+            byte[] info = new byte[4];
+
+            using HpkeContract hpke = new(s_suite)
+            {
+                OnOpenCore = (ReadOnlySpan<byte> kemSrc, ReadOnlySpan<byte> ctSrc, Span<byte> ptDest, ReadOnlySpan<byte> a, ReadOnlySpan<byte> i) =>
+                {
+                    AssertExtensions.Same(kemCt, kemSrc);
+                    AssertExtensions.Same(ciphertext, ctSrc);
+                    AssertExtensions.Same(plaintext, ptDest);
+                    AssertExtensions.Same(aad, a);
+                    AssertExtensions.Same(info, i);
+                }
+            };
+
+            hpke.Open(kemCt, ciphertext, plaintext, aad, info);
+        }
+
+        [Fact]
+        public static void Open_ByteArray_Allocated_NullKemCiphertext_Throws()
+        {
+            using HpkeContract hpke = new(s_suite);
+            Assert.Throws<ArgumentNullException>(() =>
+                hpke.Open((byte[])null, new byte[s_suite.AeadTagSizeInBytes], aad: null, info: null));
+        }
+
+        [Fact]
+        public static void Open_ByteArray_Allocated_NullCiphertext_Throws()
+        {
+            using HpkeContract hpke = new(s_suite);
+            Assert.Throws<ArgumentNullException>(() =>
+                hpke.Open(new byte[s_suite.EncapsulatedKeySizeInBytes], (byte[])null, aad: null, info: null));
+        }
+
+        [Fact]
+        public static void Open_ByteArray_Allocated_FunnelsToCore()
+        {
+            byte[] kemCt = new byte[s_suite.EncapsulatedKeySizeInBytes];
+            byte[] ciphertext = new byte[10 + s_suite.AeadTagSizeInBytes];
+
+            using HpkeContract hpke = new(s_suite)
+            {
+                OnOpenCore = (ReadOnlySpan<byte> kemSrc, ReadOnlySpan<byte> ctSrc, Span<byte> ptDest, ReadOnlySpan<byte> a, ReadOnlySpan<byte> i) =>
+                {
+                    AssertExtensions.Same(kemCt, kemSrc);
+                    AssertExtensions.Same(ciphertext, ctSrc);
+                    Assert.Equal(10, ptDest.Length);
+                    ptDest.Fill(0xAA);
+                }
+            };
+
+            byte[] result = hpke.Open(kemCt, ciphertext, aad: null, info: null);
+            Assert.Equal(10, result.Length);
+            AssertExtensions.FilledWith<byte>(0xAA, result);
+        }
+
+        [Fact]
+        public static void SetupSender_ByteArray_NullKemCiphertext_Throws()
+        {
+            using HpkeContract hpke = new(s_suite);
+            Assert.Throws<ArgumentNullException>(() =>
+                hpke.SetupSender((byte[])null, info: null));
+        }
+
+        [Fact]
+        public static void SetupSender_ByteArray_FunnelsToCore()
+        {
+            byte[] kemCt = new byte[s_suite.EncapsulatedKeySizeInBytes];
+            byte[] info = new byte[4];
+            HpkeSenderContract returnedCtx = new(7);
+
+            using HpkeContract hpke = new(s_suite)
+            {
+                OnSetupSenderCore = (Span<byte> kemDest, ReadOnlySpan<byte> i) =>
+                {
+                    AssertExtensions.Same(kemCt, kemDest);
+                    AssertExtensions.Same(info, i);
+                    return returnedCtx;
+                }
+            };
+
+            HpkeSenderContext ctx = hpke.SetupSender(kemCt, info);
+            Assert.Same(returnedCtx, ctx);
+        }
+
+        [Fact]
+        public static void SetupReceiver_ByteArray_NullKemCiphertext_Throws()
+        {
+            using HpkeContract hpke = new(s_suite);
+            Assert.Throws<ArgumentNullException>(() =>
+                hpke.SetupReceiver((byte[])null, info: null));
+        }
+
+        [Fact]
+        public static void SetupReceiver_ByteArray_FunnelsToCore()
+        {
+            byte[] kemCt = new byte[s_suite.EncapsulatedKeySizeInBytes];
+            byte[] info = new byte[4];
+            HpkeReceiverContract returnedCtx = new(7);
+
+            using HpkeContract hpke = new(s_suite)
+            {
+                OnSetupReceiverCore = (ReadOnlySpan<byte> kemSrc, ReadOnlySpan<byte> i) =>
+                {
+                    AssertExtensions.Same(kemCt, kemSrc);
+                    AssertExtensions.Same(info, i);
+                    return returnedCtx;
+                }
+            };
+
+            HpkeReceiverContext ctx = hpke.SetupReceiver(kemCt, info);
+            Assert.Same(returnedCtx, ctx);
+        }
+
+        // ----------------------------------------------------------------
+        // PSK overloads
+        // ----------------------------------------------------------------
+
+        [Fact]
+        public static void SetupSender_Psk_Span_EmptyPsk_Throws()
+        {
+            using HpkeContract hpke = new(s_suite);
+            byte[] kemCt = new byte[s_suite.EncapsulatedKeySizeInBytes];
+            AssertExtensions.Throws<ArgumentException>("psk", () =>
+                hpke.SetupSenderPsk(kemCt.AsSpan(), ReadOnlySpan<byte>.Empty, new byte[] { 1 }));
+        }
+
+        [Fact]
+        public static void SetupSender_Psk_Span_EmptyPskId_Throws()
+        {
+            using HpkeContract hpke = new(s_suite);
+            byte[] kemCt = new byte[s_suite.EncapsulatedKeySizeInBytes];
+            AssertExtensions.Throws<ArgumentException>("pskId", () =>
+                hpke.SetupSenderPsk(kemCt.AsSpan(), new byte[] { 1 }, ReadOnlySpan<byte>.Empty));
+        }
+
+        [Fact]
+        public static void SetupSender_Psk_Span_Disposed()
+        {
+            HpkeContract hpke = new(s_suite);
+            hpke.Dispose();
+            byte[] kemCt = new byte[s_suite.EncapsulatedKeySizeInBytes];
+            Assert.Throws<ObjectDisposedException>(() =>
+                hpke.SetupSenderPsk(kemCt.AsSpan(), new byte[] { 1 }, new byte[] { 2 }));
+        }
+
+        [Fact]
+        public static void SetupSender_Psk_Span_Works()
+        {
+            byte[] kemCt = new byte[s_suite.EncapsulatedKeySizeInBytes];
+            byte[] psk = new byte[] { 1, 2, 3 };
+            byte[] pskId = new byte[] { 4, 5 };
+            HpkeSenderContract returnedCtx = new(7);
+
+            using HpkeContract hpke = new(s_suite)
+            {
+                OnSetupSenderPskCore = (Span<byte> kemDest, ReadOnlySpan<byte> info, ReadOnlySpan<byte> p, ReadOnlySpan<byte> pid) =>
+                {
+                    AssertExtensions.Same(kemCt, kemDest);
+                    AssertExtensions.Same(psk, p);
+                    AssertExtensions.Same(pskId, pid);
+                    return returnedCtx;
+                }
+            };
+
+            HpkeSenderContext ctx = hpke.SetupSenderPsk(kemCt.AsSpan(), psk, pskId);
+            Assert.Same(returnedCtx, ctx);
+        }
+
+        [Fact]
+        public static void SetupSender_Psk_Allocated_EmptyPsk_Throws()
+        {
+            using HpkeContract hpke = new(s_suite);
+            AssertExtensions.Throws<ArgumentException>("psk", () =>
+                hpke.SetupSenderPsk(ReadOnlySpan<byte>.Empty, new byte[] { 1 }));
+        }
+
+        [Fact]
+        public static void SetupSender_Psk_Allocated_EmptyPskId_Throws()
+        {
+            using HpkeContract hpke = new(s_suite);
+            AssertExtensions.Throws<ArgumentException>("pskId", () =>
+                hpke.SetupSenderPsk(new byte[] { 1 }, ReadOnlySpan<byte>.Empty));
+        }
+
+        [Fact]
+        public static void SetupSender_Psk_Allocated_Disposed()
+        {
+            HpkeContract hpke = new(s_suite);
+            hpke.Dispose();
+            Assert.Throws<ObjectDisposedException>(() =>
+                hpke.SetupSenderPsk(new byte[] { 1 }, new byte[] { 2 }));
+        }
+
+        [Fact]
+        public static void SetupSender_Psk_Allocated_Works()
+        {
+            byte[] psk = new byte[] { 1, 2, 3 };
+            byte[] pskId = new byte[] { 4, 5 };
+            HpkeSenderContract returnedCtx = new(7);
+
+            using HpkeContract hpke = new(s_suite)
+            {
+                OnSetupSenderPskCore = (Span<byte> kemDest, ReadOnlySpan<byte> info, ReadOnlySpan<byte> p, ReadOnlySpan<byte> pid) =>
+                {
+                    Assert.Equal(s_suite.EncapsulatedKeySizeInBytes, kemDest.Length);
+                    AssertExtensions.Same(psk, p);
+                    AssertExtensions.Same(pskId, pid);
+                    return returnedCtx;
+                }
+            };
+
+            (byte[] kemCiphertext, HpkeSenderContext ctx) = hpke.SetupSenderPsk(psk, pskId);
+            Assert.Same(returnedCtx, ctx);
+            Assert.Equal(s_suite.EncapsulatedKeySizeInBytes, kemCiphertext.Length);
+        }
+
+        [Fact]
+        public static void SetupSender_Psk_ByteArray_NullPsk_Throws()
+        {
+            using HpkeContract hpke = new(s_suite);
+            byte[] kemCt = new byte[s_suite.EncapsulatedKeySizeInBytes];
+            Assert.Throws<ArgumentNullException>(() =>
+                hpke.SetupSenderPsk(kemCt, (byte[])null, new byte[] { 1 }, (byte[])null));
+        }
+
+        [Fact]
+        public static void SetupSender_Psk_ByteArray_NullPskId_Throws()
+        {
+            using HpkeContract hpke = new(s_suite);
+            byte[] kemCt = new byte[s_suite.EncapsulatedKeySizeInBytes];
+            Assert.Throws<ArgumentNullException>(() =>
+                hpke.SetupSenderPsk(kemCt, new byte[] { 1 }, (byte[])null, (byte[])null));
+        }
+
+        [Fact]
+        public static void SetupSender_Psk_ByteArray_NullKemCiphertext_Throws()
+        {
+            using HpkeContract hpke = new(s_suite);
+            Assert.Throws<ArgumentNullException>(() =>
+                hpke.SetupSenderPsk((byte[])null, new byte[] { 1 }, new byte[] { 2 }, (byte[])null));
+        }
+
+        [Fact]
+        public static void SetupSender_Psk_Allocated_NullPsk_Throws()
+        {
+            using HpkeContract hpke = new(s_suite);
+            Assert.Throws<ArgumentNullException>(() =>
+                hpke.SetupSenderPsk((byte[])null, new byte[] { 1 }));
+        }
+
+        [Fact]
+        public static void SetupSender_Psk_Allocated_NullPskId_Throws()
+        {
+            using HpkeContract hpke = new(s_suite);
+            Assert.Throws<ArgumentNullException>(() =>
+                hpke.SetupSenderPsk(new byte[] { 1 }, (byte[])null));
+        }
+
+        [Fact]
+        public static void SetupSender_Psk_ByteArray_FunnelsToCore()
+        {
+            byte[] kemCt = new byte[s_suite.EncapsulatedKeySizeInBytes];
+            byte[] psk = new byte[] { 1, 2, 3 };
+            byte[] pskId = new byte[] { 4, 5 };
+            byte[] info = new byte[] { 6 };
+            HpkeSenderContract returnedCtx = new(7);
+
+            using HpkeContract hpke = new(s_suite)
+            {
+                OnSetupSenderPskCore = (Span<byte> kemDest, ReadOnlySpan<byte> i, ReadOnlySpan<byte> p, ReadOnlySpan<byte> pid) =>
+                {
+                    AssertExtensions.Same(kemCt, kemDest);
+                    AssertExtensions.Same(info, i);
+                    AssertExtensions.Same(psk, p);
+                    AssertExtensions.Same(pskId, pid);
+                    return returnedCtx;
+                }
+            };
+
+            HpkeSenderContext ctx = hpke.SetupSenderPsk(kemCt, psk, pskId, info);
+            Assert.Same(returnedCtx, ctx);
+        }
+
+        [Fact]
+        public static void SetupReceiver_Psk_Span_EmptyPsk_Throws()
+        {
+            using HpkeContract hpke = new(s_suite);
+            byte[] kemCt = new byte[s_suite.EncapsulatedKeySizeInBytes];
+            AssertExtensions.Throws<ArgumentException>("psk", () =>
+                hpke.SetupReceiverPsk(new ReadOnlySpan<byte>(kemCt), ReadOnlySpan<byte>.Empty, new byte[] { 1 }));
+        }
+
+        [Fact]
+        public static void SetupReceiver_Psk_Span_EmptyPskId_Throws()
+        {
+            using HpkeContract hpke = new(s_suite);
+            byte[] kemCt = new byte[s_suite.EncapsulatedKeySizeInBytes];
+            AssertExtensions.Throws<ArgumentException>("pskId", () =>
+                hpke.SetupReceiverPsk(new ReadOnlySpan<byte>(kemCt), new byte[] { 1 }, ReadOnlySpan<byte>.Empty));
+        }
+
+        [Fact]
+        public static void SetupReceiver_Psk_Span_Disposed()
+        {
+            HpkeContract hpke = new(s_suite);
+            hpke.Dispose();
+            byte[] kemCt = new byte[s_suite.EncapsulatedKeySizeInBytes];
+            Assert.Throws<ObjectDisposedException>(() =>
+                hpke.SetupReceiverPsk(new ReadOnlySpan<byte>(kemCt), new byte[] { 1 }, new byte[] { 2 }));
+        }
+
+        [Fact]
+        public static void SetupReceiver_Psk_Span_Works()
+        {
+            byte[] kemCt = new byte[s_suite.EncapsulatedKeySizeInBytes];
+            byte[] psk = new byte[] { 1, 2, 3 };
+            byte[] pskId = new byte[] { 4, 5 };
+            HpkeReceiverContract returnedCtx = new(7);
+
+            using HpkeContract hpke = new(s_suite)
+            {
+                OnSetupReceiverPskCore = (ReadOnlySpan<byte> kemSrc, ReadOnlySpan<byte> info, ReadOnlySpan<byte> p, ReadOnlySpan<byte> pid) =>
+                {
+                    AssertExtensions.Same(kemCt, kemSrc);
+                    AssertExtensions.Same(psk, p);
+                    AssertExtensions.Same(pskId, pid);
+                    return returnedCtx;
+                }
+            };
+
+            HpkeReceiverContext ctx = hpke.SetupReceiverPsk(new ReadOnlySpan<byte>(kemCt), psk, pskId);
+            Assert.Same(returnedCtx, ctx);
+        }
+
+        [Fact]
+        public static void SetupReceiver_Psk_ByteArray_NullPsk_Throws()
+        {
+            using HpkeContract hpke = new(s_suite);
+            byte[] kemCt = new byte[s_suite.EncapsulatedKeySizeInBytes];
+            Assert.Throws<ArgumentNullException>(() =>
+                hpke.SetupReceiverPsk(kemCt, (byte[])null, new byte[] { 1 }));
+        }
+
+        [Fact]
+        public static void SetupReceiver_Psk_ByteArray_NullPskId_Throws()
+        {
+            using HpkeContract hpke = new(s_suite);
+            byte[] kemCt = new byte[s_suite.EncapsulatedKeySizeInBytes];
+            Assert.Throws<ArgumentNullException>(() =>
+                hpke.SetupReceiverPsk(kemCt, new byte[] { 1 }, (byte[])null));
+        }
+
+        [Fact]
+        public static void SetupReceiver_Psk_ByteArray_NullKemCiphertext_Throws()
+        {
+            using HpkeContract hpke = new(s_suite);
+            Assert.Throws<ArgumentNullException>(() =>
+                hpke.SetupReceiverPsk((byte[])null, new byte[] { 1 }, new byte[] { 2 }));
+        }
+
+        [Fact]
+        public static void SetupReceiver_Psk_ByteArray_FunnelsToCore()
+        {
+            byte[] kemCt = new byte[s_suite.EncapsulatedKeySizeInBytes];
+            byte[] psk = new byte[] { 1, 2, 3 };
+            byte[] pskId = new byte[] { 4, 5 };
+            byte[] info = new byte[] { 6 };
+            HpkeReceiverContract returnedCtx = new(7);
+
+            using HpkeContract hpke = new(s_suite)
+            {
+                OnSetupReceiverPskCore = (ReadOnlySpan<byte> kemSrc, ReadOnlySpan<byte> i, ReadOnlySpan<byte> p, ReadOnlySpan<byte> pid) =>
+                {
+                    AssertExtensions.Same(kemCt, kemSrc);
+                    AssertExtensions.Same(info, i);
+                    AssertExtensions.Same(psk, p);
+                    AssertExtensions.Same(pskId, pid);
+                    return returnedCtx;
+                }
+            };
+
+            HpkeReceiverContext ctx = hpke.SetupReceiverPsk(kemCt, psk, pskId, info);
+            Assert.Same(returnedCtx, ctx);
+        }
     }
 
     public static class HpkeSenderContractTests
@@ -630,6 +1144,132 @@ namespace System.Security.Cryptography.Tests
             HpkeSenderContract ctx = new(TagSize);
             ctx.Dispose();
             ctx.Dispose();
+        }
+
+        [Fact]
+        public static void Seal_ByteArray_NullPlaintext_Throws()
+        {
+            using HpkeSenderContract ctx = new(TagSize);
+            Assert.Throws<ArgumentNullException>(() =>
+                ctx.Seal((byte[])null, new byte[TagSize], aad: null));
+        }
+
+        [Fact]
+        public static void Seal_ByteArray_NullCiphertext_Throws()
+        {
+            using HpkeSenderContract ctx = new(TagSize);
+            Assert.Throws<ArgumentNullException>(() =>
+                ctx.Seal(new byte[5], (byte[])null, aad: null));
+        }
+
+        [Fact]
+        public static void Seal_ByteArray_FunnelsToCore()
+        {
+            byte[] plaintext = new byte[5];
+            byte[] ciphertext = new byte[5 + TagSize];
+            byte[] aad = new byte[3];
+
+            using HpkeSenderContract ctx = new(TagSize)
+            {
+                OnSealCore = (ReadOnlySpan<byte> pt, Span<byte> ct, ReadOnlySpan<byte> a) =>
+                {
+                    AssertExtensions.Same(plaintext, pt);
+                    AssertExtensions.Same(ciphertext, ct);
+                    AssertExtensions.Same(aad, a);
+                }
+            };
+
+            ctx.Seal(plaintext, ciphertext, aad);
+        }
+
+        [Fact]
+        public static void Seal_ByteArray_Allocated_NullPlaintext_Throws()
+        {
+            using HpkeSenderContract ctx = new(TagSize);
+            Assert.Throws<ArgumentNullException>(() =>
+                ctx.Seal((byte[])null, aad: null));
+        }
+
+        [Fact]
+        public static void Seal_ByteArray_Allocated_FunnelsToCore()
+        {
+            byte[] plaintext = new byte[5];
+
+            using HpkeSenderContract ctx = new(TagSize)
+            {
+                OnSealCore = (ReadOnlySpan<byte> pt, Span<byte> ct, ReadOnlySpan<byte> a) =>
+                {
+                    AssertExtensions.Same(plaintext, pt);
+                    Assert.Equal(5 + TagSize, ct.Length);
+                    ct.Fill(0xBB);
+                }
+            };
+
+            byte[] result = ctx.Seal(plaintext, aad: null);
+            Assert.Equal(5 + TagSize, result.Length);
+            AssertExtensions.FilledWith<byte>(0xBB, result);
+        }
+
+        [Fact]
+        public static void Export_ByteArray_NullExporterContext_Throws()
+        {
+            using HpkeSenderContract ctx = new(TagSize);
+            Assert.Throws<ArgumentNullException>(() =>
+                ctx.Export((byte[])null, new byte[32]));
+        }
+
+        [Fact]
+        public static void Export_ByteArray_NullDestination_Throws()
+        {
+            using HpkeSenderContract ctx = new(TagSize);
+            Assert.Throws<ArgumentNullException>(() =>
+                ctx.Export(new byte[5], (byte[])null));
+        }
+
+        [Fact]
+        public static void Export_ByteArray_FunnelsToCore()
+        {
+            byte[] exporterContext = "my context"u8.ToArray();
+            byte[] destination = new byte[32];
+
+            using HpkeSenderContract ctx = new(TagSize)
+            {
+                OnExportCore = (ReadOnlySpan<byte> expCtx, Span<byte> dest) =>
+                {
+                    AssertExtensions.Same(exporterContext, expCtx);
+                    AssertExtensions.Same(destination, dest);
+                }
+            };
+
+            ctx.Export(exporterContext, destination);
+        }
+
+        [Fact]
+        public static void Export_ByteArray_Allocated_NullExporterContext_Throws()
+        {
+            using HpkeSenderContract ctx = new(TagSize);
+            Assert.Throws<ArgumentNullException>(() =>
+                ctx.Export((byte[])null, 32));
+        }
+
+        [Fact]
+        public static void Export_ByteArray_Allocated_FunnelsToCore()
+        {
+            byte[] exporterContext = "my context"u8.ToArray();
+
+            using HpkeSenderContract ctx = new(TagSize)
+            {
+                OnExportCore = (ReadOnlySpan<byte> expCtx, Span<byte> dest) =>
+                {
+                    AssertExtensions.Same(exporterContext, expCtx);
+                    Assert.Equal(48, dest.Length);
+                    dest.Fill(0xCC);
+                }
+            };
+
+            byte[] result = ctx.Export(exporterContext, 48);
+            Assert.Equal(48, result.Length);
+            AssertExtensions.FilledWith<byte>(0xCC, result);
         }
     }
 
@@ -852,6 +1492,198 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Fact]
+        public static void Open_Sequential_ByteArray_NullCiphertext_Throws()
+        {
+            using HpkeReceiverContract ctx = new(TagSize);
+            Assert.Throws<ArgumentNullException>(() =>
+                ctx.Open((byte[])null, new byte[0], aad: null));
+        }
+
+        [Fact]
+        public static void Open_Sequential_ByteArray_NullPlaintext_Throws()
+        {
+            using HpkeReceiverContract ctx = new(TagSize);
+            Assert.Throws<ArgumentNullException>(() =>
+                ctx.Open(new byte[TagSize], (byte[])null, aad: null));
+        }
+
+        [Fact]
+        public static void Open_Sequential_ByteArray_FunnelsToCore()
+        {
+            byte[] ciphertext = new byte[5 + TagSize];
+            byte[] plaintext = new byte[5];
+            byte[] aad = new byte[3];
+
+            using HpkeReceiverContract ctx = new(TagSize)
+            {
+                OnOpenCore = (ReadOnlySpan<byte> ct, Span<byte> pt, ReadOnlySpan<byte> a) =>
+                {
+                    AssertExtensions.Same(ciphertext, ct);
+                    AssertExtensions.Same(plaintext, pt);
+                    AssertExtensions.Same(aad, a);
+                }
+            };
+
+            ctx.Open(ciphertext, plaintext, aad);
+        }
+
+        [Fact]
+        public static void Open_Sequential_ByteArray_Allocated_NullCiphertext_Throws()
+        {
+            using HpkeReceiverContract ctx = new(TagSize);
+            Assert.Throws<ArgumentNullException>(() =>
+                ctx.Open((byte[])null, aad: null));
+        }
+
+        [Fact]
+        public static void Open_Sequential_ByteArray_Allocated_FunnelsToCore()
+        {
+            byte[] ciphertext = new byte[10 + TagSize];
+
+            using HpkeReceiverContract ctx = new(TagSize)
+            {
+                OnOpenCore = (ReadOnlySpan<byte> ct, Span<byte> pt, ReadOnlySpan<byte> a) =>
+                {
+                    AssertExtensions.Same(ciphertext, ct);
+                    Assert.Equal(10, pt.Length);
+                    pt.Fill(0xDD);
+                }
+            };
+
+            byte[] result = ctx.Open(ciphertext, aad: null);
+            Assert.Equal(10, result.Length);
+            AssertExtensions.FilledWith<byte>(0xDD, result);
+        }
+
+        [Fact]
+        public static void Open_Explicit_ByteArray_NullCiphertext_Throws()
+        {
+            using HpkeReceiverContract ctx = new(TagSize);
+            Assert.Throws<ArgumentNullException>(() =>
+                ctx.Open(0L, (byte[])null, new byte[0], aad: null));
+        }
+
+        [Fact]
+        public static void Open_Explicit_ByteArray_NullPlaintext_Throws()
+        {
+            using HpkeReceiverContract ctx = new(TagSize);
+            Assert.Throws<ArgumentNullException>(() =>
+                ctx.Open(0L, new byte[TagSize], (byte[])null, aad: null));
+        }
+
+        [Fact]
+        public static void Open_Explicit_ByteArray_FunnelsToCore()
+        {
+            byte[] ciphertext = new byte[5 + TagSize];
+            byte[] plaintext = new byte[5];
+            byte[] aad = new byte[3];
+
+            using HpkeReceiverContract ctx = new(TagSize)
+            {
+                OnOpenExplicitCore = (long seq, ReadOnlySpan<byte> ct, Span<byte> pt, ReadOnlySpan<byte> a) =>
+                {
+                    Assert.Equal(42L, seq);
+                    AssertExtensions.Same(ciphertext, ct);
+                    AssertExtensions.Same(plaintext, pt);
+                    AssertExtensions.Same(aad, a);
+                }
+            };
+
+            ctx.Open(42L, ciphertext, plaintext, aad);
+        }
+
+        [Fact]
+        public static void Open_Explicit_ByteArray_Allocated_NullCiphertext_Throws()
+        {
+            using HpkeReceiverContract ctx = new(TagSize);
+            Assert.Throws<ArgumentNullException>(() =>
+                ctx.Open(0L, (byte[])null, aad: null));
+        }
+
+        [Fact]
+        public static void Open_Explicit_ByteArray_Allocated_FunnelsToCore()
+        {
+            byte[] ciphertext = new byte[10 + TagSize];
+
+            using HpkeReceiverContract ctx = new(TagSize)
+            {
+                OnOpenExplicitCore = (long seq, ReadOnlySpan<byte> ct, Span<byte> pt, ReadOnlySpan<byte> a) =>
+                {
+                    Assert.Equal(99L, seq);
+                    AssertExtensions.Same(ciphertext, ct);
+                    Assert.Equal(10, pt.Length);
+                    pt.Fill(0xEE);
+                }
+            };
+
+            byte[] result = ctx.Open(99L, ciphertext, aad: null);
+            Assert.Equal(10, result.Length);
+            AssertExtensions.FilledWith<byte>(0xEE, result);
+        }
+
+        [Fact]
+        public static void Export_ByteArray_NullExporterContext_Throws()
+        {
+            using HpkeReceiverContract ctx = new(TagSize);
+            Assert.Throws<ArgumentNullException>(() =>
+                ctx.Export((byte[])null, new byte[32]));
+        }
+
+        [Fact]
+        public static void Export_ByteArray_NullDestination_Throws()
+        {
+            using HpkeReceiverContract ctx = new(TagSize);
+            Assert.Throws<ArgumentNullException>(() =>
+                ctx.Export(new byte[5], (byte[])null));
+        }
+
+        [Fact]
+        public static void Export_ByteArray_FunnelsToCore()
+        {
+            byte[] exporterContext = "my context"u8.ToArray();
+            byte[] destination = new byte[32];
+
+            using HpkeReceiverContract ctx = new(TagSize)
+            {
+                OnExportCore = (ReadOnlySpan<byte> expCtx, Span<byte> dest) =>
+                {
+                    AssertExtensions.Same(exporterContext, expCtx);
+                    AssertExtensions.Same(destination, dest);
+                }
+            };
+
+            ctx.Export(exporterContext, destination);
+        }
+
+        [Fact]
+        public static void Export_ByteArray_Allocated_NullExporterContext_Throws()
+        {
+            using HpkeReceiverContract ctx = new(TagSize);
+            Assert.Throws<ArgumentNullException>(() =>
+                ctx.Export((byte[])null, 32));
+        }
+
+        [Fact]
+        public static void Export_ByteArray_Allocated_FunnelsToCore()
+        {
+            byte[] exporterContext = "my context"u8.ToArray();
+
+            using HpkeReceiverContract ctx = new(TagSize)
+            {
+                OnExportCore = (ReadOnlySpan<byte> expCtx, Span<byte> dest) =>
+                {
+                    AssertExtensions.Same(exporterContext, expCtx);
+                    Assert.Equal(48, dest.Length);
+                    dest.Fill(0xFF);
+                }
+            };
+
+            byte[] result = ctx.Export(exporterContext, 48);
+            Assert.Equal(48, result.Length);
+            AssertExtensions.FilledWith<byte>(0xFF, result);
+        }
+
+        [Fact]
         public static void DoubleDispose_DoesNotThrow()
         {
             HpkeReceiverContract ctx = new(TagSize);
@@ -867,7 +1699,9 @@ namespace System.Security.Cryptography.Tests
         internal SealCoreCallback OnSealCore { get; set; }
         internal OpenCoreCallback OnOpenCore { get; set; }
         internal SetupSenderCoreCallback OnSetupSenderCore { get; set; }
+        internal SetupSenderPskCoreCallback OnSetupSenderPskCore { get; set; }
         internal SetupReceiverCoreCallback OnSetupReceiverCore { get; set; }
+        internal SetupReceiverPskCoreCallback OnSetupReceiverPskCore { get; set; }
         internal Action<bool> OnDispose { get; set; }
 
         public HpkeContract(HpkeSuite suite) : base(suite)
@@ -909,9 +1743,19 @@ namespace System.Security.Cryptography.Tests
             return GetCallback(OnSetupSenderCore)(kemCiphertext, info);
         }
 
+        protected override HpkeSenderContext SetupSenderPskCore(Span<byte> kemCiphertext, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId)
+        {
+            return GetCallback(OnSetupSenderPskCore)(kemCiphertext, info, psk, pskId);
+        }
+
         protected override HpkeReceiverContext SetupReceiverCore(ReadOnlySpan<byte> kemCiphertext, ReadOnlySpan<byte> info)
         {
             return GetCallback(OnSetupReceiverCore)(kemCiphertext, info);
+        }
+
+        protected override HpkeReceiverContext SetupReceiverPskCore(ReadOnlySpan<byte> kemCiphertext, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId)
+        {
+            return GetCallback(OnSetupReceiverPskCore)(kemCiphertext, info, psk, pskId);
         }
 
         protected override void Dispose(bool disposing)
@@ -929,7 +1773,9 @@ namespace System.Security.Cryptography.Tests
         internal delegate void SealCoreCallback(ReadOnlySpan<byte> plaintext, Span<byte> kemCiphertext, Span<byte> ciphertext, ReadOnlySpan<byte> aad, ReadOnlySpan<byte> info);
         internal delegate void OpenCoreCallback(ReadOnlySpan<byte> kemCiphertext, ReadOnlySpan<byte> ciphertext, Span<byte> plaintext, ReadOnlySpan<byte> aad, ReadOnlySpan<byte> info);
         internal delegate HpkeSenderContext SetupSenderCoreCallback(Span<byte> kemCiphertext, ReadOnlySpan<byte> info);
+        internal delegate HpkeSenderContext SetupSenderPskCoreCallback(Span<byte> kemCiphertext, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId);
         internal delegate HpkeReceiverContext SetupReceiverCoreCallback(ReadOnlySpan<byte> kemCiphertext, ReadOnlySpan<byte> info);
+        internal delegate HpkeReceiverContext SetupReceiverPskCoreCallback(ReadOnlySpan<byte> kemCiphertext, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId);
     }
 
     internal sealed class HpkeSenderContract : HpkeSenderContext

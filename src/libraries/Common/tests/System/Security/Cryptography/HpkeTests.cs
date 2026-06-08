@@ -112,7 +112,7 @@ namespace System.Security.Cryptography.Tests
             Assert.Equal(suite.EncapsulatedKeySizeInBytes, kemCiphertext.Length);
             Assert.Equal(plaintext.Length + suite.AeadTagSizeInBytes, ciphertext.Length);
 
-            byte[] decrypted = key.Open(kemCiphertext, ciphertext, aad);
+            byte[] decrypted = key.Open(kemCiphertext, ciphertext, aad: aad);
             Assert.Equal(plaintext, decrypted);
         }
 
@@ -193,7 +193,7 @@ namespace System.Security.Cryptography.Tests
             (byte[] kemCiphertext, byte[] ciphertext) = key.Seal(plaintext, aad1);
 
             Assert.ThrowsAny<CryptographicException>(() =>
-                key.Open(kemCiphertext, ciphertext, aad2));
+                key.Open(kemCiphertext, ciphertext, aad: aad2));
         }
 
         [Theory]
@@ -261,8 +261,8 @@ namespace System.Security.Cryptography.Tests
                 {
                     byte[] plaintext = Encoding.UTF8.GetBytes($"msg {i}");
                     byte[] aad = Encoding.UTF8.GetBytes($"aad {i}");
-                    byte[] ciphertext = senderCtx.Seal(plaintext, aad);
-                    byte[] decrypted = receiverCtx.Open(ciphertext, aad);
+                    byte[] ciphertext = senderCtx.Seal(plaintext, aad: aad);
+                    byte[] decrypted = receiverCtx.Open(ciphertext, aad: aad);
 
                     Assert.Equal(plaintext, decrypted);
                 }
@@ -608,7 +608,7 @@ namespace System.Security.Cryptography.Tests
             using HPKE key = HPKE.GenerateKey(suite);
             byte[] info = "context with info"u8.ToArray();
 
-            (byte[] kemCiphertext, HpkeSenderContext senderCtx) = key.SetupSender(info);
+            (byte[] kemCiphertext, HpkeSenderContext senderCtx) = key.SetupSender(info: (ReadOnlySpan<byte>)info);
             using (senderCtx)
             using (HpkeReceiverContext receiverCtx = key.SetupReceiver(kemCiphertext, info))
             {
@@ -655,6 +655,226 @@ namespace System.Security.Cryptography.Tests
             (_, HpkeSenderContext senderCtx) = key.SetupSender();
             senderCtx.Dispose();
             senderCtx.Dispose();
+        }
+
+        // ----------------------------------------------------------------
+        // PSK Mode Tests
+        // ----------------------------------------------------------------
+
+        [Theory]
+        [MemberData(nameof(NistSuites))]
+        public void PskMode_SetupSenderReceiver_RoundTrip(HpkeSuite suite)
+        {
+            byte[] psk = new byte[32];
+            byte[] pskId = "test-psk-id"u8.ToArray();
+            RandomNumberGenerator.Fill(psk);
+
+            using HPKE key = HPKE.GenerateKey(suite);
+
+            (byte[] kemCiphertext, HpkeSenderContext senderCtx) = key.SetupSenderPsk(psk, pskId);
+
+            using (senderCtx)
+            {
+                using HpkeReceiverContext receiverCtx = key.SetupReceiverPsk(kemCiphertext, psk, pskId);
+
+                byte[] plaintext = "Hello, PSK HPKE!"u8.ToArray();
+                byte[] aad = "associated-data"u8.ToArray();
+
+                byte[] ciphertext = senderCtx.Seal(plaintext, aad);
+                byte[] decrypted = receiverCtx.Open(ciphertext, aad);
+
+                Assert.Equal(plaintext, decrypted);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(NistSuites))]
+        public void PskMode_WrongPsk_FailsToDecrypt(HpkeSuite suite)
+        {
+            byte[] psk = new byte[32];
+            byte[] pskId = "test-psk-id"u8.ToArray();
+            RandomNumberGenerator.Fill(psk);
+
+            byte[] wrongPsk = new byte[32];
+            RandomNumberGenerator.Fill(wrongPsk);
+
+            using HPKE key = HPKE.GenerateKey(suite);
+
+            (byte[] kemCiphertext, HpkeSenderContext senderCtx) = key.SetupSenderPsk(psk, pskId);
+
+            using (senderCtx)
+            {
+                byte[] plaintext = "Hello, PSK HPKE!"u8.ToArray();
+                byte[] aad = "associated-data"u8.ToArray();
+
+                byte[] ciphertext = senderCtx.Seal(plaintext, aad);
+
+                using HpkeReceiverContext receiverCtx = key.SetupReceiverPsk(kemCiphertext, wrongPsk, pskId);
+                Assert.ThrowsAny<CryptographicException>(() => receiverCtx.Open(ciphertext, aad));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(NistSuites))]
+        public void PskMode_WrongPskId_FailsToDecrypt(HpkeSuite suite)
+        {
+            byte[] psk = new byte[32];
+            byte[] pskId = "test-psk-id"u8.ToArray();
+            RandomNumberGenerator.Fill(psk);
+
+            byte[] wrongPskId = "wrong-psk-id"u8.ToArray();
+
+            using HPKE key = HPKE.GenerateKey(suite);
+
+            (byte[] kemCiphertext, HpkeSenderContext senderCtx) = key.SetupSenderPsk(psk, pskId);
+
+            using (senderCtx)
+            {
+                byte[] plaintext = "Hello, PSK HPKE!"u8.ToArray();
+                byte[] aad = "associated-data"u8.ToArray();
+
+                byte[] ciphertext = senderCtx.Seal(plaintext, aad);
+
+                using HpkeReceiverContext receiverCtx = key.SetupReceiverPsk(kemCiphertext, psk, wrongPskId);
+                Assert.ThrowsAny<CryptographicException>(() => receiverCtx.Open(ciphertext, aad));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(NistSuites))]
+        public void PskMode_MultipleMessages(HpkeSuite suite)
+        {
+            byte[] psk = new byte[32];
+            byte[] pskId = "multi-msg-psk"u8.ToArray();
+            RandomNumberGenerator.Fill(psk);
+
+            using HPKE key = HPKE.GenerateKey(suite);
+
+            (byte[] kemCiphertext, HpkeSenderContext senderCtx) = key.SetupSenderPsk(psk, pskId);
+
+            using (senderCtx)
+            using (HpkeReceiverContext receiverCtx = key.SetupReceiverPsk(kemCiphertext, psk, pskId))
+            {
+                for (int i = 0; i < 5; i++)
+                {
+                    byte[] plaintext = System.Text.Encoding.UTF8.GetBytes($"Message {i}");
+                    byte[] aad = System.Text.Encoding.UTF8.GetBytes($"Count-{i}");
+
+                    byte[] ciphertext = senderCtx.Seal(plaintext, aad);
+                    byte[] decrypted = receiverCtx.Open(ciphertext, aad);
+
+                    Assert.Equal(plaintext, decrypted);
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(NistSuites))]
+        public void PskMode_WithInfo(HpkeSuite suite)
+        {
+            byte[] psk = new byte[32];
+            byte[] pskId = "info-test-psk"u8.ToArray();
+            byte[] info = "application-context"u8.ToArray();
+            RandomNumberGenerator.Fill(psk);
+
+            using HPKE key = HPKE.GenerateKey(suite);
+
+            (byte[] kemCiphertext, HpkeSenderContext senderCtx) = key.SetupSenderPsk(psk, pskId, info);
+
+            using (senderCtx)
+            using (HpkeReceiverContext receiverCtx = key.SetupReceiverPsk(
+                new ReadOnlySpan<byte>(kemCiphertext), psk, pskId, info))
+            {
+                byte[] plaintext = "With info!"u8.ToArray();
+                byte[] ciphertext = senderCtx.Seal(plaintext);
+                byte[] decrypted = receiverCtx.Open(ciphertext);
+
+                Assert.Equal(plaintext, decrypted);
+            }
+        }
+
+        [Fact]
+        public void PskMode_EmptyPsk_Throws()
+        {
+            using HPKE key = HPKE.GenerateKey(HpkeSuite.DHKEM_P256_HKDF_SHA256_AES_128_GCM);
+            byte[] kemCt = new byte[key.Suite.EncapsulatedKeySizeInBytes];
+
+            AssertExtensions.Throws<ArgumentException>("psk", () =>
+                key.SetupSenderPsk(kemCt.AsSpan(), ReadOnlySpan<byte>.Empty, new byte[] { 1 }));
+
+            AssertExtensions.Throws<ArgumentException>("psk", () =>
+                key.SetupReceiverPsk(new ReadOnlySpan<byte>(kemCt), ReadOnlySpan<byte>.Empty, new byte[] { 1 }));
+        }
+
+        [Fact]
+        public void PskMode_EmptyPskId_Throws()
+        {
+            using HPKE key = HPKE.GenerateKey(HpkeSuite.DHKEM_P256_HKDF_SHA256_AES_128_GCM);
+            byte[] kemCt = new byte[key.Suite.EncapsulatedKeySizeInBytes];
+
+            AssertExtensions.Throws<ArgumentException>("pskId", () =>
+                key.SetupSenderPsk(kemCt.AsSpan(), new byte[] { 1 }, ReadOnlySpan<byte>.Empty));
+
+            AssertExtensions.Throws<ArgumentException>("pskId", () =>
+                key.SetupReceiverPsk(new ReadOnlySpan<byte>(kemCt), new byte[] { 1 }, ReadOnlySpan<byte>.Empty));
+        }
+
+        // ----------------------------------------------------------------
+        // RFC 9180 Test Vector: A.3.2
+        // DHKEM(P-256, HKDF-SHA256), HKDF-SHA256, AES-128-GCM, PSK mode
+        // ----------------------------------------------------------------
+
+        [Fact]
+        public void Rfc9180_A32_PskMode_P256_Sha256_Aes128Gcm()
+        {
+            // RFC 9180 Appendix A.3.2 test vector
+            byte[] skRm = Convert.FromHexString("438d8bcef33b89e0e9ae5eb0957c353c25a94584b0dd59c991372a75b43cb661");
+            byte[] enc = Convert.FromHexString(
+                "04305d35563527bce037773d79a13deabed0e8e7cde61eecee403496959e89" +
+                "e4d0ca701726696d1485137ccb5341b3c1c7aaee90a4a02449725e744b1193b53b5f");
+            byte[] info = Convert.FromHexString("4f6465206f6e2061204772656369616e2055726e");
+            byte[] psk = Convert.FromHexString("0247fd33b913760fa1fa51e1892d9f307fbe65eb171e8132c2af18555a738b82");
+            byte[] pskId = Convert.FromHexString("456e6e796e20447572696e206172616e204d6f726961");
+
+            // Expected key schedule outputs
+            byte[] expectedKey = Convert.FromHexString("55d9eb9d26911d4c514a990fa8d57048");
+            byte[] expectedBaseNonce = Convert.FromHexString("b595dc6b2d7e2ed23af529b1");
+            byte[] expectedExporterSecret = Convert.FromHexString(
+                "895a723a1eab809804973a53c0ee18ece29b25a7555a4808277ad2651d66d705");
+
+            // Encryption test vectors (seq=0)
+            byte[] pt0 = Convert.FromHexString("4265617574792069732074727574682c20747275746820626561757479");
+            byte[] aad0 = Convert.FromHexString("436f756e742d30");
+            byte[] ct0 = Convert.FromHexString(
+                "90c4deb5b75318530194e4bb62f890b019b1397bbf9d0d6eb918890e1fb2be1a" +
+                "c2603193b60a49c2126b75d0eb");
+
+            // Import the recipient private key for P-256
+            using HPKE key = HPKE.ImportDecapsulationKey(HpkeSuite.DHKEM_P256_HKDF_SHA256_AES_128_GCM, skRm);
+
+            using HpkeReceiverContext receiverCtx = key.SetupReceiverPsk(
+                new ReadOnlySpan<byte>(enc), psk, pskId, info);
+
+            // Decrypt sequence 0
+            byte[] decrypted = receiverCtx.Open(ct0, aad0);
+            Assert.Equal(pt0, decrypted);
+
+            // Decrypt sequence 1
+            byte[] pt1 = Convert.FromHexString("4265617574792069732074727574682c20747275746820626561757479");
+            byte[] aad1 = Convert.FromHexString("436f756e742d31");
+            byte[] ct1 = Convert.FromHexString(
+                "9e223384a3620f4a75b5a52f546b7262d8826dea18db5a365feb8b997180b22d" +
+                "72dc1287f7089a1073a7102c27");
+            byte[] decrypted1 = receiverCtx.Open(ct1, aad1);
+            Assert.Equal(pt1, decrypted1);
+
+            // Decrypt sequence 2
+            byte[] aad2 = Convert.FromHexString("436f756e742d32");
+            byte[] ct2 = Convert.FromHexString(
+                "adf9f6000773035023be7d415e13f84c1cb32a24339a32eb81df02be9ddc6abc" +
+                "880dd81cceb7c1d0c7781465b2");
+            byte[] decrypted2 = receiverCtx.Open(ct2, aad2);
+            Assert.Equal(pt1, decrypted2);
         }
     }
 }

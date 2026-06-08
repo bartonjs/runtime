@@ -1807,27 +1807,47 @@ namespace System.Security.Cryptography
         public static System.Security.Cryptography.HPKE ImportDecapsulationKey(System.Security.Cryptography.HpkeSuite suite, System.ReadOnlySpan<byte> source) { throw null; }
         public static System.Security.Cryptography.HPKE ImportEncapsulationKey(System.Security.Cryptography.HpkeSuite suite, byte[] source) { throw null; }
         public static System.Security.Cryptography.HPKE ImportEncapsulationKey(System.Security.Cryptography.HpkeSuite suite, System.ReadOnlySpan<byte> source) { throw null; }
+        public byte[] Open(byte[] kemCiphertext, byte[] ciphertext, byte[]? aad = null, byte[]? info = null) { throw null; }
+        public void Open(byte[] kemCiphertext, byte[] ciphertext, byte[] plaintext, byte[]? aad = null, byte[]? info = null) { }
         public byte[] Open(System.ReadOnlySpan<byte> kemCiphertext, System.ReadOnlySpan<byte> ciphertext, System.ReadOnlySpan<byte> aad = default(System.ReadOnlySpan<byte>), System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
         public void Open(System.ReadOnlySpan<byte> kemCiphertext, System.ReadOnlySpan<byte> ciphertext, System.Span<byte> plaintext, System.ReadOnlySpan<byte> aad = default(System.ReadOnlySpan<byte>), System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { }
         protected abstract void OpenCore(System.ReadOnlySpan<byte> kemCiphertext, System.ReadOnlySpan<byte> ciphertext, System.Span<byte> plaintext, System.ReadOnlySpan<byte> aad, System.ReadOnlySpan<byte> info);
+        public (byte[] KemCiphertext, byte[] Ciphertext) Seal(byte[] plaintext, byte[]? aad = null, byte[]? info = null) { throw null; }
+        public void Seal(byte[] plaintext, byte[] kemCiphertext, byte[] ciphertext, byte[]? aad = null, byte[]? info = null) { }
         public (byte[] KemCiphertext, byte[] Ciphertext) Seal(System.ReadOnlySpan<byte> plaintext, System.ReadOnlySpan<byte> aad = default(System.ReadOnlySpan<byte>), System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
         public void Seal(System.ReadOnlySpan<byte> plaintext, System.Span<byte> kemCiphertext, System.Span<byte> ciphertext, System.ReadOnlySpan<byte> aad = default(System.ReadOnlySpan<byte>), System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { }
         protected abstract void SealCore(System.ReadOnlySpan<byte> plaintext, System.Span<byte> kemCiphertext, System.Span<byte> ciphertext, System.ReadOnlySpan<byte> aad, System.ReadOnlySpan<byte> info);
+        public System.Security.Cryptography.HpkeReceiverContext SetupReceiver(byte[] kemCiphertext, byte[]? info = null) { throw null; }
         public System.Security.Cryptography.HpkeReceiverContext SetupReceiver(System.ReadOnlySpan<byte> kemCiphertext, System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
         protected abstract System.Security.Cryptography.HpkeReceiverContext SetupReceiverCore(System.ReadOnlySpan<byte> kemCiphertext, System.ReadOnlySpan<byte> info);
+        protected abstract System.Security.Cryptography.HpkeReceiverContext SetupReceiverPskCore(System.ReadOnlySpan<byte> kemCiphertext, System.ReadOnlySpan<byte> info, System.ReadOnlySpan<byte> psk, System.ReadOnlySpan<byte> pskId);
+        public System.Security.Cryptography.HpkeReceiverContext SetupReceiverPsk(byte[] kemCiphertext, byte[] psk, byte[] pskId, byte[]? info = null) { throw null; }
+        public System.Security.Cryptography.HpkeReceiverContext SetupReceiverPsk(System.ReadOnlySpan<byte> kemCiphertext, System.ReadOnlySpan<byte> psk, System.ReadOnlySpan<byte> pskId, System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
         public (byte[] KemCiphertext, System.Security.Cryptography.HpkeSenderContext Context) SetupSender(System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
+        public System.Security.Cryptography.HpkeSenderContext SetupSender(byte[] kemCiphertext, byte[]? info = null) { throw null; }
         public System.Security.Cryptography.HpkeSenderContext SetupSender(System.Span<byte> kemCiphertext, System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
         protected abstract System.Security.Cryptography.HpkeSenderContext SetupSenderCore(System.Span<byte> kemCiphertext, System.ReadOnlySpan<byte> info);
+        protected abstract System.Security.Cryptography.HpkeSenderContext SetupSenderPskCore(System.Span<byte> kemCiphertext, System.ReadOnlySpan<byte> info, System.ReadOnlySpan<byte> psk, System.ReadOnlySpan<byte> pskId);
+        public (byte[] KemCiphertext, System.Security.Cryptography.HpkeSenderContext Context) SetupSenderPsk(byte[] psk, byte[] pskId, byte[]? info = null) { throw null; }
+        public (byte[] KemCiphertext, System.Security.Cryptography.HpkeSenderContext Context) SetupSenderPsk(System.ReadOnlySpan<byte> psk, System.ReadOnlySpan<byte> pskId, System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
+        public System.Security.Cryptography.HpkeSenderContext SetupSenderPsk(byte[] kemCiphertext, byte[] psk, byte[] pskId, byte[]? info = null) { throw null; }
+        public System.Security.Cryptography.HpkeSenderContext SetupSenderPsk(System.Span<byte> kemCiphertext, System.ReadOnlySpan<byte> psk, System.ReadOnlySpan<byte> pskId, System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
     }
     public abstract partial class HpkeReceiverContext : System.IDisposable
     {
         protected HpkeReceiverContext() { }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
+        public byte[] Export(byte[] exporterContext, int length) { throw null; }
+        public void Export(byte[] exporterContext, byte[] destination) { }
         public byte[] Export(System.ReadOnlySpan<byte> exporterContext, int length) { throw null; }
         public void Export(System.ReadOnlySpan<byte> exporterContext, System.Span<byte> destination) { }
         protected abstract void ExportCore(System.ReadOnlySpan<byte> exporterContext, System.Span<byte> destination);
         protected abstract int GetAeadTagSizeInBytes();
+        public byte[] Open(byte[] ciphertext, byte[]? aad = null) { throw null; }
+        public void Open(byte[] ciphertext, byte[] plaintext, byte[]? aad = null) { }
+        public byte[] Open(long sequenceNumber, byte[] ciphertext, byte[]? aad = null) { throw null; }
+        public void Open(long sequenceNumber, byte[] ciphertext, byte[] plaintext, byte[]? aad = null) { }
         public byte[] Open(long sequenceNumber, System.ReadOnlySpan<byte> ciphertext, System.ReadOnlySpan<byte> aad = default(System.ReadOnlySpan<byte>)) { throw null; }
         public void Open(long sequenceNumber, System.ReadOnlySpan<byte> ciphertext, System.Span<byte> plaintext, System.ReadOnlySpan<byte> aad = default(System.ReadOnlySpan<byte>)) { }
         public byte[] Open(System.ReadOnlySpan<byte> ciphertext, System.ReadOnlySpan<byte> aad = default(System.ReadOnlySpan<byte>)) { throw null; }
@@ -1840,10 +1860,14 @@ namespace System.Security.Cryptography
         protected HpkeSenderContext() { }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
+        public byte[] Export(byte[] exporterContext, int length) { throw null; }
+        public void Export(byte[] exporterContext, byte[] destination) { }
         public byte[] Export(System.ReadOnlySpan<byte> exporterContext, int length) { throw null; }
         public void Export(System.ReadOnlySpan<byte> exporterContext, System.Span<byte> destination) { }
         protected abstract void ExportCore(System.ReadOnlySpan<byte> exporterContext, System.Span<byte> destination);
         protected abstract int GetAeadTagSizeInBytes();
+        public byte[] Seal(byte[] plaintext, byte[]? aad = null) { throw null; }
+        public void Seal(byte[] plaintext, byte[] ciphertext, byte[]? aad = null) { }
         public byte[] Seal(System.ReadOnlySpan<byte> plaintext, System.ReadOnlySpan<byte> aad = default(System.ReadOnlySpan<byte>)) { throw null; }
         public void Seal(System.ReadOnlySpan<byte> plaintext, System.Span<byte> ciphertext, System.ReadOnlySpan<byte> aad = default(System.ReadOnlySpan<byte>)) { }
         protected abstract void SealCore(System.ReadOnlySpan<byte> plaintext, System.Span<byte> ciphertext, System.ReadOnlySpan<byte> aad);

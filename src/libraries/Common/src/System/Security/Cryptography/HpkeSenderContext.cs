@@ -54,6 +54,41 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
+        ///   Encrypts and authenticates the plaintext, writing the ciphertext and authentication tag
+        ///   into the provided byte array, and advances the sequence number.
+        /// </summary>
+        /// <param name="plaintext">
+        ///   The plaintext to encrypt.
+        /// </param>
+        /// <param name="ciphertext">
+        ///   The byte array to receive the AEAD ciphertext and authentication tag.
+        ///   This must be exactly <paramref name="plaintext" />.Length + the suite's AEAD tag size in bytes.
+        /// </param>
+        /// <param name="aad">
+        ///   The additional authenticated data, or <see langword="null" /> for none.
+        /// </param>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="plaintext" /> or <paramref name="ciphertext" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="ciphertext" /> is not the correct size.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred during encryption, or the message limit has been reached.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        public void Seal(byte[] plaintext, byte[] ciphertext, byte[]? aad = null)
+        {
+            ArgumentNullException.ThrowIfNull(plaintext);
+            ArgumentNullException.ThrowIfNull(ciphertext);
+
+            Seal(
+                new ReadOnlySpan<byte>(plaintext),
+                new Span<byte>(ciphertext),
+                new ReadOnlySpan<byte>(aad));
+        }
+
+        /// <summary>
         ///   Encrypts and authenticates the plaintext, and advances the sequence number.
         /// </summary>
         /// <param name="plaintext">
@@ -77,6 +112,34 @@ namespace System.Security.Cryptography
             SealCore(plaintext, ciphertext, aad);
 
             return ciphertext;
+        }
+
+        /// <summary>
+        ///   Encrypts and authenticates the plaintext, and advances the sequence number.
+        /// </summary>
+        /// <param name="plaintext">
+        ///   The plaintext to encrypt.
+        /// </param>
+        /// <param name="aad">
+        ///   The additional authenticated data, or <see langword="null" /> for none.
+        /// </param>
+        /// <returns>
+        ///   A byte array containing the AEAD ciphertext and authentication tag.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="plaintext" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred during encryption, or the message limit has been reached.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        public byte[] Seal(byte[] plaintext, byte[]? aad = null)
+        {
+            ArgumentNullException.ThrowIfNull(plaintext);
+
+            return Seal(
+                new ReadOnlySpan<byte>(plaintext),
+                new ReadOnlySpan<byte>(aad));
         }
 
         /// <summary>
@@ -110,6 +173,32 @@ namespace System.Security.Cryptography
         /// <param name="exporterContext">
         ///   The exporter context string, which binds the exported secret to a specific purpose.
         /// </param>
+        /// <param name="destination">
+        ///   The byte array to receive the exported secret.
+        /// </param>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="exporterContext" /> or <paramref name="destination" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="destination" /> has a length of zero.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        public void Export(byte[] exporterContext, byte[] destination)
+        {
+            ArgumentNullException.ThrowIfNull(exporterContext);
+            ArgumentNullException.ThrowIfNull(destination);
+
+            Export(
+                new ReadOnlySpan<byte>(exporterContext),
+                new Span<byte>(destination));
+        }
+
+        /// <summary>
+        ///   Exports a secret from this HPKE context.
+        /// </summary>
+        /// <param name="exporterContext">
+        ///   The exporter context string, which binds the exported secret to a specific purpose.
+        /// </param>
         /// <param name="length">
         ///   The desired length of the exported secret, in bytes.
         /// </param>
@@ -129,6 +218,34 @@ namespace System.Security.Cryptography
             ExportCore(exporterContext, destination);
 
             return destination;
+        }
+
+        /// <summary>
+        ///   Exports a secret from this HPKE context.
+        /// </summary>
+        /// <param name="exporterContext">
+        ///   The exporter context string, which binds the exported secret to a specific purpose.
+        /// </param>
+        /// <param name="length">
+        ///   The desired length of the exported secret, in bytes.
+        /// </param>
+        /// <returns>
+        ///   A byte array containing the exported secret.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="exporterContext" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="length" /> is less than 1.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        public byte[] Export(byte[] exporterContext, int length)
+        {
+            ArgumentNullException.ThrowIfNull(exporterContext);
+
+            return Export(
+                new ReadOnlySpan<byte>(exporterContext),
+                length);
         }
 
         /// <summary>
