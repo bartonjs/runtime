@@ -1820,26 +1820,26 @@ namespace System.Security.Cryptography
         public System.Security.Cryptography.HpkeReceiverContext SetupReceiver(byte[] kemCiphertext, byte[]? info = null) { throw null; }
         public System.Security.Cryptography.HpkeReceiverContext SetupReceiver(System.ReadOnlySpan<byte> kemCiphertext, System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
         protected abstract System.Security.Cryptography.HpkeReceiverContext SetupReceiverCore(System.ReadOnlySpan<byte> kemCiphertext, System.ReadOnlySpan<byte> info);
-        protected abstract System.Security.Cryptography.HpkeReceiverContext SetupReceiverPskCore(System.ReadOnlySpan<byte> kemCiphertext, System.ReadOnlySpan<byte> info, System.ReadOnlySpan<byte> psk, System.ReadOnlySpan<byte> pskId);
         public System.Security.Cryptography.HpkeReceiverContext SetupReceiverPsk(byte[] kemCiphertext, byte[] psk, byte[] pskId, byte[]? info = null) { throw null; }
         public System.Security.Cryptography.HpkeReceiverContext SetupReceiverPsk(System.ReadOnlySpan<byte> kemCiphertext, System.ReadOnlySpan<byte> psk, System.ReadOnlySpan<byte> pskId, System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
-        public (byte[] KemCiphertext, System.Security.Cryptography.HpkeSenderContext Context) SetupSender(System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
+        protected abstract System.Security.Cryptography.HpkeReceiverContext SetupReceiverPskCore(System.ReadOnlySpan<byte> kemCiphertext, System.ReadOnlySpan<byte> info, System.ReadOnlySpan<byte> psk, System.ReadOnlySpan<byte> pskId);
         public System.Security.Cryptography.HpkeSenderContext SetupSender(byte[] kemCiphertext, byte[]? info = null) { throw null; }
+        public (byte[] KemCiphertext, System.Security.Cryptography.HpkeSenderContext Context) SetupSender(System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
         public System.Security.Cryptography.HpkeSenderContext SetupSender(System.Span<byte> kemCiphertext, System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
         protected abstract System.Security.Cryptography.HpkeSenderContext SetupSenderCore(System.Span<byte> kemCiphertext, System.ReadOnlySpan<byte> info);
-        protected abstract System.Security.Cryptography.HpkeSenderContext SetupSenderPskCore(System.Span<byte> kemCiphertext, System.ReadOnlySpan<byte> info, System.ReadOnlySpan<byte> psk, System.ReadOnlySpan<byte> pskId);
         public (byte[] KemCiphertext, System.Security.Cryptography.HpkeSenderContext Context) SetupSenderPsk(byte[] psk, byte[] pskId, byte[]? info = null) { throw null; }
-        public (byte[] KemCiphertext, System.Security.Cryptography.HpkeSenderContext Context) SetupSenderPsk(System.ReadOnlySpan<byte> psk, System.ReadOnlySpan<byte> pskId, System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
         public System.Security.Cryptography.HpkeSenderContext SetupSenderPsk(byte[] kemCiphertext, byte[] psk, byte[] pskId, byte[]? info = null) { throw null; }
+        public (byte[] KemCiphertext, System.Security.Cryptography.HpkeSenderContext Context) SetupSenderPsk(System.ReadOnlySpan<byte> psk, System.ReadOnlySpan<byte> pskId, System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
         public System.Security.Cryptography.HpkeSenderContext SetupSenderPsk(System.Span<byte> kemCiphertext, System.ReadOnlySpan<byte> psk, System.ReadOnlySpan<byte> pskId, System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
+        protected abstract System.Security.Cryptography.HpkeSenderContext SetupSenderPskCore(System.Span<byte> kemCiphertext, System.ReadOnlySpan<byte> info, System.ReadOnlySpan<byte> psk, System.ReadOnlySpan<byte> pskId);
     }
     public abstract partial class HpkeReceiverContext : System.IDisposable
     {
         protected HpkeReceiverContext() { }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
-        public byte[] Export(byte[] exporterContext, int length) { throw null; }
         public void Export(byte[] exporterContext, byte[] destination) { }
+        public byte[] Export(byte[] exporterContext, int length) { throw null; }
         public byte[] Export(System.ReadOnlySpan<byte> exporterContext, int length) { throw null; }
         public void Export(System.ReadOnlySpan<byte> exporterContext, System.Span<byte> destination) { }
         protected abstract void ExportCore(System.ReadOnlySpan<byte> exporterContext, System.Span<byte> destination);
@@ -1860,8 +1860,8 @@ namespace System.Security.Cryptography
         protected HpkeSenderContext() { }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
-        public byte[] Export(byte[] exporterContext, int length) { throw null; }
         public void Export(byte[] exporterContext, byte[] destination) { }
+        public byte[] Export(byte[] exporterContext, int length) { throw null; }
         public byte[] Export(System.ReadOnlySpan<byte> exporterContext, int length) { throw null; }
         public void Export(System.ReadOnlySpan<byte> exporterContext, System.Span<byte> destination) { }
         protected abstract void ExportCore(System.ReadOnlySpan<byte> exporterContext, System.Span<byte> destination);
