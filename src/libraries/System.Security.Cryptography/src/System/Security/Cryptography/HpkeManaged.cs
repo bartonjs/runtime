@@ -55,6 +55,29 @@ namespace System.Security.Cryptography
             return new HpkeManaged(suite, key, pub);
         }
 
+        private ECDiffieHellman GetPrivateKey()
+        {
+            ThrowIfDisposed();
+
+            return _privateKey ?? throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
+        }
+
+        private ECParameters GetPublicKeyParameters()
+        {
+            ThrowIfDisposed();
+            return _publicKeyParameters;
+        }
+
+        private static ECParameters ExportPublicKeyParameters(HPKE key, HpkeSuite suite)
+        {
+            if (key is HpkeManaged managed)
+            {
+                return managed.GetPublicKeyParameters();
+            }
+
+            return DeserializePublicKey(suite, key.ExportEncapsulationKey());
+        }
+
         protected override void ExportEncapsulationKeyCore(Span<byte> destination)
         {
             SerializePublicKey(_publicKeyParameters, destination);
@@ -182,6 +205,96 @@ namespace System.Security.Cryptography
             }
         }
 
+        protected override HpkeSenderContext SetupSenderAuthCore(
+            Span<byte> kemCiphertext,
+            HPKE senderKey,
+            ReadOnlySpan<byte> info)
+        {
+            return SetupSenderAuthPskCore(kemCiphertext, senderKey, info, default, default);
+        }
+
+        protected override HpkeSenderContext SetupSenderAuthPskCore(
+            Span<byte> kemCiphertext,
+            HPKE senderKey,
+            ReadOnlySpan<byte> info,
+            ReadOnlySpan<byte> psk,
+            ReadOnlySpan<byte> pskId)
+        {
+            bool disposeSenderPrivateKey = false;
+            ECDiffieHellman senderPrivateKey;
+            ECParameters senderPublicKeyParameters;
+            byte[]? senderPrivateKeyBytes = null;
+            byte[]? dh1 = null;
+            byte[]? dh2 = null;
+            byte[]? dh = null;
+            byte[]? sharedSecret = null;
+
+            if (senderKey is HpkeManaged senderManaged)
+            {
+                senderPrivateKey = senderManaged.GetPrivateKey();
+                senderPublicKeyParameters = senderManaged.GetPublicKeyParameters();
+            }
+            else
+            {
+                senderPrivateKeyBytes = senderKey.ExportDecapsulationKey();
+                senderPrivateKey = ECDiffieHellman.Create(new ECParameters
+                {
+                    Curve = GetCurve(Suite),
+                    D = senderPrivateKeyBytes,
+                });
+                senderPublicKeyParameters = ExportPublicKeyParameters(senderKey, Suite);
+                disposeSenderPrivateKey = true;
+            }
+
+            try
+            {
+                ECCurve curve = GetCurve(Suite);
+                using (ECDiffieHellman ephemeral = ECDiffieHellman.Create(curve))
+                {
+                    ECParameters ephPub = ephemeral.ExportParameters(includePrivateParameters: false);
+                    SerializePublicKey(ephPub, kemCiphertext);
+
+                    using (ECDiffieHellman recipientPub = ECDiffieHellman.Create(_publicKeyParameters))
+                    {
+                        dh1 = ephemeral.DeriveRawSecretAgreement(recipientPub.PublicKey);
+                        dh2 = senderPrivateKey.DeriveRawSecretAgreement(recipientPub.PublicKey);
+                        dh = new byte[dh1.Length + dh2.Length];
+                        dh1.CopyTo(dh, 0);
+                        dh2.CopyTo(dh, dh1.Length);
+
+                        byte[] pkRm = new byte[Suite.EncapsulationKeySizeInBytes];
+                        SerializePublicKey(_publicKeyParameters, pkRm);
+
+                        byte[] pkSm = new byte[Suite.EncapsulationKeySizeInBytes];
+                        SerializePublicKey(senderPublicKeyParameters, pkSm);
+
+                        byte[] kemContext = new byte[kemCiphertext.Length + pkRm.Length + pkSm.Length];
+                        kemCiphertext.CopyTo(kemContext);
+                        pkRm.CopyTo(kemContext.AsSpan(kemCiphertext.Length));
+                        pkSm.CopyTo(kemContext.AsSpan(kemCiphertext.Length + pkRm.Length));
+
+                        sharedSecret = ExtractAndExpand(Suite, dh, kemContext);
+
+                        byte mode = psk.IsEmpty ? (byte)0x02 : (byte)0x03;
+                        return CreateSenderContext(Suite, sharedSecret, info, mode, psk, pskId);
+                    }
+                }
+            }
+            finally
+            {
+                if (disposeSenderPrivateKey)
+                {
+                    senderPrivateKey.Dispose();
+                }
+
+                ZeroMemory(senderPrivateKeyBytes);
+                ZeroMemory(dh1);
+                ZeroMemory(dh2);
+                ZeroMemory(dh);
+                ZeroMemory(sharedSecret);
+            }
+        }
+
         protected override HpkeReceiverContext SetupReceiverCore(
             ReadOnlySpan<byte> kemCiphertext,
             ReadOnlySpan<byte> info)
@@ -195,15 +308,12 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> psk,
             ReadOnlySpan<byte> pskId)
         {
-            if (_privateKey is null)
-            {
-                throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
-            }
+            ECDiffieHellman privateKey = GetPrivateKey();
 
             ECParameters ephPub = DeserializePublicKey(Suite, kemCiphertext);
             using (ECDiffieHellman ephPublicKey = ECDiffieHellman.Create(ephPub))
             {
-                byte[] dh = _privateKey.DeriveRawSecretAgreement(ephPublicKey.PublicKey);
+                byte[] dh = privateKey.DeriveRawSecretAgreement(ephPublicKey.PublicKey);
 
                 byte[] pkRm = new byte[Suite.EncapsulationKeySizeInBytes];
                 SerializePublicKey(_publicKeyParameters, pkRm);
@@ -216,6 +326,66 @@ namespace System.Security.Cryptography
 
                 byte mode = psk.IsEmpty ? (byte)0x00 : (byte)0x01;
                 return CreateReceiverContext(Suite, sharedSecret, info, mode, psk, pskId);
+            }
+        }
+
+        protected override HpkeReceiverContext SetupReceiverAuthCore(
+            ReadOnlySpan<byte> kemCiphertext,
+            HPKE senderKey,
+            ReadOnlySpan<byte> info)
+        {
+            return SetupReceiverAuthPskCore(kemCiphertext, senderKey, info, default, default);
+        }
+
+        protected override HpkeReceiverContext SetupReceiverAuthPskCore(
+            ReadOnlySpan<byte> kemCiphertext,
+            HPKE senderKey,
+            ReadOnlySpan<byte> info,
+            ReadOnlySpan<byte> psk,
+            ReadOnlySpan<byte> pskId)
+        {
+            ECDiffieHellman privateKey = GetPrivateKey();
+            ECParameters senderPublicKeyParameters = ExportPublicKeyParameters(senderKey, Suite);
+            byte[]? dh1 = null;
+            byte[]? dh2 = null;
+            byte[]? dh = null;
+            byte[]? sharedSecret = null;
+
+            try
+            {
+                ECParameters ephPub = DeserializePublicKey(Suite, kemCiphertext);
+                using (ECDiffieHellman ephPublicKey = ECDiffieHellman.Create(ephPub))
+                using (ECDiffieHellman senderPublicKey = ECDiffieHellman.Create(senderPublicKeyParameters))
+                {
+                    dh1 = privateKey.DeriveRawSecretAgreement(ephPublicKey.PublicKey);
+                    dh2 = privateKey.DeriveRawSecretAgreement(senderPublicKey.PublicKey);
+                    dh = new byte[dh1.Length + dh2.Length];
+                    dh1.CopyTo(dh, 0);
+                    dh2.CopyTo(dh, dh1.Length);
+
+                    byte[] pkRm = new byte[Suite.EncapsulationKeySizeInBytes];
+                    SerializePublicKey(_publicKeyParameters, pkRm);
+
+                    byte[] pkSm = new byte[Suite.EncapsulationKeySizeInBytes];
+                    SerializePublicKey(senderPublicKeyParameters, pkSm);
+
+                    byte[] kemContext = new byte[kemCiphertext.Length + pkRm.Length + pkSm.Length];
+                    kemCiphertext.CopyTo(kemContext);
+                    pkRm.CopyTo(kemContext.AsSpan(kemCiphertext.Length));
+                    pkSm.CopyTo(kemContext.AsSpan(kemCiphertext.Length + pkRm.Length));
+
+                    sharedSecret = ExtractAndExpand(Suite, dh, kemContext);
+
+                    byte mode = psk.IsEmpty ? (byte)0x02 : (byte)0x03;
+                    return CreateReceiverContext(Suite, sharedSecret, info, mode, psk, pskId);
+                }
+            }
+            finally
+            {
+                ZeroMemory(dh1);
+                ZeroMemory(dh2);
+                ZeroMemory(dh);
+                ZeroMemory(sharedSecret);
             }
         }
 
@@ -398,6 +568,14 @@ namespace System.Security.Cryptography
             byte[] sharedSecret = LabeledExpand(kemHash, kemSuiteId, eaePrk, "shared_secret"u8, kemContext, nSecret);
 
             return sharedSecret;
+        }
+
+        private static void ZeroMemory(byte[]? buffer)
+        {
+            if (buffer is not null)
+            {
+                CryptographicOperations.ZeroMemory(buffer);
+            }
         }
 
         // ----------------------------------------------------------------

@@ -56,6 +56,19 @@ namespace System.Security.Cryptography
             Suite = suite;
         }
 
+        internal void ThrowIfDisposed() => ObjectDisposedException.ThrowIf(_disposed, this);
+
+        private void ValidateSenderKey(HPKE senderKey)
+        {
+            ArgumentNullException.ThrowIfNull(senderKey);
+            senderKey.ThrowIfDisposed();
+
+            if (!Suite.Equals(senderKey.Suite))
+            {
+                throw new ArgumentException(SR.Cryptography_HpkeKeyMismatch, nameof(senderKey));
+            }
+        }
+
         /// <summary>
         ///   Generates a new HPKE key pair.
         /// </summary>
@@ -835,10 +848,6 @@ namespace System.Security.Cryptography
                 new ReadOnlySpan<byte>(info));
         }
 
-        // ----------------------------------------------------------------
-        // PSK mode SetupSender / SetupReceiver
-        // ----------------------------------------------------------------
-
         /// <summary>
         ///   Creates a sender encryption context for multi-message encryption using PSK mode,
         ///   writing the KEM ciphertext into the provided buffer.
@@ -1155,6 +1164,654 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
+        ///   Creates a sender encryption context for multi-message encryption using Auth mode,
+        ///   writing the KEM ciphertext into the provided buffer.
+        /// </summary>
+        /// <param name="kemCiphertext">
+        ///   The buffer to receive the KEM ciphertext, which the recipient needs to create the
+        ///   corresponding receiver context. This must be exactly
+        ///   <see cref="HpkeSuite.EncapsulatedKeySizeInBytes" /> bytes long.
+        /// </param>
+        /// <param name="senderKey">
+        ///   The sender's static key.
+        /// </param>
+        /// <param name="info">
+        ///   The info parameter for the HPKE key schedule.
+        /// </param>
+        /// <returns>
+        ///   A sender context that can be used for sequential encryption and secret export operations.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="senderKey" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="kemCiphertext" /> is not the correct size.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred creating the sender context, or <paramref name="senderKey" /> does not contain a decapsulation key.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The object has already been disposed.
+        ///   -or-
+        ///   <paramref name="senderKey" /> has already been disposed.
+        /// </exception>
+        public HpkeSenderContext SetupSenderAuth(
+            Span<byte> kemCiphertext,
+            HPKE senderKey,
+            ReadOnlySpan<byte> info = default)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            ValidateSenderKey(senderKey);
+
+            if (kemCiphertext.Length != Suite.EncapsulatedKeySizeInBytes)
+            {
+                throw new ArgumentException(
+                    SR.Format(SR.Argument_DestinationImprecise, Suite.EncapsulatedKeySizeInBytes),
+                    nameof(kemCiphertext));
+            }
+
+            return SetupSenderAuthCore(kemCiphertext, senderKey, info);
+        }
+
+        /// <summary>
+        ///   Creates a sender encryption context for multi-message encryption using Auth mode,
+        ///   writing the KEM ciphertext into the provided byte array.
+        /// </summary>
+        /// <param name="kemCiphertext">
+        ///   The byte array to receive the KEM ciphertext, which the recipient needs to create the
+        ///   corresponding receiver context.
+        /// </param>
+        /// <param name="senderKey">
+        ///   The sender's static key.
+        /// </param>
+        /// <param name="info">
+        ///   The info parameter for the HPKE key schedule, or <see langword="null" /> for none.
+        /// </param>
+        /// <returns>
+        ///   A sender context that can be used for sequential encryption and secret export operations.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="kemCiphertext" /> is <see langword="null" />.
+        ///   -or-
+        ///   <paramref name="senderKey" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="kemCiphertext" /> is not the correct size.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred creating the sender context, or <paramref name="senderKey" /> does not contain a decapsulation key.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The object has already been disposed.
+        ///   -or-
+        ///   <paramref name="senderKey" /> has already been disposed.
+        /// </exception>
+        public HpkeSenderContext SetupSenderAuth(
+            byte[] kemCiphertext,
+            HPKE senderKey,
+            byte[]? info = null)
+        {
+            ArgumentNullException.ThrowIfNull(kemCiphertext);
+            ArgumentNullException.ThrowIfNull(senderKey);
+
+            return SetupSenderAuth(
+                new Span<byte>(kemCiphertext),
+                senderKey,
+                new ReadOnlySpan<byte>(info));
+        }
+
+        /// <summary>
+        ///   Creates a sender encryption context for multi-message encryption using Auth mode.
+        /// </summary>
+        /// <param name="senderKey">
+        ///   The sender's static key.
+        /// </param>
+        /// <param name="info">
+        ///   The info parameter for the HPKE key schedule.
+        /// </param>
+        /// <returns>
+        ///   A tuple containing the KEM ciphertext and the sender context.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="senderKey" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred creating the sender context, or <paramref name="senderKey" /> does not contain a decapsulation key.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The object has already been disposed.
+        ///   -or-
+        ///   <paramref name="senderKey" /> has already been disposed.
+        /// </exception>
+        public (byte[] KemCiphertext, HpkeSenderContext Context) SetupSenderAuth(
+            HPKE senderKey,
+            ReadOnlySpan<byte> info = default)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            ValidateSenderKey(senderKey);
+
+            byte[] kemCiphertext = new byte[Suite.EncapsulatedKeySizeInBytes];
+            HpkeSenderContext context = SetupSenderAuthCore(kemCiphertext, senderKey, info);
+
+            return (kemCiphertext, context);
+        }
+
+        /// <summary>
+        ///   Creates a sender encryption context for multi-message encryption using Auth mode.
+        /// </summary>
+        /// <param name="senderKey">
+        ///   The sender's static key.
+        /// </param>
+        /// <param name="info">
+        ///   The info parameter for the HPKE key schedule, or <see langword="null" /> for none.
+        /// </param>
+        /// <returns>
+        ///   A tuple containing the KEM ciphertext and the sender context.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="senderKey" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred creating the sender context, or <paramref name="senderKey" /> does not contain a decapsulation key.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The object has already been disposed.
+        ///   -or-
+        ///   <paramref name="senderKey" /> has already been disposed.
+        /// </exception>
+        public (byte[] KemCiphertext, HpkeSenderContext Context) SetupSenderAuth(
+            HPKE senderKey,
+            byte[]? info = null)
+        {
+            ArgumentNullException.ThrowIfNull(senderKey);
+
+            return SetupSenderAuth(senderKey, new ReadOnlySpan<byte>(info));
+        }
+
+        /// <summary>
+        ///   Creates a receiver decryption context for multi-message decryption using Auth mode.
+        /// </summary>
+        /// <param name="kemCiphertext">
+        ///   The KEM ciphertext produced by the sender.
+        /// </param>
+        /// <param name="senderKey">
+        ///   The sender's static key.
+        /// </param>
+        /// <param name="info">
+        ///   The info parameter for the HPKE key schedule.
+        /// </param>
+        /// <returns>
+        ///   A receiver context that can be used for sequential decryption and secret export operations.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="senderKey" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="kemCiphertext" /> is not the correct size.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred creating the receiver context, this instance does not contain a decapsulation key,
+        ///   or <paramref name="senderKey" /> is not valid.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The object has already been disposed.
+        ///   -or-
+        ///   <paramref name="senderKey" /> has already been disposed.
+        /// </exception>
+        public HpkeReceiverContext SetupReceiverAuth(
+            ReadOnlySpan<byte> kemCiphertext,
+            HPKE senderKey,
+            ReadOnlySpan<byte> info = default)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            ValidateSenderKey(senderKey);
+
+            if (kemCiphertext.Length != Suite.EncapsulatedKeySizeInBytes)
+            {
+                throw new ArgumentException(
+                    SR.Format(SR.Argument_DestinationImprecise, Suite.EncapsulatedKeySizeInBytes),
+                    nameof(kemCiphertext));
+            }
+
+            return SetupReceiverAuthCore(kemCiphertext, senderKey, info);
+        }
+
+        /// <summary>
+        ///   Creates a receiver decryption context for multi-message decryption using Auth mode.
+        /// </summary>
+        /// <param name="kemCiphertext">
+        ///   The KEM ciphertext produced by the sender.
+        /// </param>
+        /// <param name="senderKey">
+        ///   The sender's static key.
+        /// </param>
+        /// <param name="info">
+        ///   The info parameter for the HPKE key schedule, or <see langword="null" /> for none.
+        /// </param>
+        /// <returns>
+        ///   A receiver context that can be used for sequential decryption and secret export operations.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="kemCiphertext" /> is <see langword="null" />.
+        ///   -or-
+        ///   <paramref name="senderKey" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="kemCiphertext" /> is not the correct size.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred creating the receiver context, this instance does not contain a decapsulation key,
+        ///   or <paramref name="senderKey" /> is not valid.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The object has already been disposed.
+        ///   -or-
+        ///   <paramref name="senderKey" /> has already been disposed.
+        /// </exception>
+        public HpkeReceiverContext SetupReceiverAuth(
+            byte[] kemCiphertext,
+            HPKE senderKey,
+            byte[]? info = null)
+        {
+            ArgumentNullException.ThrowIfNull(kemCiphertext);
+            ArgumentNullException.ThrowIfNull(senderKey);
+
+            return SetupReceiverAuth(
+                new ReadOnlySpan<byte>(kemCiphertext),
+                senderKey,
+                new ReadOnlySpan<byte>(info));
+        }
+
+        /// <summary>
+        ///   Creates a sender encryption context for multi-message encryption using AuthPSK mode,
+        ///   writing the KEM ciphertext into the provided buffer.
+        /// </summary>
+        /// <param name="kemCiphertext">
+        ///   The buffer to receive the KEM ciphertext, which the recipient needs to create the
+        ///   corresponding receiver context. This must be exactly
+        ///   <see cref="HpkeSuite.EncapsulatedKeySizeInBytes" /> bytes long.
+        /// </param>
+        /// <param name="senderKey">
+        ///   The sender's static key.
+        /// </param>
+        /// <param name="psk">
+        ///   The pre-shared key.
+        /// </param>
+        /// <param name="pskId">
+        ///   The pre-shared key identifier.
+        /// </param>
+        /// <param name="info">
+        ///   The info parameter for the HPKE key schedule.
+        /// </param>
+        /// <returns>
+        ///   A sender context that can be used for sequential encryption and secret export operations.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="senderKey" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="kemCiphertext" /> is not the correct size.
+        ///   -or-
+        ///   <paramref name="psk" /> is empty.
+        ///   -or-
+        ///   <paramref name="pskId" /> is empty.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred creating the sender context, or <paramref name="senderKey" /> does not contain a decapsulation key.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The object has already been disposed.
+        ///   -or-
+        ///   <paramref name="senderKey" /> has already been disposed.
+        /// </exception>
+        public HpkeSenderContext SetupSenderAuthPsk(
+            Span<byte> kemCiphertext,
+            HPKE senderKey,
+            ReadOnlySpan<byte> psk,
+            ReadOnlySpan<byte> pskId,
+            ReadOnlySpan<byte> info = default)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            ValidateSenderKey(senderKey);
+
+            if (kemCiphertext.Length != Suite.EncapsulatedKeySizeInBytes)
+            {
+                throw new ArgumentException(
+                    SR.Format(SR.Argument_DestinationImprecise, Suite.EncapsulatedKeySizeInBytes),
+                    nameof(kemCiphertext));
+            }
+
+            if (psk.IsEmpty)
+            {
+                throw new ArgumentException(SR.Argument_EmptySpan, nameof(psk));
+            }
+
+            if (pskId.IsEmpty)
+            {
+                throw new ArgumentException(SR.Argument_EmptySpan, nameof(pskId));
+            }
+
+            return SetupSenderAuthPskCore(kemCiphertext, senderKey, info, psk, pskId);
+        }
+
+        /// <summary>
+        ///   Creates a sender encryption context for multi-message encryption using AuthPSK mode,
+        ///   writing the KEM ciphertext into the provided byte array.
+        /// </summary>
+        /// <param name="kemCiphertext">
+        ///   The byte array to receive the KEM ciphertext, which the recipient needs to create the
+        ///   corresponding receiver context.
+        /// </param>
+        /// <param name="senderKey">
+        ///   The sender's static key.
+        /// </param>
+        /// <param name="psk">
+        ///   The pre-shared key.
+        /// </param>
+        /// <param name="pskId">
+        ///   The pre-shared key identifier.
+        /// </param>
+        /// <param name="info">
+        ///   The info parameter for the HPKE key schedule, or <see langword="null" /> for none.
+        /// </param>
+        /// <returns>
+        ///   A sender context that can be used for sequential encryption and secret export operations.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="kemCiphertext" /> is <see langword="null" />.
+        ///   -or-
+        ///   <paramref name="senderKey" /> is <see langword="null" />.
+        ///   -or-
+        ///   <paramref name="psk" /> is <see langword="null" />.
+        ///   -or-
+        ///   <paramref name="pskId" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="kemCiphertext" /> is not the correct size.
+        ///   -or-
+        ///   <paramref name="psk" /> is empty.
+        ///   -or-
+        ///   <paramref name="pskId" /> is empty.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred creating the sender context, or <paramref name="senderKey" /> does not contain a decapsulation key.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The object has already been disposed.
+        ///   -or-
+        ///   <paramref name="senderKey" /> has already been disposed.
+        /// </exception>
+        public HpkeSenderContext SetupSenderAuthPsk(
+            byte[] kemCiphertext,
+            HPKE senderKey,
+            byte[] psk,
+            byte[] pskId,
+            byte[]? info = null)
+        {
+            ArgumentNullException.ThrowIfNull(kemCiphertext);
+            ArgumentNullException.ThrowIfNull(senderKey);
+            ArgumentNullException.ThrowIfNull(psk);
+            ArgumentNullException.ThrowIfNull(pskId);
+
+            return SetupSenderAuthPsk(
+                new Span<byte>(kemCiphertext),
+                senderKey,
+                new ReadOnlySpan<byte>(psk),
+                new ReadOnlySpan<byte>(pskId),
+                new ReadOnlySpan<byte>(info));
+        }
+
+        /// <summary>
+        ///   Creates a sender encryption context for multi-message encryption using AuthPSK mode.
+        /// </summary>
+        /// <param name="senderKey">
+        ///   The sender's static key.
+        /// </param>
+        /// <param name="psk">
+        ///   The pre-shared key.
+        /// </param>
+        /// <param name="pskId">
+        ///   The pre-shared key identifier.
+        /// </param>
+        /// <param name="info">
+        ///   The info parameter for the HPKE key schedule.
+        /// </param>
+        /// <returns>
+        ///   A tuple containing the KEM ciphertext and the sender context.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="senderKey" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="psk" /> is empty.
+        ///   -or-
+        ///   <paramref name="pskId" /> is empty.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred creating the sender context, or <paramref name="senderKey" /> does not contain a decapsulation key.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The object has already been disposed.
+        ///   -or-
+        ///   <paramref name="senderKey" /> has already been disposed.
+        /// </exception>
+        public (byte[] KemCiphertext, HpkeSenderContext Context) SetupSenderAuthPsk(
+            HPKE senderKey,
+            ReadOnlySpan<byte> psk,
+            ReadOnlySpan<byte> pskId,
+            ReadOnlySpan<byte> info = default)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            ValidateSenderKey(senderKey);
+
+            if (psk.IsEmpty)
+            {
+                throw new ArgumentException(SR.Argument_EmptySpan, nameof(psk));
+            }
+
+            if (pskId.IsEmpty)
+            {
+                throw new ArgumentException(SR.Argument_EmptySpan, nameof(pskId));
+            }
+
+            byte[] kemCiphertext = new byte[Suite.EncapsulatedKeySizeInBytes];
+            HpkeSenderContext context = SetupSenderAuthPskCore(kemCiphertext, senderKey, info, psk, pskId);
+
+            return (kemCiphertext, context);
+        }
+
+        /// <summary>
+        ///   Creates a sender encryption context for multi-message encryption using AuthPSK mode.
+        /// </summary>
+        /// <param name="senderKey">
+        ///   The sender's static key.
+        /// </param>
+        /// <param name="psk">
+        ///   The pre-shared key.
+        /// </param>
+        /// <param name="pskId">
+        ///   The pre-shared key identifier.
+        /// </param>
+        /// <param name="info">
+        ///   The info parameter for the HPKE key schedule, or <see langword="null" /> for none.
+        /// </param>
+        /// <returns>
+        ///   A tuple containing the KEM ciphertext and the sender context.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="senderKey" /> is <see langword="null" />.
+        ///   -or-
+        ///   <paramref name="psk" /> is <see langword="null" />.
+        ///   -or-
+        ///   <paramref name="pskId" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="psk" /> is empty.
+        ///   -or-
+        ///   <paramref name="pskId" /> is empty.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred creating the sender context, or <paramref name="senderKey" /> does not contain a decapsulation key.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The object has already been disposed.
+        ///   -or-
+        ///   <paramref name="senderKey" /> has already been disposed.
+        /// </exception>
+        public (byte[] KemCiphertext, HpkeSenderContext Context) SetupSenderAuthPsk(
+            HPKE senderKey,
+            byte[] psk,
+            byte[] pskId,
+            byte[]? info = null)
+        {
+            ArgumentNullException.ThrowIfNull(senderKey);
+            ArgumentNullException.ThrowIfNull(psk);
+            ArgumentNullException.ThrowIfNull(pskId);
+
+            return SetupSenderAuthPsk(
+                senderKey,
+                new ReadOnlySpan<byte>(psk),
+                new ReadOnlySpan<byte>(pskId),
+                new ReadOnlySpan<byte>(info));
+        }
+
+        /// <summary>
+        ///   Creates a receiver decryption context for multi-message decryption using AuthPSK mode.
+        /// </summary>
+        /// <param name="kemCiphertext">
+        ///   The KEM ciphertext produced by the sender.
+        /// </param>
+        /// <param name="senderKey">
+        ///   The sender's static key.
+        /// </param>
+        /// <param name="psk">
+        ///   The pre-shared key.
+        /// </param>
+        /// <param name="pskId">
+        ///   The pre-shared key identifier.
+        /// </param>
+        /// <param name="info">
+        ///   The info parameter for the HPKE key schedule.
+        /// </param>
+        /// <returns>
+        ///   A receiver context that can be used for sequential decryption and secret export operations.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="senderKey" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="kemCiphertext" /> is not the correct size.
+        ///   -or-
+        ///   <paramref name="psk" /> is empty.
+        ///   -or-
+        ///   <paramref name="pskId" /> is empty.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred creating the receiver context, this instance does not contain a decapsulation key,
+        ///   or <paramref name="senderKey" /> is not valid.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The object has already been disposed.
+        ///   -or-
+        ///   <paramref name="senderKey" /> has already been disposed.
+        /// </exception>
+        public HpkeReceiverContext SetupReceiverAuthPsk(
+            ReadOnlySpan<byte> kemCiphertext,
+            HPKE senderKey,
+            ReadOnlySpan<byte> psk,
+            ReadOnlySpan<byte> pskId,
+            ReadOnlySpan<byte> info = default)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            ValidateSenderKey(senderKey);
+
+            if (kemCiphertext.Length != Suite.EncapsulatedKeySizeInBytes)
+            {
+                throw new ArgumentException(
+                    SR.Format(SR.Argument_DestinationImprecise, Suite.EncapsulatedKeySizeInBytes),
+                    nameof(kemCiphertext));
+            }
+
+            if (psk.IsEmpty)
+            {
+                throw new ArgumentException(SR.Argument_EmptySpan, nameof(psk));
+            }
+
+            if (pskId.IsEmpty)
+            {
+                throw new ArgumentException(SR.Argument_EmptySpan, nameof(pskId));
+            }
+
+            return SetupReceiverAuthPskCore(kemCiphertext, senderKey, info, psk, pskId);
+        }
+
+        /// <summary>
+        ///   Creates a receiver decryption context for multi-message decryption using AuthPSK mode.
+        /// </summary>
+        /// <param name="kemCiphertext">
+        ///   The KEM ciphertext produced by the sender.
+        /// </param>
+        /// <param name="senderKey">
+        ///   The sender's static key.
+        /// </param>
+        /// <param name="psk">
+        ///   The pre-shared key.
+        /// </param>
+        /// <param name="pskId">
+        ///   The pre-shared key identifier.
+        /// </param>
+        /// <param name="info">
+        ///   The info parameter for the HPKE key schedule, or <see langword="null" /> for none.
+        /// </param>
+        /// <returns>
+        ///   A receiver context that can be used for sequential decryption and secret export operations.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="kemCiphertext" /> is <see langword="null" />.
+        ///   -or-
+        ///   <paramref name="senderKey" /> is <see langword="null" />.
+        ///   -or-
+        ///   <paramref name="psk" /> is <see langword="null" />.
+        ///   -or-
+        ///   <paramref name="pskId" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="kemCiphertext" /> is not the correct size.
+        ///   -or-
+        ///   <paramref name="psk" /> is empty.
+        ///   -or-
+        ///   <paramref name="pskId" /> is empty.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   An error occurred creating the receiver context, this instance does not contain a decapsulation key,
+        ///   or <paramref name="senderKey" /> is not valid.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The object has already been disposed.
+        ///   -or-
+        ///   <paramref name="senderKey" /> has already been disposed.
+        /// </exception>
+        public HpkeReceiverContext SetupReceiverAuthPsk(
+            byte[] kemCiphertext,
+            HPKE senderKey,
+            byte[] psk,
+            byte[] pskId,
+            byte[]? info = null)
+        {
+            ArgumentNullException.ThrowIfNull(kemCiphertext);
+            ArgumentNullException.ThrowIfNull(senderKey);
+            ArgumentNullException.ThrowIfNull(psk);
+            ArgumentNullException.ThrowIfNull(pskId);
+
+            return SetupReceiverAuthPsk(
+                new ReadOnlySpan<byte>(kemCiphertext),
+                senderKey,
+                new ReadOnlySpan<byte>(psk),
+                new ReadOnlySpan<byte>(pskId),
+                new ReadOnlySpan<byte>(info));
+        }
+
+        /// <summary>
         ///   When overridden in a derived class, exports the encapsulation key into the provided buffer.
         /// </summary>
         /// <param name="destination">
@@ -1227,6 +1884,34 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> pskId);
 
         /// <summary>
+        ///   When overridden in a derived class, creates a sender encryption context using Auth mode.
+        /// </summary>
+        /// <param name="kemCiphertext">The buffer to receive the KEM ciphertext.</param>
+        /// <param name="senderKey">The sender's static key.</param>
+        /// <param name="info">The info parameter for the key schedule.</param>
+        /// <returns>A sender encryption context.</returns>
+        protected abstract HpkeSenderContext SetupSenderAuthCore(
+            Span<byte> kemCiphertext,
+            HPKE senderKey,
+            ReadOnlySpan<byte> info);
+
+        /// <summary>
+        ///   When overridden in a derived class, creates a sender encryption context using AuthPSK mode.
+        /// </summary>
+        /// <param name="kemCiphertext">The buffer to receive the KEM ciphertext.</param>
+        /// <param name="senderKey">The sender's static key.</param>
+        /// <param name="info">The info parameter for the key schedule.</param>
+        /// <param name="psk">The pre-shared key.</param>
+        /// <param name="pskId">The pre-shared key identifier.</param>
+        /// <returns>A sender encryption context.</returns>
+        protected abstract HpkeSenderContext SetupSenderAuthPskCore(
+            Span<byte> kemCiphertext,
+            HPKE senderKey,
+            ReadOnlySpan<byte> info,
+            ReadOnlySpan<byte> psk,
+            ReadOnlySpan<byte> pskId);
+
+        /// <summary>
         ///   When overridden in a derived class, creates a receiver decryption context using Base mode.
         /// </summary>
         /// <param name="kemCiphertext">The KEM ciphertext produced by the sender.</param>
@@ -1246,6 +1931,34 @@ namespace System.Security.Cryptography
         /// <returns>A receiver decryption context.</returns>
         protected abstract HpkeReceiverContext SetupReceiverPskCore(
             ReadOnlySpan<byte> kemCiphertext,
+            ReadOnlySpan<byte> info,
+            ReadOnlySpan<byte> psk,
+            ReadOnlySpan<byte> pskId);
+
+        /// <summary>
+        ///   When overridden in a derived class, creates a receiver decryption context using Auth mode.
+        /// </summary>
+        /// <param name="kemCiphertext">The KEM ciphertext produced by the sender.</param>
+        /// <param name="senderKey">The sender's static key.</param>
+        /// <param name="info">The info parameter for the key schedule.</param>
+        /// <returns>A receiver decryption context.</returns>
+        protected abstract HpkeReceiverContext SetupReceiverAuthCore(
+            ReadOnlySpan<byte> kemCiphertext,
+            HPKE senderKey,
+            ReadOnlySpan<byte> info);
+
+        /// <summary>
+        ///   When overridden in a derived class, creates a receiver decryption context using AuthPSK mode.
+        /// </summary>
+        /// <param name="kemCiphertext">The KEM ciphertext produced by the sender.</param>
+        /// <param name="senderKey">The sender's static key.</param>
+        /// <param name="info">The info parameter for the key schedule.</param>
+        /// <param name="psk">The pre-shared key.</param>
+        /// <param name="pskId">The pre-shared key identifier.</param>
+        /// <returns>A receiver decryption context.</returns>
+        protected abstract HpkeReceiverContext SetupReceiverAuthPskCore(
+            ReadOnlySpan<byte> kemCiphertext,
+            HPKE senderKey,
             ReadOnlySpan<byte> info,
             ReadOnlySpan<byte> psk,
             ReadOnlySpan<byte> pskId);

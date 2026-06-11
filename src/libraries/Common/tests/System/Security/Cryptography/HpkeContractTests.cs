@@ -10,6 +10,7 @@ namespace System.Security.Cryptography.Tests
     public static class HpkeContractTests
     {
         private static readonly HpkeSuite s_suite = HpkeSuite.DHKEM_P256_HKDF_SHA256_AES_128_GCM;
+        private static readonly HpkeSuite s_otherSuite = HpkeSuite.DHKEM_P384_HKDF_SHA384_AES_256_GCM;
 
         [Fact]
         public static void Constructor_ThrowsForNullSuite()
@@ -738,10 +739,6 @@ namespace System.Security.Cryptography.Tests
             Assert.Same(returnedCtx, ctx);
         }
 
-        // ----------------------------------------------------------------
-        // PSK overloads
-        // ----------------------------------------------------------------
-
         [Fact]
         public static void SetupSender_Psk_Span_EmptyPsk_Throws()
         {
@@ -1007,6 +1004,520 @@ namespace System.Security.Cryptography.Tests
             };
 
             HpkeReceiverContext ctx = hpke.SetupReceiverPsk(kemCt, psk, pskId, info);
+            Assert.Same(returnedCtx, ctx);
+        }
+
+        [Fact]
+        public static void SetupSender_Auth_Span_NullSenderKey_Throws()
+        {
+            using HpkeContract hpke = new(s_suite);
+            byte[] kemCt = new byte[s_suite.EncapsulatedKeySizeInBytes];
+            AssertExtensions.Throws<ArgumentNullException>("senderKey", () =>
+                hpke.SetupSenderAuth(kemCt.AsSpan(), null));
+        }
+
+        [Fact]
+        public static void SetupSender_Auth_Span_Disposed()
+        {
+            using HpkeContract senderKey = new(s_suite);
+            HpkeContract hpke = new(s_suite);
+            hpke.Dispose();
+            byte[] kemCt = new byte[s_suite.EncapsulatedKeySizeInBytes];
+            Assert.Throws<ObjectDisposedException>(() =>
+                hpke.SetupSenderAuth(kemCt.AsSpan(), senderKey));
+        }
+
+        [Fact]
+        public static void SetupSender_Auth_Span_SenderDisposed()
+        {
+            using HpkeContract hpke = new(s_suite);
+            HpkeContract senderKey = new(s_suite);
+            senderKey.Dispose();
+            byte[] kemCt = new byte[s_suite.EncapsulatedKeySizeInBytes];
+            Assert.Throws<ObjectDisposedException>(() =>
+                hpke.SetupSenderAuth(kemCt.AsSpan(), senderKey));
+        }
+
+        [Fact]
+        public static void SetupSender_Auth_Span_SuiteMismatch_Throws()
+        {
+            using HpkeContract hpke = new(s_suite);
+            using HpkeContract senderKey = new(s_otherSuite);
+            byte[] kemCt = new byte[s_suite.EncapsulatedKeySizeInBytes];
+            AssertExtensions.Throws<ArgumentException>("senderKey", () =>
+                hpke.SetupSenderAuth(kemCt.AsSpan(), senderKey));
+        }
+
+        [Fact]
+        public static void SetupSender_Auth_Span_Works()
+        {
+            byte[] kemCt = new byte[s_suite.EncapsulatedKeySizeInBytes];
+            byte[] info = new byte[] { 1, 2, 3 };
+            using HpkeContract senderKey = new(s_suite);
+            HpkeSenderContract returnedCtx = new(7);
+
+            using HpkeContract hpke = new(s_suite)
+            {
+                OnSetupSenderAuthCore = (Span<byte> kemDest, HPKE sender, ReadOnlySpan<byte> i) =>
+                {
+                    AssertExtensions.Same(kemCt, kemDest);
+                    Assert.Same(senderKey, sender);
+                    AssertExtensions.Same(info, i);
+                    return returnedCtx;
+                }
+            };
+
+            HpkeSenderContext ctx = hpke.SetupSenderAuth(kemCt.AsSpan(), senderKey, info);
+            Assert.Same(returnedCtx, ctx);
+        }
+
+        [Fact]
+        public static void SetupSender_Auth_Allocated_Works()
+        {
+            using HpkeContract senderKey = new(s_suite);
+            HpkeSenderContract returnedCtx = new(7);
+
+            using HpkeContract hpke = new(s_suite)
+            {
+                OnSetupSenderAuthCore = (Span<byte> kemDest, HPKE sender, ReadOnlySpan<byte> i) =>
+                {
+                    Assert.Equal(s_suite.EncapsulatedKeySizeInBytes, kemDest.Length);
+                    Assert.Same(senderKey, sender);
+                    return returnedCtx;
+                }
+            };
+
+            (byte[] kemCiphertext, HpkeSenderContext ctx) = hpke.SetupSenderAuth(senderKey, default(ReadOnlySpan<byte>));
+            Assert.Equal(s_suite.EncapsulatedKeySizeInBytes, kemCiphertext.Length);
+            Assert.Same(returnedCtx, ctx);
+        }
+
+        [Fact]
+        public static void SetupSender_Auth_ByteArray_NullSenderKey_Throws()
+        {
+            using HpkeContract hpke = new(s_suite);
+            byte[] kemCt = new byte[s_suite.EncapsulatedKeySizeInBytes];
+            AssertExtensions.Throws<ArgumentNullException>("senderKey", () =>
+                hpke.SetupSenderAuth(kemCt, null, (byte[])null));
+        }
+
+        [Fact]
+        public static void SetupSender_Auth_ByteArray_NullKemCiphertext_Throws()
+        {
+            using HpkeContract hpke = new(s_suite);
+            using HpkeContract senderKey = new(s_suite);
+            AssertExtensions.Throws<ArgumentNullException>("kemCiphertext", () =>
+                hpke.SetupSenderAuth((byte[])null, senderKey, (byte[])null));
+        }
+
+        [Fact]
+        public static void SetupSender_Auth_Allocated_NullSenderKey_Throws()
+        {
+            using HpkeContract hpke = new(s_suite);
+            AssertExtensions.Throws<ArgumentNullException>("senderKey", () =>
+                hpke.SetupSenderAuth((HPKE)null, (byte[])null));
+        }
+
+        [Fact]
+        public static void SetupSender_Auth_ByteArray_FunnelsToCore()
+        {
+            byte[] kemCt = new byte[s_suite.EncapsulatedKeySizeInBytes];
+            byte[] info = new byte[] { 6 };
+            using HpkeContract senderKey = new(s_suite);
+            HpkeSenderContract returnedCtx = new(7);
+
+            using HpkeContract hpke = new(s_suite)
+            {
+                OnSetupSenderAuthCore = (Span<byte> kemDest, HPKE sender, ReadOnlySpan<byte> i) =>
+                {
+                    AssertExtensions.Same(kemCt, kemDest);
+                    Assert.Same(senderKey, sender);
+                    AssertExtensions.Same(info, i);
+                    return returnedCtx;
+                }
+            };
+
+            HpkeSenderContext ctx = hpke.SetupSenderAuth(kemCt, senderKey, info);
+            Assert.Same(returnedCtx, ctx);
+        }
+
+        [Fact]
+        public static void SetupReceiver_Auth_Span_NullSenderKey_Throws()
+        {
+            using HpkeContract hpke = new(s_suite);
+            byte[] kemCt = new byte[s_suite.EncapsulatedKeySizeInBytes];
+            AssertExtensions.Throws<ArgumentNullException>("senderKey", () =>
+                hpke.SetupReceiverAuth(new ReadOnlySpan<byte>(kemCt), null));
+        }
+
+        [Fact]
+        public static void SetupReceiver_Auth_Span_SenderDisposed()
+        {
+            using HpkeContract hpke = new(s_suite);
+            HpkeContract senderKey = new(s_suite);
+            senderKey.Dispose();
+            byte[] kemCt = new byte[s_suite.EncapsulatedKeySizeInBytes];
+            Assert.Throws<ObjectDisposedException>(() =>
+                hpke.SetupReceiverAuth(new ReadOnlySpan<byte>(kemCt), senderKey));
+        }
+
+        [Fact]
+        public static void SetupReceiver_Auth_Span_Disposed()
+        {
+            using HpkeContract senderKey = new(s_suite);
+            HpkeContract hpke = new(s_suite);
+            hpke.Dispose();
+            byte[] kemCt = new byte[s_suite.EncapsulatedKeySizeInBytes];
+            Assert.Throws<ObjectDisposedException>(() =>
+                hpke.SetupReceiverAuth(new ReadOnlySpan<byte>(kemCt), senderKey));
+        }
+
+        [Fact]
+        public static void SetupReceiver_Auth_Span_SuiteMismatch_Throws()
+        {
+            using HpkeContract hpke = new(s_suite);
+            using HpkeContract senderKey = new(s_otherSuite);
+            byte[] kemCt = new byte[s_suite.EncapsulatedKeySizeInBytes];
+            AssertExtensions.Throws<ArgumentException>("senderKey", () =>
+                hpke.SetupReceiverAuth(new ReadOnlySpan<byte>(kemCt), senderKey));
+        }
+
+        [Fact]
+        public static void SetupReceiver_Auth_Span_Works()
+        {
+            byte[] kemCt = new byte[s_suite.EncapsulatedKeySizeInBytes];
+            byte[] info = new byte[] { 9 };
+            using HpkeContract senderKey = new(s_suite);
+            HpkeReceiverContract returnedCtx = new(7);
+
+            using HpkeContract hpke = new(s_suite)
+            {
+                OnSetupReceiverAuthCore = (ReadOnlySpan<byte> kemSrc, HPKE sender, ReadOnlySpan<byte> i) =>
+                {
+                    AssertExtensions.Same(kemCt, kemSrc);
+                    Assert.Same(senderKey, sender);
+                    AssertExtensions.Same(info, i);
+                    return returnedCtx;
+                }
+            };
+
+            HpkeReceiverContext ctx = hpke.SetupReceiverAuth(new ReadOnlySpan<byte>(kemCt), senderKey, info);
+            Assert.Same(returnedCtx, ctx);
+        }
+
+        [Fact]
+        public static void SetupReceiver_Auth_ByteArray_NullSenderKey_Throws()
+        {
+            using HpkeContract hpke = new(s_suite);
+            byte[] kemCt = new byte[s_suite.EncapsulatedKeySizeInBytes];
+            AssertExtensions.Throws<ArgumentNullException>("senderKey", () =>
+                hpke.SetupReceiverAuth(kemCt, null, (byte[])null));
+        }
+
+        [Fact]
+        public static void SetupReceiver_Auth_ByteArray_NullKemCiphertext_Throws()
+        {
+            using HpkeContract hpke = new(s_suite);
+            using HpkeContract senderKey = new(s_suite);
+            AssertExtensions.Throws<ArgumentNullException>("kemCiphertext", () =>
+                hpke.SetupReceiverAuth((byte[])null, senderKey, (byte[])null));
+        }
+
+        [Fact]
+        public static void SetupReceiver_Auth_ByteArray_FunnelsToCore()
+        {
+            byte[] kemCt = new byte[s_suite.EncapsulatedKeySizeInBytes];
+            byte[] info = new byte[] { 6 };
+            using HpkeContract senderKey = new(s_suite);
+            HpkeReceiverContract returnedCtx = new(7);
+
+            using HpkeContract hpke = new(s_suite)
+            {
+                OnSetupReceiverAuthCore = (ReadOnlySpan<byte> kemSrc, HPKE sender, ReadOnlySpan<byte> i) =>
+                {
+                    AssertExtensions.Same(kemCt, kemSrc);
+                    Assert.Same(senderKey, sender);
+                    AssertExtensions.Same(info, i);
+                    return returnedCtx;
+                }
+            };
+
+            HpkeReceiverContext ctx = hpke.SetupReceiverAuth(kemCt, senderKey, info);
+            Assert.Same(returnedCtx, ctx);
+        }
+
+        [Fact]
+        public static void SetupSender_AuthPsk_Span_EmptyPsk_Throws()
+        {
+            using HpkeContract hpke = new(s_suite);
+            using HpkeContract senderKey = new(s_suite);
+            byte[] kemCt = new byte[s_suite.EncapsulatedKeySizeInBytes];
+            AssertExtensions.Throws<ArgumentException>("psk", () =>
+                hpke.SetupSenderAuthPsk(kemCt.AsSpan(), senderKey, ReadOnlySpan<byte>.Empty, new byte[] { 1 }));
+        }
+
+        [Fact]
+        public static void SetupSender_AuthPsk_Span_EmptyPskId_Throws()
+        {
+            using HpkeContract hpke = new(s_suite);
+            using HpkeContract senderKey = new(s_suite);
+            byte[] kemCt = new byte[s_suite.EncapsulatedKeySizeInBytes];
+            AssertExtensions.Throws<ArgumentException>("pskId", () =>
+                hpke.SetupSenderAuthPsk(kemCt.AsSpan(), senderKey, new byte[] { 1 }, ReadOnlySpan<byte>.Empty));
+        }
+
+        [Fact]
+        public static void SetupSender_AuthPsk_Span_Disposed()
+        {
+            using HpkeContract senderKey = new(s_suite);
+            HpkeContract hpke = new(s_suite);
+            hpke.Dispose();
+            byte[] kemCt = new byte[s_suite.EncapsulatedKeySizeInBytes];
+            Assert.Throws<ObjectDisposedException>(() =>
+                hpke.SetupSenderAuthPsk(kemCt.AsSpan(), senderKey, new byte[] { 1 }, new byte[] { 2 }));
+        }
+
+        [Fact]
+        public static void SetupSender_AuthPsk_Span_SenderDisposed()
+        {
+            using HpkeContract hpke = new(s_suite);
+            HpkeContract senderKey = new(s_suite);
+            senderKey.Dispose();
+            byte[] kemCt = new byte[s_suite.EncapsulatedKeySizeInBytes];
+            Assert.Throws<ObjectDisposedException>(() =>
+                hpke.SetupSenderAuthPsk(kemCt.AsSpan(), senderKey, new byte[] { 1 }, new byte[] { 2 }));
+        }
+
+        [Fact]
+        public static void SetupSender_AuthPsk_Span_Works()
+        {
+            byte[] kemCt = new byte[s_suite.EncapsulatedKeySizeInBytes];
+            byte[] psk = new byte[] { 1, 2, 3 };
+            byte[] pskId = new byte[] { 4, 5 };
+            byte[] info = new byte[] { 6 };
+            using HpkeContract senderKey = new(s_suite);
+            HpkeSenderContract returnedCtx = new(7);
+
+            using HpkeContract hpke = new(s_suite)
+            {
+                OnSetupSenderAuthPskCore = (Span<byte> kemDest, HPKE sender, ReadOnlySpan<byte> i, ReadOnlySpan<byte> p, ReadOnlySpan<byte> pid) =>
+                {
+                    AssertExtensions.Same(kemCt, kemDest);
+                    Assert.Same(senderKey, sender);
+                    AssertExtensions.Same(info, i);
+                    AssertExtensions.Same(psk, p);
+                    AssertExtensions.Same(pskId, pid);
+                    return returnedCtx;
+                }
+            };
+
+            HpkeSenderContext ctx = hpke.SetupSenderAuthPsk(kemCt.AsSpan(), senderKey, psk, pskId, info);
+            Assert.Same(returnedCtx, ctx);
+        }
+
+        [Fact]
+        public static void SetupSender_AuthPsk_Allocated_Works()
+        {
+            byte[] psk = new byte[] { 1, 2, 3 };
+            byte[] pskId = new byte[] { 4, 5 };
+            using HpkeContract senderKey = new(s_suite);
+            HpkeSenderContract returnedCtx = new(7);
+
+            using HpkeContract hpke = new(s_suite)
+            {
+                OnSetupSenderAuthPskCore = (Span<byte> kemDest, HPKE sender, ReadOnlySpan<byte> i, ReadOnlySpan<byte> p, ReadOnlySpan<byte> pid) =>
+                {
+                    Assert.Equal(s_suite.EncapsulatedKeySizeInBytes, kemDest.Length);
+                    Assert.Same(senderKey, sender);
+                    AssertExtensions.Same(psk, p);
+                    AssertExtensions.Same(pskId, pid);
+                    return returnedCtx;
+                }
+            };
+
+            (byte[] kemCiphertext, HpkeSenderContext ctx) = hpke.SetupSenderAuthPsk(senderKey, psk, pskId);
+            Assert.Equal(s_suite.EncapsulatedKeySizeInBytes, kemCiphertext.Length);
+            Assert.Same(returnedCtx, ctx);
+        }
+
+        [Fact]
+        public static void SetupSender_AuthPsk_ByteArray_NullSenderKey_Throws()
+        {
+            using HpkeContract hpke = new(s_suite);
+            byte[] kemCt = new byte[s_suite.EncapsulatedKeySizeInBytes];
+            AssertExtensions.Throws<ArgumentNullException>("senderKey", () =>
+                hpke.SetupSenderAuthPsk(kemCt, null, new byte[] { 1 }, new byte[] { 2 }, (byte[])null));
+        }
+
+        [Fact]
+        public static void SetupSender_AuthPsk_ByteArray_NullPsk_Throws()
+        {
+            using HpkeContract hpke = new(s_suite);
+            using HpkeContract senderKey = new(s_suite);
+            byte[] kemCt = new byte[s_suite.EncapsulatedKeySizeInBytes];
+            AssertExtensions.Throws<ArgumentNullException>("psk", () =>
+                hpke.SetupSenderAuthPsk(kemCt, senderKey, null, new byte[] { 2 }, (byte[])null));
+        }
+
+        [Fact]
+        public static void SetupSender_AuthPsk_ByteArray_NullPskId_Throws()
+        {
+            using HpkeContract hpke = new(s_suite);
+            using HpkeContract senderKey = new(s_suite);
+            byte[] kemCt = new byte[s_suite.EncapsulatedKeySizeInBytes];
+            AssertExtensions.Throws<ArgumentNullException>("pskId", () =>
+                hpke.SetupSenderAuthPsk(kemCt, senderKey, new byte[] { 1 }, null, (byte[])null));
+        }
+
+        [Fact]
+        public static void SetupSender_AuthPsk_ByteArray_FunnelsToCore()
+        {
+            byte[] kemCt = new byte[s_suite.EncapsulatedKeySizeInBytes];
+            byte[] psk = new byte[] { 1, 2, 3 };
+            byte[] pskId = new byte[] { 4, 5 };
+            byte[] info = new byte[] { 6 };
+            using HpkeContract senderKey = new(s_suite);
+            HpkeSenderContract returnedCtx = new(7);
+
+            using HpkeContract hpke = new(s_suite)
+            {
+                OnSetupSenderAuthPskCore = (Span<byte> kemDest, HPKE sender, ReadOnlySpan<byte> i, ReadOnlySpan<byte> p, ReadOnlySpan<byte> pid) =>
+                {
+                    AssertExtensions.Same(kemCt, kemDest);
+                    Assert.Same(senderKey, sender);
+                    AssertExtensions.Same(info, i);
+                    AssertExtensions.Same(psk, p);
+                    AssertExtensions.Same(pskId, pid);
+                    return returnedCtx;
+                }
+            };
+
+            HpkeSenderContext ctx = hpke.SetupSenderAuthPsk(kemCt, senderKey, psk, pskId, info);
+            Assert.Same(returnedCtx, ctx);
+        }
+
+        [Fact]
+        public static void SetupReceiver_AuthPsk_Span_EmptyPsk_Throws()
+        {
+            using HpkeContract hpke = new(s_suite);
+            using HpkeContract senderKey = new(s_suite);
+            byte[] kemCt = new byte[s_suite.EncapsulatedKeySizeInBytes];
+            AssertExtensions.Throws<ArgumentException>("psk", () =>
+                hpke.SetupReceiverAuthPsk(new ReadOnlySpan<byte>(kemCt), senderKey, ReadOnlySpan<byte>.Empty, new byte[] { 1 }));
+        }
+
+        [Fact]
+        public static void SetupReceiver_AuthPsk_Span_EmptyPskId_Throws()
+        {
+            using HpkeContract hpke = new(s_suite);
+            using HpkeContract senderKey = new(s_suite);
+            byte[] kemCt = new byte[s_suite.EncapsulatedKeySizeInBytes];
+            AssertExtensions.Throws<ArgumentException>("pskId", () =>
+                hpke.SetupReceiverAuthPsk(new ReadOnlySpan<byte>(kemCt), senderKey, new byte[] { 1 }, ReadOnlySpan<byte>.Empty));
+        }
+
+        [Fact]
+        public static void SetupReceiver_AuthPsk_Span_Disposed()
+        {
+            using HpkeContract senderKey = new(s_suite);
+            HpkeContract hpke = new(s_suite);
+            hpke.Dispose();
+            byte[] kemCt = new byte[s_suite.EncapsulatedKeySizeInBytes];
+            Assert.Throws<ObjectDisposedException>(() =>
+                hpke.SetupReceiverAuthPsk(new ReadOnlySpan<byte>(kemCt), senderKey, new byte[] { 1 }, new byte[] { 2 }));
+        }
+
+        [Fact]
+        public static void SetupReceiver_AuthPsk_Span_SenderDisposed()
+        {
+            using HpkeContract hpke = new(s_suite);
+            HpkeContract senderKey = new(s_suite);
+            senderKey.Dispose();
+            byte[] kemCt = new byte[s_suite.EncapsulatedKeySizeInBytes];
+            Assert.Throws<ObjectDisposedException>(() =>
+                hpke.SetupReceiverAuthPsk(new ReadOnlySpan<byte>(kemCt), senderKey, new byte[] { 1 }, new byte[] { 2 }));
+        }
+
+        [Fact]
+        public static void SetupReceiver_AuthPsk_Span_Works()
+        {
+            byte[] kemCt = new byte[s_suite.EncapsulatedKeySizeInBytes];
+            byte[] psk = new byte[] { 1, 2, 3 };
+            byte[] pskId = new byte[] { 4, 5 };
+            byte[] info = new byte[] { 6 };
+            using HpkeContract senderKey = new(s_suite);
+            HpkeReceiverContract returnedCtx = new(7);
+
+            using HpkeContract hpke = new(s_suite)
+            {
+                OnSetupReceiverAuthPskCore = (ReadOnlySpan<byte> kemSrc, HPKE sender, ReadOnlySpan<byte> i, ReadOnlySpan<byte> p, ReadOnlySpan<byte> pid) =>
+                {
+                    AssertExtensions.Same(kemCt, kemSrc);
+                    Assert.Same(senderKey, sender);
+                    AssertExtensions.Same(info, i);
+                    AssertExtensions.Same(psk, p);
+                    AssertExtensions.Same(pskId, pid);
+                    return returnedCtx;
+                }
+            };
+
+            HpkeReceiverContext ctx = hpke.SetupReceiverAuthPsk(new ReadOnlySpan<byte>(kemCt), senderKey, psk, pskId, info);
+            Assert.Same(returnedCtx, ctx);
+        }
+
+        [Fact]
+        public static void SetupReceiver_AuthPsk_ByteArray_NullSenderKey_Throws()
+        {
+            using HpkeContract hpke = new(s_suite);
+            byte[] kemCt = new byte[s_suite.EncapsulatedKeySizeInBytes];
+            AssertExtensions.Throws<ArgumentNullException>("senderKey", () =>
+                hpke.SetupReceiverAuthPsk(kemCt, null, new byte[] { 1 }, new byte[] { 2 }, (byte[])null));
+        }
+
+        [Fact]
+        public static void SetupReceiver_AuthPsk_ByteArray_NullPsk_Throws()
+        {
+            using HpkeContract hpke = new(s_suite);
+            using HpkeContract senderKey = new(s_suite);
+            byte[] kemCt = new byte[s_suite.EncapsulatedKeySizeInBytes];
+            AssertExtensions.Throws<ArgumentNullException>("psk", () =>
+                hpke.SetupReceiverAuthPsk(kemCt, senderKey, null, new byte[] { 2 }, (byte[])null));
+        }
+
+        [Fact]
+        public static void SetupReceiver_AuthPsk_ByteArray_NullPskId_Throws()
+        {
+            using HpkeContract hpke = new(s_suite);
+            using HpkeContract senderKey = new(s_suite);
+            byte[] kemCt = new byte[s_suite.EncapsulatedKeySizeInBytes];
+            AssertExtensions.Throws<ArgumentNullException>("pskId", () =>
+                hpke.SetupReceiverAuthPsk(kemCt, senderKey, new byte[] { 1 }, null, (byte[])null));
+        }
+
+        [Fact]
+        public static void SetupReceiver_AuthPsk_ByteArray_FunnelsToCore()
+        {
+            byte[] kemCt = new byte[s_suite.EncapsulatedKeySizeInBytes];
+            byte[] psk = new byte[] { 1, 2, 3 };
+            byte[] pskId = new byte[] { 4, 5 };
+            byte[] info = new byte[] { 6 };
+            using HpkeContract senderKey = new(s_suite);
+            HpkeReceiverContract returnedCtx = new(7);
+
+            using HpkeContract hpke = new(s_suite)
+            {
+                OnSetupReceiverAuthPskCore = (ReadOnlySpan<byte> kemSrc, HPKE sender, ReadOnlySpan<byte> i, ReadOnlySpan<byte> p, ReadOnlySpan<byte> pid) =>
+                {
+                    AssertExtensions.Same(kemCt, kemSrc);
+                    Assert.Same(senderKey, sender);
+                    AssertExtensions.Same(info, i);
+                    AssertExtensions.Same(psk, p);
+                    AssertExtensions.Same(pskId, pid);
+                    return returnedCtx;
+                }
+            };
+
+            HpkeReceiverContext ctx = hpke.SetupReceiverAuthPsk(kemCt, senderKey, psk, pskId, info);
             Assert.Same(returnedCtx, ctx);
         }
     }
@@ -1700,8 +2211,12 @@ namespace System.Security.Cryptography.Tests
         internal OpenCoreCallback OnOpenCore { get; set; }
         internal SetupSenderCoreCallback OnSetupSenderCore { get; set; }
         internal SetupSenderPskCoreCallback OnSetupSenderPskCore { get; set; }
+        internal SetupSenderAuthCoreCallback OnSetupSenderAuthCore { get; set; }
+        internal SetupSenderAuthPskCoreCallback OnSetupSenderAuthPskCore { get; set; }
         internal SetupReceiverCoreCallback OnSetupReceiverCore { get; set; }
         internal SetupReceiverPskCoreCallback OnSetupReceiverPskCore { get; set; }
+        internal SetupReceiverAuthCoreCallback OnSetupReceiverAuthCore { get; set; }
+        internal SetupReceiverAuthPskCoreCallback OnSetupReceiverAuthPskCore { get; set; }
         internal Action<bool> OnDispose { get; set; }
 
         public HpkeContract(HpkeSuite suite) : base(suite)
@@ -1748,6 +2263,16 @@ namespace System.Security.Cryptography.Tests
             return GetCallback(OnSetupSenderPskCore)(kemCiphertext, info, psk, pskId);
         }
 
+        protected override HpkeSenderContext SetupSenderAuthCore(Span<byte> kemCiphertext, HPKE senderKey, ReadOnlySpan<byte> info)
+        {
+            return GetCallback(OnSetupSenderAuthCore)(kemCiphertext, senderKey, info);
+        }
+
+        protected override HpkeSenderContext SetupSenderAuthPskCore(Span<byte> kemCiphertext, HPKE senderKey, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId)
+        {
+            return GetCallback(OnSetupSenderAuthPskCore)(kemCiphertext, senderKey, info, psk, pskId);
+        }
+
         protected override HpkeReceiverContext SetupReceiverCore(ReadOnlySpan<byte> kemCiphertext, ReadOnlySpan<byte> info)
         {
             return GetCallback(OnSetupReceiverCore)(kemCiphertext, info);
@@ -1756,6 +2281,16 @@ namespace System.Security.Cryptography.Tests
         protected override HpkeReceiverContext SetupReceiverPskCore(ReadOnlySpan<byte> kemCiphertext, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId)
         {
             return GetCallback(OnSetupReceiverPskCore)(kemCiphertext, info, psk, pskId);
+        }
+
+        protected override HpkeReceiverContext SetupReceiverAuthCore(ReadOnlySpan<byte> kemCiphertext, HPKE senderKey, ReadOnlySpan<byte> info)
+        {
+            return GetCallback(OnSetupReceiverAuthCore)(kemCiphertext, senderKey, info);
+        }
+
+        protected override HpkeReceiverContext SetupReceiverAuthPskCore(ReadOnlySpan<byte> kemCiphertext, HPKE senderKey, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId)
+        {
+            return GetCallback(OnSetupReceiverAuthPskCore)(kemCiphertext, senderKey, info, psk, pskId);
         }
 
         protected override void Dispose(bool disposing)
@@ -1774,8 +2309,12 @@ namespace System.Security.Cryptography.Tests
         internal delegate void OpenCoreCallback(ReadOnlySpan<byte> kemCiphertext, ReadOnlySpan<byte> ciphertext, Span<byte> plaintext, ReadOnlySpan<byte> aad, ReadOnlySpan<byte> info);
         internal delegate HpkeSenderContext SetupSenderCoreCallback(Span<byte> kemCiphertext, ReadOnlySpan<byte> info);
         internal delegate HpkeSenderContext SetupSenderPskCoreCallback(Span<byte> kemCiphertext, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId);
+        internal delegate HpkeSenderContext SetupSenderAuthCoreCallback(Span<byte> kemCiphertext, HPKE senderKey, ReadOnlySpan<byte> info);
+        internal delegate HpkeSenderContext SetupSenderAuthPskCoreCallback(Span<byte> kemCiphertext, HPKE senderKey, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId);
         internal delegate HpkeReceiverContext SetupReceiverCoreCallback(ReadOnlySpan<byte> kemCiphertext, ReadOnlySpan<byte> info);
         internal delegate HpkeReceiverContext SetupReceiverPskCoreCallback(ReadOnlySpan<byte> kemCiphertext, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId);
+        internal delegate HpkeReceiverContext SetupReceiverAuthCoreCallback(ReadOnlySpan<byte> kemCiphertext, HPKE senderKey, ReadOnlySpan<byte> info);
+        internal delegate HpkeReceiverContext SetupReceiverAuthPskCoreCallback(ReadOnlySpan<byte> kemCiphertext, HPKE senderKey, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId);
     }
 
     internal sealed class HpkeSenderContract : HpkeSenderContext
