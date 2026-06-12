@@ -595,7 +595,7 @@ namespace System.Security.Cryptography.Tests
 
             using Hpke key = Hpke.GenerateKey(suite);
 
-            HpkeSenderContext senderCtx = key.SetupSenderPsk(out byte[] kemCiphertext, psk, pskId);
+            HpkeSenderContext senderCtx = key.SetupSenderPsk(psk, pskId, out byte[] kemCiphertext);
 
             using (senderCtx)
             {
@@ -624,7 +624,7 @@ namespace System.Security.Cryptography.Tests
 
             using Hpke key = Hpke.GenerateKey(suite);
 
-            HpkeSenderContext senderCtx = key.SetupSenderPsk(out byte[] kemCiphertext, psk, pskId);
+            HpkeSenderContext senderCtx = key.SetupSenderPsk(psk, pskId, out byte[] kemCiphertext);
 
             using (senderCtx)
             {
@@ -650,7 +650,7 @@ namespace System.Security.Cryptography.Tests
 
             using Hpke key = Hpke.GenerateKey(suite);
 
-            HpkeSenderContext senderCtx = key.SetupSenderPsk(out byte[] kemCiphertext, psk, pskId);
+            HpkeSenderContext senderCtx = key.SetupSenderPsk(psk, pskId, out byte[] kemCiphertext);
 
             using (senderCtx)
             {
@@ -674,7 +674,7 @@ namespace System.Security.Cryptography.Tests
 
             using Hpke key = Hpke.GenerateKey(suite);
 
-            HpkeSenderContext senderCtx = key.SetupSenderPsk(out byte[] kemCiphertext, psk, pskId);
+            HpkeSenderContext senderCtx = key.SetupSenderPsk(psk, pskId, out byte[] kemCiphertext);
 
             using (senderCtx)
             using (HpkeReceiverContext receiverCtx = key.SetupReceiverPsk(kemCiphertext, psk, pskId))
@@ -703,7 +703,7 @@ namespace System.Security.Cryptography.Tests
 
             using Hpke key = Hpke.GenerateKey(suite);
 
-            HpkeSenderContext senderCtx = key.SetupSenderPsk(out byte[] kemCiphertext, psk, pskId, info);
+            HpkeSenderContext senderCtx = key.SetupSenderPsk(psk, pskId, out byte[] kemCiphertext, info);
 
             using (senderCtx)
             using (HpkeReceiverContext receiverCtx = key.SetupReceiverPsk(
@@ -724,7 +724,7 @@ namespace System.Security.Cryptography.Tests
             byte[] kemCt = new byte[key.Suite.EncapsulatedKeySizeInBytes];
 
             AssertExtensions.Throws<ArgumentException>("psk", () =>
-                key.SetupSenderPsk(kemCt.AsSpan(), ReadOnlySpan<byte>.Empty, new byte[] { 1 }));
+                key.SetupSenderPsk(ReadOnlySpan<byte>.Empty, new byte[] { 1 }, kemCt.AsSpan()));
 
             AssertExtensions.Throws<ArgumentException>("psk", () =>
                 key.SetupReceiverPsk(new ReadOnlySpan<byte>(kemCt), ReadOnlySpan<byte>.Empty, new byte[] { 1 }));
@@ -737,7 +737,7 @@ namespace System.Security.Cryptography.Tests
             byte[] kemCt = new byte[key.Suite.EncapsulatedKeySizeInBytes];
 
             AssertExtensions.Throws<ArgumentException>("pskId", () =>
-                key.SetupSenderPsk(kemCt.AsSpan(), new byte[] { 1 }, ReadOnlySpan<byte>.Empty));
+                key.SetupSenderPsk(new byte[] { 1 }, ReadOnlySpan<byte>.Empty, kemCt.AsSpan()));
 
             AssertExtensions.Throws<ArgumentException>("pskId", () =>
                 key.SetupReceiverPsk(new ReadOnlySpan<byte>(kemCt), new byte[] { 1 }, ReadOnlySpan<byte>.Empty));

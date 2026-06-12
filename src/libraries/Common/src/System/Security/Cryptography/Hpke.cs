@@ -730,16 +730,16 @@ namespace System.Security.Cryptography
         ///   Creates a sender encryption context for multi-message encryption using PSK mode,
         ///   writing the KEM ciphertext into the provided buffer.
         /// </summary>
-        /// <param name="kemCiphertext">
-        ///   The buffer to receive the KEM ciphertext, which the recipient needs to create the
-        ///   corresponding receiver context. This must be exactly
-        ///   <see cref="HpkeSuite.EncapsulatedKeySizeInBytes" /> bytes long.
-        /// </param>
         /// <param name="psk">
         ///   The pre-shared key.
         /// </param>
         /// <param name="pskId">
         ///   The pre-shared key identifier.
+        /// </param>
+        /// <param name="kemCiphertext">
+        ///   The buffer to receive the KEM ciphertext, which the recipient needs to create the
+        ///   corresponding receiver context. This must be exactly
+        ///   <see cref="HpkeSuite.EncapsulatedKeySizeInBytes" /> bytes long.
         /// </param>
         /// <param name="info">
         ///   The info parameter for the HPKE key schedule.
@@ -759,9 +759,9 @@ namespace System.Security.Cryptography
         /// </exception>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public HpkeSenderContext SetupSenderPsk(
-            Span<byte> kemCiphertext,
             ReadOnlySpan<byte> psk,
             ReadOnlySpan<byte> pskId,
+            Span<byte> kemCiphertext,
             ReadOnlySpan<byte> info = default)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
@@ -789,15 +789,15 @@ namespace System.Security.Cryptography
         /// <summary>
         ///   Creates a sender encryption context for multi-message encryption using PSK mode.
         /// </summary>
-        /// <param name="kemCiphertext">
-        ///   When this method returns, contains the KEM ciphertext produced by the sender, which the recipient needs to create the
-        ///   corresponding receiver context.
-        /// </param>
         /// <param name="psk">
         ///   The pre-shared key.
         /// </param>
         /// <param name="pskId">
         ///   The pre-shared key identifier.
+        /// </param>
+        /// <param name="kemCiphertext">
+        ///   When this method returns, contains the KEM ciphertext produced by the sender, which the recipient needs to create the
+        ///   corresponding receiver context.
         /// </param>
         /// <param name="info">
         ///   The info parameter for the HPKE key schedule.
@@ -815,9 +815,9 @@ namespace System.Security.Cryptography
         /// </exception>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public HpkeSenderContext SetupSenderPsk(
-            out byte[] kemCiphertext,
             ReadOnlySpan<byte> psk,
             ReadOnlySpan<byte> pskId,
+            out byte[] kemCiphertext,
             ReadOnlySpan<byte> info = default)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
@@ -840,15 +840,15 @@ namespace System.Security.Cryptography
         /// <summary>
         ///   Creates a sender encryption context for multi-message encryption using PSK mode.
         /// </summary>
-        /// <param name="kemCiphertext">
-        ///   When this method returns, contains the KEM ciphertext produced by the sender, which the recipient needs to create the
-        ///   corresponding receiver context.
-        /// </param>
         /// <param name="psk">
         ///   The pre-shared key.
         /// </param>
         /// <param name="pskId">
         ///   The pre-shared key identifier.
+        /// </param>
+        /// <param name="kemCiphertext">
+        ///   When this method returns, contains the KEM ciphertext produced by the sender, which the recipient needs to create the
+        ///   corresponding receiver context.
         /// </param>
         /// <param name="info">
         ///   The info parameter for the HPKE key schedule.
@@ -871,18 +871,18 @@ namespace System.Security.Cryptography
         /// </exception>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public HpkeSenderContext SetupSenderPsk(
-            out byte[] kemCiphertext,
             byte[] psk,
             byte[] pskId,
+            out byte[] kemCiphertext,
             byte[]? info = null)
         {
             ArgumentNullException.ThrowIfNull(psk);
             ArgumentNullException.ThrowIfNull(pskId);
 
             return SetupSenderPsk(
-                out kemCiphertext,
                 new ReadOnlySpan<byte>(psk),
                 new ReadOnlySpan<byte>(pskId),
+                out kemCiphertext,
                 new ReadOnlySpan<byte>(info));
         }
 
