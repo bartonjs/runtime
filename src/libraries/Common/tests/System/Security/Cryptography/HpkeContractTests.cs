@@ -230,7 +230,7 @@ namespace System.Security.Cryptography.Tests
         {
             HpkeContract hpke = new(s_suite);
             hpke.Dispose();
-            Assert.Throws<ObjectDisposedException>(() => hpke.Seal(new byte[10]));
+            Assert.Throws<ObjectDisposedException>(() => hpke.Seal(new byte[10], out byte[] _, out byte[] _));
         }
 
         [Fact]
@@ -249,7 +249,7 @@ namespace System.Security.Cryptography.Tests
                 }
             };
 
-            (byte[] kemCiphertext, byte[] ciphertext) = hpke.Seal(plaintext);
+            hpke.Seal(plaintext, out byte[] kemCiphertext, out byte[] ciphertext);
             Assert.Equal(s_suite.EncapsulatedKeySizeInBytes, kemCiphertext.Length);
             Assert.Equal(plaintext.Length + s_suite.AeadTagSizeInBytes, ciphertext.Length);
             AssertExtensions.FilledWith<byte>(0x11, kemCiphertext);
@@ -433,7 +433,7 @@ namespace System.Security.Cryptography.Tests
         {
             HpkeContract hpke = new(s_suite);
             hpke.Dispose();
-            Assert.Throws<ObjectDisposedException>(() => hpke.SetupSender());
+            Assert.Throws<ObjectDisposedException>(() => hpke.SetupSender(out byte[] _));
         }
 
         [Fact]
@@ -451,7 +451,7 @@ namespace System.Security.Cryptography.Tests
                 }
             };
 
-            (byte[] kemCiphertext, HpkeSenderContext ctx) = hpke.SetupSender();
+            HpkeSenderContext ctx = hpke.SetupSender(out byte[] kemCiphertext);
             Assert.Same(returnedCtx, ctx);
             Assert.Equal(s_suite.EncapsulatedKeySizeInBytes, kemCiphertext.Length);
             AssertExtensions.FilledWith<byte>(0x33, kemCiphertext);
@@ -559,7 +559,7 @@ namespace System.Security.Cryptography.Tests
         {
             using HpkeContract hpke = new(s_suite);
             Assert.Throws<ArgumentNullException>(() =>
-                hpke.Seal((byte[])null, aad: null, info: null));
+                hpke.Seal((byte[])null, out byte[] _, out byte[] _, aad: null, info: null));
         }
 
         [Fact]
@@ -579,7 +579,7 @@ namespace System.Security.Cryptography.Tests
                 }
             };
 
-            (byte[] kemCiphertext, byte[] ciphertext) = hpke.Seal(plaintext, aad: null, info: null);
+            hpke.Seal(plaintext, out byte[] kemCiphertext, out byte[] ciphertext, aad: null, info: null);
             Assert.Equal(s_suite.EncapsulatedKeySizeInBytes, kemCiphertext.Length);
             AssertExtensions.FilledWith<byte>(0x11, kemCiphertext);
             Assert.Equal(plaintext.Length + s_suite.AeadTagSizeInBytes, ciphertext.Length);
@@ -812,7 +812,7 @@ namespace System.Security.Cryptography.Tests
             HpkeContract hpke = new(s_suite);
             hpke.Dispose();
             Assert.Throws<ObjectDisposedException>(() =>
-                hpke.SetupSenderPsk(new byte[] { 1 }, new byte[] { 2 }));
+                hpke.SetupSenderPsk(out byte[] _, new byte[] { 1 }, new byte[] { 2 }));
         }
 
         [Fact]
@@ -833,7 +833,7 @@ namespace System.Security.Cryptography.Tests
                 }
             };
 
-            (byte[] kemCiphertext, HpkeSenderContext ctx) = hpke.SetupSenderPsk(psk, pskId);
+            HpkeSenderContext ctx = hpke.SetupSenderPsk(out byte[] kemCiphertext, psk, pskId);
             Assert.Same(returnedCtx, ctx);
             Assert.Equal(s_suite.EncapsulatedKeySizeInBytes, kemCiphertext.Length);
         }
@@ -869,7 +869,7 @@ namespace System.Security.Cryptography.Tests
         {
             using HpkeContract hpke = new(s_suite);
             Assert.Throws<ArgumentNullException>(() =>
-                hpke.SetupSenderPsk((byte[])null, new byte[] { 1 }));
+                hpke.SetupSenderPsk(out byte[] _, (byte[])null, new byte[] { 1 }));
         }
 
         [Fact]
@@ -877,7 +877,7 @@ namespace System.Security.Cryptography.Tests
         {
             using HpkeContract hpke = new(s_suite);
             Assert.Throws<ArgumentNullException>(() =>
-                hpke.SetupSenderPsk(new byte[] { 1 }, (byte[])null));
+                hpke.SetupSenderPsk(out byte[] _, new byte[] { 1 }, (byte[])null));
         }
 
         [Fact]
@@ -1087,7 +1087,7 @@ namespace System.Security.Cryptography.Tests
                 }
             };
 
-            (byte[] kemCiphertext, HpkeSenderContext ctx) = hpke.SetupSenderAuth(senderKey, default(ReadOnlySpan<byte>));
+            HpkeSenderContext ctx = hpke.SetupSenderAuth(out byte[] kemCiphertext, senderKey, default(ReadOnlySpan<byte>));
             Assert.Equal(s_suite.EncapsulatedKeySizeInBytes, kemCiphertext.Length);
             Assert.Same(returnedCtx, ctx);
         }
@@ -1115,7 +1115,7 @@ namespace System.Security.Cryptography.Tests
         {
             using HpkeContract hpke = new(s_suite);
             AssertExtensions.Throws<ArgumentNullException>("senderKey", () =>
-                hpke.SetupSenderAuth((Hpke)null, (byte[])null));
+                hpke.SetupSenderAuth(out byte[] _, (Hpke)null, (byte[])null));
         }
 
         [Fact]
@@ -1335,7 +1335,7 @@ namespace System.Security.Cryptography.Tests
                 }
             };
 
-            (byte[] kemCiphertext, HpkeSenderContext ctx) = hpke.SetupSenderAuthPsk(senderKey, psk, pskId);
+            HpkeSenderContext ctx = hpke.SetupSenderAuthPsk(out byte[] kemCiphertext, senderKey, psk, pskId);
             Assert.Equal(s_suite.EncapsulatedKeySizeInBytes, kemCiphertext.Length);
             Assert.Same(returnedCtx, ctx);
         }
