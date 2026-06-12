@@ -1808,7 +1808,6 @@ namespace System.Security.Cryptography
         public static System.Security.Cryptography.Hpke ImportEncapsulationKey(System.Security.Cryptography.HpkeSuite suite, byte[] source) { throw null; }
         public static System.Security.Cryptography.Hpke ImportEncapsulationKey(System.Security.Cryptography.HpkeSuite suite, System.ReadOnlySpan<byte> source) { throw null; }
         public byte[] Open(byte[] kemCiphertext, byte[] ciphertext, byte[]? aad = null, byte[]? info = null) { throw null; }
-        public void Open(byte[] kemCiphertext, byte[] ciphertext, byte[] plaintext, byte[]? aad = null, byte[]? info = null) { }
         public byte[] Open(System.ReadOnlySpan<byte> kemCiphertext, System.ReadOnlySpan<byte> ciphertext, System.ReadOnlySpan<byte> aad = default(System.ReadOnlySpan<byte>), System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
         public void Open(System.ReadOnlySpan<byte> kemCiphertext, System.ReadOnlySpan<byte> ciphertext, System.Span<byte> plaintext, System.ReadOnlySpan<byte> aad = default(System.ReadOnlySpan<byte>), System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { }
         protected abstract void OpenCore(System.ReadOnlySpan<byte> kemCiphertext, System.ReadOnlySpan<byte> ciphertext, System.Span<byte> plaintext, System.ReadOnlySpan<byte> aad, System.ReadOnlySpan<byte> info);
@@ -1828,7 +1827,6 @@ namespace System.Security.Cryptography
         public System.Security.Cryptography.HpkeReceiverContext SetupReceiverPsk(byte[] kemCiphertext, byte[] psk, byte[] pskId, byte[]? info = null) { throw null; }
         public System.Security.Cryptography.HpkeReceiverContext SetupReceiverPsk(System.ReadOnlySpan<byte> kemCiphertext, System.ReadOnlySpan<byte> psk, System.ReadOnlySpan<byte> pskId, System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
         protected abstract System.Security.Cryptography.HpkeReceiverContext SetupReceiverPskCore(System.ReadOnlySpan<byte> kemCiphertext, System.ReadOnlySpan<byte> info, System.ReadOnlySpan<byte> psk, System.ReadOnlySpan<byte> pskId);
-        public System.Security.Cryptography.HpkeSenderContext SetupSender(byte[] kemCiphertext, byte[]? info = null) { throw null; }
         public System.Security.Cryptography.HpkeSenderContext SetupSender(out byte[] kemCiphertext, System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
         public System.Security.Cryptography.HpkeSenderContext SetupSender(System.Span<byte> kemCiphertext, System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
         public System.Security.Cryptography.HpkeSenderContext SetupSenderAuth(out byte[] kemCiphertext, System.Security.Cryptography.Hpke senderKey, byte[]? info = null) { throw null; }

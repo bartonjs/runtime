@@ -450,7 +450,7 @@ namespace System.Security.Cryptography.Tests
         public void SenderContext_Disposed_ThrowsObjectDisposedException(HpkeSuite suite)
         {
             using Hpke key = Hpke.GenerateKey(suite);
-            (_, HpkeSenderContext senderCtx) = key.SetupSender();
+            HpkeSenderContext senderCtx = key.SetupSender(out _);
             senderCtx.Dispose();
 
             Assert.Throws<ObjectDisposedException>(() => senderCtx.Seal("test"u8));
@@ -517,7 +517,8 @@ namespace System.Security.Cryptography.Tests
         public void Export_ZeroLength_Throws(HpkeSuite suite)
         {
             using Hpke key = Hpke.GenerateKey(suite);
-            (_, HpkeSenderContext senderCtx) = key.SetupSender();
+            HpkeSenderContext senderCtx = key.SetupSender(out _);
+
             using (senderCtx)
             {
                 Assert.Throws<ArgumentOutOfRangeException>(() =>
@@ -579,7 +580,7 @@ namespace System.Security.Cryptography.Tests
         public void Context_DoubleDispose_DoesNotThrow(HpkeSuite suite)
         {
             using Hpke key = Hpke.GenerateKey(suite);
-            (_, HpkeSenderContext senderCtx) = key.SetupSender();
+            HpkeSenderContext senderCtx = key.SetupSender(out _);
             senderCtx.Dispose();
             senderCtx.Dispose();
         }
@@ -795,7 +796,7 @@ namespace System.Security.Cryptography.Tests
             Hpke senderKey = Hpke.GenerateKey(suite);
             senderKey.Dispose();
 
-            Assert.Throws<ObjectDisposedException>(() => recipientKey.SetupSenderAuth(senderKey, default(ReadOnlySpan<byte>)));
+            Assert.Throws<ObjectDisposedException>(() => recipientKey.SetupSenderAuth(out _, senderKey, default(ReadOnlySpan<byte>)));
         }
 
         [Theory]
@@ -807,7 +808,7 @@ namespace System.Security.Cryptography.Tests
             using Hpke senderPublicKey = Hpke.ImportEncapsulationKey(suite, senderKey.ExportEncapsulationKey());
 
             Assert.ThrowsAny<CryptographicException>(() =>
-                recipientKey.SetupSenderAuth(senderPublicKey, default(ReadOnlySpan<byte>)));
+                recipientKey.SetupSenderAuth(out _, senderPublicKey, default(ReadOnlySpan<byte>)));
         }
 
         [Fact]
@@ -817,7 +818,7 @@ namespace System.Security.Cryptography.Tests
             using Hpke senderKey = Hpke.GenerateKey(HpkeSuite.DHKEM_P384_HKDF_SHA384_AES_256_GCM);
 
             AssertExtensions.Throws<ArgumentException>("senderKey", () =>
-                recipientKey.SetupSenderAuth(senderKey, default(ReadOnlySpan<byte>)));
+                recipientKey.SetupSenderAuth(out _, senderKey, default(ReadOnlySpan<byte>)));
         }
 
         [Theory]
@@ -885,7 +886,7 @@ namespace System.Security.Cryptography.Tests
             Hpke senderKey = Hpke.GenerateKey(suite);
             senderKey.Dispose();
 
-            Assert.Throws<ObjectDisposedException>(() => recipientKey.SetupSenderAuthPsk(senderKey, psk, pskId));
+            Assert.Throws<ObjectDisposedException>(() => recipientKey.SetupSenderAuthPsk(out _, senderKey, psk, pskId));
         }
 
         [Theory]
@@ -901,7 +902,7 @@ namespace System.Security.Cryptography.Tests
             using Hpke senderPublicKey = Hpke.ImportEncapsulationKey(suite, senderKey.ExportEncapsulationKey());
 
             Assert.ThrowsAny<CryptographicException>(() =>
-                recipientKey.SetupSenderAuthPsk(senderPublicKey, psk, pskId));
+                recipientKey.SetupSenderAuthPsk(out _, senderPublicKey, psk, pskId));
         }
 
         [Fact]
@@ -915,7 +916,7 @@ namespace System.Security.Cryptography.Tests
             using Hpke senderKey = Hpke.GenerateKey(HpkeSuite.DHKEM_P384_HKDF_SHA384_AES_256_GCM);
 
             AssertExtensions.Throws<ArgumentException>("senderKey", () =>
-                recipientKey.SetupSenderAuthPsk(senderKey, psk, pskId));
+                recipientKey.SetupSenderAuthPsk(out _, senderKey, psk, pskId));
         }
 
     }

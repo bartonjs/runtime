@@ -503,56 +503,6 @@ namespace System.Security.Cryptography
         /// <param name="ciphertext">
         ///   The AEAD ciphertext and authentication tag to decrypt.
         /// </param>
-        /// <param name="plaintext">
-        ///   The byte array to receive the decrypted plaintext.
-        ///   This must be exactly <paramref name="ciphertext" />.Length - <see cref="HpkeSuite.AeadTagSizeInBytes" /> bytes.
-        /// </param>
-        /// <param name="aad">
-        ///   The additional authenticated data, or <see langword="null" /> for none.
-        /// </param>
-        /// <param name="info">
-        ///   The info parameter for the HPKE key schedule, or <see langword="null" /> for none.
-        /// </param>
-        /// <exception cref="ArgumentNullException">
-        ///   <paramref name="kemCiphertext" />, <paramref name="ciphertext" />, or <paramref name="plaintext" /> is <see langword="null" />.
-        /// </exception>
-        /// <exception cref="ArgumentException">
-        ///   <paramref name="kemCiphertext" /> is not the correct size, or
-        ///   <paramref name="plaintext" /> is not the correct size, or
-        ///   <paramref name="ciphertext" /> is too small to contain a valid authentication tag.
-        /// </exception>
-        /// <exception cref="CryptographicException">
-        ///   Decryption failed, or this instance does not contain a decapsulation key.
-        /// </exception>
-        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
-        public void Open(
-            byte[] kemCiphertext,
-            byte[] ciphertext,
-            byte[] plaintext,
-            byte[]? aad = null,
-            byte[]? info = null)
-        {
-            ArgumentNullException.ThrowIfNull(kemCiphertext);
-            ArgumentNullException.ThrowIfNull(ciphertext);
-            ArgumentNullException.ThrowIfNull(plaintext);
-
-            Open(
-                new ReadOnlySpan<byte>(kemCiphertext),
-                new ReadOnlySpan<byte>(ciphertext),
-                new Span<byte>(plaintext),
-                new ReadOnlySpan<byte>(aad),
-                new ReadOnlySpan<byte>(info));
-        }
-
-        /// <summary>
-        ///   Decrypts and authenticates a single ciphertext message using Base mode HPKE.
-        /// </summary>
-        /// <param name="kemCiphertext">
-        ///   The KEM ciphertext produced by the sender.
-        /// </param>
-        /// <param name="ciphertext">
-        ///   The AEAD ciphertext and authentication tag to decrypt.
-        /// </param>
         /// <param name="aad">
         ///   The additional authenticated data.
         /// </param>
@@ -678,41 +628,6 @@ namespace System.Security.Cryptography
             }
 
             return SetupSenderCore(kemCiphertext, info);
-        }
-
-        /// <summary>
-        ///   Creates a sender encryption context for multi-message encryption, writing the KEM ciphertext
-        ///   into the provided byte array.
-        /// </summary>
-        /// <param name="kemCiphertext">
-        ///   The byte array to receive the KEM ciphertext, which the recipient needs to create the
-        ///   corresponding receiver context.
-        /// </param>
-        /// <param name="info">
-        ///   The info parameter for the HPKE key schedule, or <see langword="null" /> for none.
-        /// </param>
-        /// <returns>
-        ///   A sender context that can be used for sequential encryption and secret export operations.
-        /// </returns>
-        /// <exception cref="ArgumentNullException">
-        ///   <paramref name="kemCiphertext" /> is <see langword="null" />.
-        /// </exception>
-        /// <exception cref="ArgumentException">
-        ///   <paramref name="kemCiphertext" /> is not the correct size.
-        /// </exception>
-        /// <exception cref="CryptographicException">
-        ///   An error occurred creating the sender context.
-        /// </exception>
-        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
-        public HpkeSenderContext SetupSender(
-            byte[] kemCiphertext,
-            byte[]? info = null)
-        {
-            ArgumentNullException.ThrowIfNull(kemCiphertext);
-
-            return SetupSender(
-                new Span<byte>(kemCiphertext),
-                new ReadOnlySpan<byte>(info));
         }
 
         /// <summary>

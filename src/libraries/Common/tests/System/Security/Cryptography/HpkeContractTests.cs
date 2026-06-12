@@ -795,7 +795,7 @@ namespace System.Security.Cryptography.Tests
         {
             using HpkeContract hpke = new(s_suite);
             AssertExtensions.Throws<ArgumentException>("psk", () =>
-                hpke.SetupSenderPsk(ReadOnlySpan<byte>.Empty, new byte[] { 1 }));
+                hpke.SetupSenderPsk(out _, ReadOnlySpan<byte>.Empty, new byte[] { 1 }));
         }
 
         [Fact]
@@ -803,7 +803,7 @@ namespace System.Security.Cryptography.Tests
         {
             using HpkeContract hpke = new(s_suite);
             AssertExtensions.Throws<ArgumentException>("pskId", () =>
-                hpke.SetupSenderPsk(new byte[] { 1 }, ReadOnlySpan<byte>.Empty));
+                hpke.SetupSenderPsk(out _, new byte[] { 1 }, ReadOnlySpan<byte>.Empty));
         }
 
         [Fact]
