@@ -875,12 +875,6 @@ namespace System.Security.Cryptography
                 _seq++;
             }
 
-            protected override void OpenCore(long sequenceNumber, ReadOnlySpan<byte> ciphertext, Span<byte> plaintext, ReadOnlySpan<byte> aad)
-            {
-                byte[] nonce = ComputeNonce(_baseNonce, sequenceNumber);
-                AeadOpen(_suite, _key, nonce, ciphertext, plaintext, aad);
-            }
-
             protected override void ExportCore(ReadOnlySpan<byte> exporterContext, Span<byte> destination)
             {
                 byte[] hpkeSuiteId = BuildHpkeSuiteId(_suite);

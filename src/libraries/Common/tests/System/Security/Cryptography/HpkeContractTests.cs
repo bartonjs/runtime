@@ -1849,89 +1849,6 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.FilledWith<byte>(0x44, result);
         }
 
-        [Theory]
-        [InlineData(-1)]
-        [InlineData(-100)]
-        public static void Open_Explicit_Span_NegativeSequence_Throws(long sequenceNumber)
-        {
-            using HpkeReceiverContract ctx = new(TagSize);
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-                ctx.Open(sequenceNumber, ciphertext: new byte[TagSize], plaintext: Array.Empty<byte>()));
-        }
-
-        [Fact]
-        public static void Open_Explicit_Span_Disposed()
-        {
-            HpkeReceiverContract ctx = new(TagSize);
-            ctx.Dispose();
-            Assert.Throws<ObjectDisposedException>(() =>
-                ctx.Open(0L, ciphertext: new byte[TagSize], plaintext: Array.Empty<byte>()));
-        }
-
-        [Fact]
-        public static void Open_Explicit_Span_Works()
-        {
-            byte[] ciphertext = new byte[5 + TagSize];
-            byte[] plaintext = new byte[5];
-
-            using HpkeReceiverContract ctx = new(TagSize)
-            {
-                OnOpenExplicitCore = (long seq, ReadOnlySpan<byte> ct, Span<byte> pt, ReadOnlySpan<byte> aad) =>
-                {
-                    Assert.Equal(42L, seq);
-                    AssertExtensions.Same(ciphertext, ct);
-                    AssertExtensions.Same(plaintext, pt);
-                }
-            };
-
-            ctx.Open(42L, ciphertext: ciphertext, plaintext: plaintext);
-        }
-
-        [Theory]
-        [InlineData(-1)]
-        [InlineData(-100)]
-        public static void Open_Explicit_Allocated_NegativeSequence_Throws(long sequenceNumber)
-        {
-            using HpkeReceiverContract ctx = new(TagSize);
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-                ctx.Open(sequenceNumber, new byte[TagSize]));
-        }
-
-        [Fact]
-        public static void Open_Explicit_Allocated_CiphertextTooSmall()
-        {
-            using HpkeReceiverContract ctx = new(TagSize);
-            AssertExtensions.Throws<ArgumentException>("ciphertext", () =>
-                ctx.Open(0L, new byte[TagSize - 1]));
-        }
-
-        [Fact]
-        public static void Open_Explicit_Allocated_Disposed()
-        {
-            HpkeReceiverContract ctx = new(TagSize);
-            ctx.Dispose();
-            Assert.Throws<ObjectDisposedException>(() => ctx.Open(0L, new byte[TagSize]));
-        }
-
-        [Fact]
-        public static void Open_Explicit_Allocated_Works()
-        {
-            using HpkeReceiverContract ctx = new(TagSize)
-            {
-                OnOpenExplicitCore = (long seq, ReadOnlySpan<byte> ct, Span<byte> pt, ReadOnlySpan<byte> aad) =>
-                {
-                    Assert.Equal(99L, seq);
-                    Assert.Equal(10 + TagSize, ct.Length);
-                    Assert.Equal(10, pt.Length);
-                    pt.Fill(0x88);
-                }
-            };
-
-            byte[] result = ctx.Open(99L, new byte[10 + TagSize]);
-            Assert.Equal(10, result.Length);
-            AssertExtensions.FilledWith<byte>(0x88, result);
-        }
-
         [Fact]
         public static void Export_Span_ZeroLength_Throws()
         {
@@ -2064,72 +1981,6 @@ namespace System.Security.Cryptography.Tests
             byte[] result = ctx.Open(ciphertext, aad: null);
             Assert.Equal(10, result.Length);
             AssertExtensions.FilledWith<byte>(0xDD, result);
-        }
-
-        [Fact]
-        public static void Open_Explicit_ByteArray_NullCiphertext_Throws()
-        {
-            using HpkeReceiverContract ctx = new(TagSize);
-            Assert.Throws<ArgumentNullException>(() =>
-                ctx.Open(0L, (byte[])null, new byte[0], aad: null));
-        }
-
-        [Fact]
-        public static void Open_Explicit_ByteArray_NullPlaintext_Throws()
-        {
-            using HpkeReceiverContract ctx = new(TagSize);
-            Assert.Throws<ArgumentNullException>(() =>
-                ctx.Open(0L, new byte[TagSize], (byte[])null, aad: null));
-        }
-
-        [Fact]
-        public static void Open_Explicit_ByteArray_FunnelsToCore()
-        {
-            byte[] ciphertext = new byte[5 + TagSize];
-            byte[] plaintext = new byte[5];
-            byte[] aad = new byte[3];
-
-            using HpkeReceiverContract ctx = new(TagSize)
-            {
-                OnOpenExplicitCore = (long seq, ReadOnlySpan<byte> ct, Span<byte> pt, ReadOnlySpan<byte> a) =>
-                {
-                    Assert.Equal(42L, seq);
-                    AssertExtensions.Same(ciphertext, ct);
-                    AssertExtensions.Same(plaintext, pt);
-                    AssertExtensions.Same(aad, a);
-                }
-            };
-
-            ctx.Open(42L, ciphertext, plaintext, aad);
-        }
-
-        [Fact]
-        public static void Open_Explicit_ByteArray_Allocated_NullCiphertext_Throws()
-        {
-            using HpkeReceiverContract ctx = new(TagSize);
-            Assert.Throws<ArgumentNullException>(() =>
-                ctx.Open(0L, (byte[])null, aad: null));
-        }
-
-        [Fact]
-        public static void Open_Explicit_ByteArray_Allocated_FunnelsToCore()
-        {
-            byte[] ciphertext = new byte[10 + TagSize];
-
-            using HpkeReceiverContract ctx = new(TagSize)
-            {
-                OnOpenExplicitCore = (long seq, ReadOnlySpan<byte> ct, Span<byte> pt, ReadOnlySpan<byte> a) =>
-                {
-                    Assert.Equal(99L, seq);
-                    AssertExtensions.Same(ciphertext, ct);
-                    Assert.Equal(10, pt.Length);
-                    pt.Fill(0xEE);
-                }
-            };
-
-            byte[] result = ctx.Open(99L, ciphertext, aad: null);
-            Assert.Equal(10, result.Length);
-            AssertExtensions.FilledWith<byte>(0xEE, result);
         }
 
         [Fact]
@@ -2355,7 +2206,6 @@ namespace System.Security.Cryptography.Tests
         private readonly int _tagSize;
 
         internal OpenCoreCallback OnOpenCore { get; set; }
-        internal OpenExplicitCoreCallback OnOpenExplicitCore { get; set; }
         internal ExportCoreCallback OnExportCore { get; set; }
 
         public HpkeReceiverContract(int tagSize)
@@ -2366,11 +2216,6 @@ namespace System.Security.Cryptography.Tests
         protected override void OpenCore(ReadOnlySpan<byte> ciphertext, Span<byte> plaintext, ReadOnlySpan<byte> aad)
         {
             GetCallback(OnOpenCore)(ciphertext, plaintext, aad);
-        }
-
-        protected override void OpenCore(long sequenceNumber, ReadOnlySpan<byte> ciphertext, Span<byte> plaintext, ReadOnlySpan<byte> aad)
-        {
-            GetCallback(OnOpenExplicitCore)(sequenceNumber, ciphertext, plaintext, aad);
         }
 
         protected override void ExportCore(ReadOnlySpan<byte> exporterContext, Span<byte> destination)
@@ -2386,7 +2231,6 @@ namespace System.Security.Cryptography.Tests
         }
 
         internal delegate void OpenCoreCallback(ReadOnlySpan<byte> ciphertext, Span<byte> plaintext, ReadOnlySpan<byte> aad);
-        internal delegate void OpenExplicitCoreCallback(long sequenceNumber, ReadOnlySpan<byte> ciphertext, Span<byte> plaintext, ReadOnlySpan<byte> aad);
         internal delegate void ExportCoreCallback(ReadOnlySpan<byte> exporterContext, Span<byte> destination);
     }
 }

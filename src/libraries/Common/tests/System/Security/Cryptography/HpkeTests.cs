@@ -291,66 +291,6 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(NistSuites))]
-        public void Context_OutOfOrder_WrongSequence_Fails(HpkeSuite suite)
-        {
-            using Hpke key = Hpke.GenerateKey(suite);
-
-            (byte[] kemCiphertext, HpkeSenderContext senderCtx) = key.SetupSender();
-            using (senderCtx)
-            using (HpkeReceiverContext receiverCtx = key.SetupReceiver(kemCiphertext))
-            {
-                byte[] plaintext = "sequence test"u8.ToArray();
-                byte[] ct0 = senderCtx.Seal(plaintext);
-                byte[] ct1 = senderCtx.Seal(plaintext);
-
-                // Trying to open ct1 first (at seq=0) should fail because it was sealed at seq=1
-                Assert.ThrowsAny<CryptographicException>(() => receiverCtx.Open(ct1));
-
-                // But using explicit sequence number 1 should succeed
-                byte[] decrypted = receiverCtx.Open(1, ct1);
-                Assert.Equal(plaintext, decrypted);
-
-                // And explicit sequence number 0 should still work for ct0
-                decrypted = receiverCtx.Open(0, ct0);
-                Assert.Equal(plaintext, decrypted);
-            }
-        }
-
-        [Theory]
-        [MemberData(nameof(NistSuites))]
-        public void Context_ExplicitSequenceNumber_DoesNotAffectInternalCounter(HpkeSuite suite)
-        {
-            using Hpke key = Hpke.GenerateKey(suite);
-
-            (byte[] kemCiphertext, HpkeSenderContext senderCtx) = key.SetupSender();
-            using (senderCtx)
-            using (HpkeReceiverContext receiverCtx = key.SetupReceiver(kemCiphertext))
-            {
-                byte[] plaintext = "counter test"u8.ToArray();
-                byte[] ct0 = senderCtx.Seal(plaintext);
-                byte[] ct1 = senderCtx.Seal(plaintext);
-                byte[] ct2 = senderCtx.Seal(plaintext);
-
-                // Open ct1 with explicit seq=1 first
-                byte[] d1 = receiverCtx.Open(1, ct1);
-                Assert.Equal(plaintext, d1);
-
-                // Internal counter is still at 0, so sequential Open should decrypt ct0
-                byte[] d0 = receiverCtx.Open(ct0);
-                Assert.Equal(plaintext, d0);
-
-                // Internal counter is now 1, so sequential Open should decrypt ct1
-                byte[] d1b = receiverCtx.Open(ct1);
-                Assert.Equal(plaintext, d1b);
-
-                // Internal counter is now 2
-                byte[] d2 = receiverCtx.Open(ct2);
-                Assert.Equal(plaintext, d2);
-            }
-        }
-
-        [Theory]
-        [MemberData(nameof(NistSuites))]
         public void Context_Export_SameSecret(HpkeSuite suite)
         {
             using Hpke key = Hpke.GenerateKey(suite);
@@ -528,7 +468,6 @@ namespace System.Security.Cryptography.Tests
             receiverCtx.Dispose();
 
             Assert.Throws<ObjectDisposedException>(() => receiverCtx.Open(new byte[suite.AeadTagSizeInBytes]));
-            Assert.Throws<ObjectDisposedException>(() => receiverCtx.Open(0, new byte[suite.AeadTagSizeInBytes]));
             Assert.Throws<ObjectDisposedException>(() => receiverCtx.Export("ctx"u8, 32));
         }
 
@@ -571,18 +510,6 @@ namespace System.Security.Cryptography.Tests
 
             Assert.ThrowsAny<ArgumentException>(() =>
                 key.Open(kemCiphertext, tooSmall));
-        }
-
-        [Theory]
-        [MemberData(nameof(NistSuites))]
-        public void ExplicitSequenceNumber_Negative_Throws(HpkeSuite suite)
-        {
-            using Hpke key = Hpke.GenerateKey(suite);
-            (byte[] kemCiphertext, _) = key.SetupSender();
-            using HpkeReceiverContext receiverCtx = key.SetupReceiver(kemCiphertext);
-
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-                receiverCtx.Open(-1, new byte[suite.AeadTagSizeInBytes]));
         }
 
         [Theory]

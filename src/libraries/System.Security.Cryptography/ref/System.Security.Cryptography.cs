@@ -1862,13 +1862,8 @@ namespace System.Security.Cryptography
         protected abstract int GetAeadTagSizeInBytes();
         public byte[] Open(byte[] ciphertext, byte[]? aad = null) { throw null; }
         public void Open(byte[] ciphertext, byte[] plaintext, byte[]? aad = null) { }
-        public byte[] Open(long sequenceNumber, byte[] ciphertext, byte[]? aad = null) { throw null; }
-        public void Open(long sequenceNumber, byte[] ciphertext, byte[] plaintext, byte[]? aad = null) { }
-        public byte[] Open(long sequenceNumber, System.ReadOnlySpan<byte> ciphertext, System.ReadOnlySpan<byte> aad = default(System.ReadOnlySpan<byte>)) { throw null; }
-        public void Open(long sequenceNumber, System.ReadOnlySpan<byte> ciphertext, System.Span<byte> plaintext, System.ReadOnlySpan<byte> aad = default(System.ReadOnlySpan<byte>)) { }
         public byte[] Open(System.ReadOnlySpan<byte> ciphertext, System.ReadOnlySpan<byte> aad = default(System.ReadOnlySpan<byte>)) { throw null; }
         public void Open(System.ReadOnlySpan<byte> ciphertext, System.Span<byte> plaintext, System.ReadOnlySpan<byte> aad = default(System.ReadOnlySpan<byte>)) { }
-        protected abstract void OpenCore(long sequenceNumber, System.ReadOnlySpan<byte> ciphertext, System.Span<byte> plaintext, System.ReadOnlySpan<byte> aad);
         protected abstract void OpenCore(System.ReadOnlySpan<byte> ciphertext, System.Span<byte> plaintext, System.ReadOnlySpan<byte> aad);
     }
     public abstract partial class HpkeSenderContext : System.IDisposable

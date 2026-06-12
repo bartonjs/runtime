@@ -4,8 +4,8 @@
 namespace System.Security.Cryptography
 {
     /// <summary>
-    ///   Represents the receiver side of an established Hpke encryption context,
-    ///   providing sequential decryption, out-of-order decryption, and secret export operations.
+    ///   Represents the receiver side of an established HPKE encryption context,
+    ///   providing sequential decryption and secret export operations.
     /// </summary>
     /// <remarks>
     ///   <para>
@@ -13,11 +13,6 @@ namespace System.Security.Cryptography
     ///     uses a nonce derived from the context's base nonce and an internal sequence number,
     ///     which is incremented after each operation. Messages must be decrypted in the same order
     ///     they were encrypted.
-    ///   </para>
-    ///   <para>
-    ///     The overloads accepting a <c>sequenceNumber</c> parameter allow decryption of messages
-    ///     out of order, using an explicit sequence number to compute the nonce. These overloads
-    ///     do not affect the internal sequence counter used by the sequential overloads.
     ///   </para>
     /// </remarks>
     public abstract class HpkeReceiverContext : IDisposable
@@ -164,185 +159,12 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Decrypts and authenticates the ciphertext using an explicit sequence number,
-        ///   writing the plaintext into the provided buffer.
-        ///   The internal sequence counter is not affected.
-        /// </summary>
-        /// <param name="sequenceNumber">
-        ///   The sequence number to use for nonce computation.
-        /// </param>
-        /// <param name="ciphertext">
-        ///   The AEAD ciphertext and authentication tag to decrypt.
-        /// </param>
-        /// <param name="plaintext">
-        ///   The buffer to receive the decrypted plaintext.
-        ///   This must be exactly <paramref name="ciphertext" />.Length - the suite's AEAD tag size in bytes.
-        /// </param>
-        /// <param name="aad">
-        ///   The additional authenticated data.
-        /// </param>
-        /// <exception cref="ArgumentOutOfRangeException">
-        ///   <paramref name="sequenceNumber" /> is negative.
-        /// </exception>
-        /// <exception cref="ArgumentException">
-        ///   <paramref name="plaintext" /> is not the correct size, or
-        ///   <paramref name="ciphertext" /> is too small to contain a valid authentication tag.
-        /// </exception>
-        /// <exception cref="CryptographicException">
-        ///   Decryption failed.
-        /// </exception>
-        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
-        public void Open(long sequenceNumber, ReadOnlySpan<byte> ciphertext, Span<byte> plaintext, ReadOnlySpan<byte> aad = default)
-        {
-            ObjectDisposedException.ThrowIf(_disposed, this);
-            ArgumentOutOfRangeException.ThrowIfNegative(sequenceNumber);
-            OpenCore(sequenceNumber, ciphertext, plaintext, aad);
-        }
-
-        /// <summary>
-        ///   Decrypts and authenticates the ciphertext using an explicit sequence number,
-        ///   writing the plaintext into the provided byte array.
-        ///   The internal sequence counter is not affected.
-        /// </summary>
-        /// <param name="sequenceNumber">
-        ///   The sequence number to use for nonce computation.
-        /// </param>
-        /// <param name="ciphertext">
-        ///   The AEAD ciphertext and authentication tag to decrypt.
-        /// </param>
-        /// <param name="plaintext">
-        ///   The byte array to receive the decrypted plaintext.
-        ///   This must be exactly <paramref name="ciphertext" />.Length - the suite's AEAD tag size in bytes.
-        /// </param>
-        /// <param name="aad">
-        ///   The additional authenticated data, or <see langword="null" /> for none.
-        /// </param>
-        /// <exception cref="ArgumentNullException">
-        ///   <paramref name="ciphertext" /> or <paramref name="plaintext" /> is <see langword="null" />.
-        /// </exception>
-        /// <exception cref="ArgumentOutOfRangeException">
-        ///   <paramref name="sequenceNumber" /> is negative.
-        /// </exception>
-        /// <exception cref="ArgumentException">
-        ///   <paramref name="plaintext" /> is not the correct size, or
-        ///   <paramref name="ciphertext" /> is too small to contain a valid authentication tag.
-        /// </exception>
-        /// <exception cref="CryptographicException">
-        ///   Decryption failed.
-        /// </exception>
-        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
-        public void Open(long sequenceNumber, byte[] ciphertext, byte[] plaintext, byte[]? aad = null)
-        {
-            ArgumentNullException.ThrowIfNull(ciphertext);
-            ArgumentNullException.ThrowIfNull(plaintext);
-
-            Open(
-                sequenceNumber,
-                new ReadOnlySpan<byte>(ciphertext),
-                new Span<byte>(plaintext),
-                new ReadOnlySpan<byte>(aad));
-        }
-
-        /// <summary>
-        ///   Decrypts and authenticates the ciphertext using an explicit sequence number.
-        ///   The internal sequence counter is not affected.
-        /// </summary>
-        /// <param name="sequenceNumber">
-        ///   The sequence number to use for nonce computation.
-        /// </param>
-        /// <param name="ciphertext">
-        ///   The AEAD ciphertext and authentication tag to decrypt.
-        /// </param>
-        /// <param name="aad">
-        ///   The additional authenticated data.
-        /// </param>
-        /// <returns>
-        ///   A byte array containing the decrypted plaintext.
-        /// </returns>
-        /// <exception cref="ArgumentOutOfRangeException">
-        ///   <paramref name="sequenceNumber" /> is negative.
-        /// </exception>
-        /// <exception cref="ArgumentException">
-        ///   <paramref name="ciphertext" /> is too small to contain a valid authentication tag.
-        /// </exception>
-        /// <exception cref="CryptographicException">
-        ///   Decryption failed.
-        /// </exception>
-        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
-        public byte[] Open(long sequenceNumber, ReadOnlySpan<byte> ciphertext, ReadOnlySpan<byte> aad = default)
-        {
-            ObjectDisposedException.ThrowIf(_disposed, this);
-            ArgumentOutOfRangeException.ThrowIfNegative(sequenceNumber);
-
-            int tagSize = GetAeadTagSizeInBytes();
-
-            if (ciphertext.Length < tagSize)
-            {
-                throw new ArgumentException(SR.Argument_CiphertextTooSmall, nameof(ciphertext));
-            }
-
-            byte[] plaintext = new byte[ciphertext.Length - tagSize];
-            OpenCore(sequenceNumber, ciphertext, plaintext, aad);
-
-            return plaintext;
-        }
-
-        /// <summary>
-        ///   Decrypts and authenticates the ciphertext using an explicit sequence number.
-        ///   The internal sequence counter is not affected.
-        /// </summary>
-        /// <param name="sequenceNumber">
-        ///   The sequence number to use for nonce computation.
-        /// </param>
-        /// <param name="ciphertext">
-        ///   The AEAD ciphertext and authentication tag to decrypt.
-        /// </param>
-        /// <param name="aad">
-        ///   The additional authenticated data, or <see langword="null" /> for none.
-        /// </param>
-        /// <returns>
-        ///   A byte array containing the decrypted plaintext.
-        /// </returns>
-        /// <exception cref="ArgumentNullException">
-        ///   <paramref name="ciphertext" /> is <see langword="null" />.
-        /// </exception>
-        /// <exception cref="ArgumentOutOfRangeException">
-        ///   <paramref name="sequenceNumber" /> is negative.
-        /// </exception>
-        /// <exception cref="ArgumentException">
-        ///   <paramref name="ciphertext" /> is too small to contain a valid authentication tag.
-        /// </exception>
-        /// <exception cref="CryptographicException">
-        ///   Decryption failed.
-        /// </exception>
-        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
-        public byte[] Open(long sequenceNumber, byte[] ciphertext, byte[]? aad = null)
-        {
-            ArgumentNullException.ThrowIfNull(ciphertext);
-
-            return Open(
-                sequenceNumber,
-                new ReadOnlySpan<byte>(ciphertext),
-                new ReadOnlySpan<byte>(aad));
-        }
-
-        /// <summary>
         ///   When overridden in a derived class, decrypts using the internal sequence number.
         /// </summary>
         /// <param name="ciphertext">The AEAD ciphertext and tag.</param>
         /// <param name="plaintext">The buffer to receive the plaintext.</param>
         /// <param name="aad">The additional authenticated data.</param>
         protected abstract void OpenCore(ReadOnlySpan<byte> ciphertext, Span<byte> plaintext, ReadOnlySpan<byte> aad);
-
-        /// <summary>
-        ///   When overridden in a derived class, decrypts using an explicit sequence number
-        ///   without affecting the internal sequence counter.
-        /// </summary>
-        /// <param name="sequenceNumber">The sequence number to use for nonce computation.</param>
-        /// <param name="ciphertext">The AEAD ciphertext and tag.</param>
-        /// <param name="plaintext">The buffer to receive the plaintext.</param>
-        /// <param name="aad">The additional authenticated data.</param>
-        protected abstract void OpenCore(long sequenceNumber, ReadOnlySpan<byte> ciphertext, Span<byte> plaintext, ReadOnlySpan<byte> aad);
 
         /// <summary>
         ///   When overridden in a derived class, gets the AEAD tag size for this context, in bytes.
