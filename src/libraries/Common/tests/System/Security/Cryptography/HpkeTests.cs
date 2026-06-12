@@ -11,11 +11,11 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public static void IsSupported_AgreesWithPlatform()
         {
-            Assert.Equal(!PlatformDetection.IsBrowser, HPKE.IsSupported);
+            Assert.Equal(!PlatformDetection.IsBrowser, Hpke.IsSupported);
         }
     }
 
-    [ConditionalClass(typeof(HPKE), nameof(HPKE.IsSupported))]
+    [ConditionalClass(typeof(Hpke), nameof(Hpke.IsSupported))]
     public class HpkeTests
     {
         public static TheoryData<HpkeSuite> NistSuites => new()
@@ -27,56 +27,56 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void GenerateKey_NullSuite()
         {
-            AssertExtensions.Throws<ArgumentNullException>("suite", static () => HPKE.GenerateKey(null));
+            AssertExtensions.Throws<ArgumentNullException>("suite", static () => Hpke.GenerateKey(null));
         }
 
         [Fact]
         public void ImportEncapsulationKey_NullSuite_Span()
         {
             AssertExtensions.Throws<ArgumentNullException>("suite", static () =>
-                HPKE.ImportEncapsulationKey(null, new ReadOnlySpan<byte>(new byte[65])));
+                Hpke.ImportEncapsulationKey(null, new ReadOnlySpan<byte>(new byte[65])));
         }
 
         [Fact]
         public void ImportEncapsulationKey_NullSuite_Array()
         {
             AssertExtensions.Throws<ArgumentNullException>("suite", static () =>
-                HPKE.ImportEncapsulationKey(null, new byte[65]));
+                Hpke.ImportEncapsulationKey(null, new byte[65]));
         }
 
         [Fact]
         public void ImportEncapsulationKey_NullSource()
         {
             AssertExtensions.Throws<ArgumentNullException>("source", static () =>
-                HPKE.ImportEncapsulationKey(HpkeSuite.DHKEM_P256_HKDF_SHA256_AES_128_GCM, (byte[])null));
+                Hpke.ImportEncapsulationKey(HpkeSuite.DHKEM_P256_HKDF_SHA256_AES_128_GCM, (byte[])null));
         }
 
         [Fact]
         public void ImportDecapsulationKey_NullSuite_Span()
         {
             AssertExtensions.Throws<ArgumentNullException>("suite", static () =>
-                HPKE.ImportDecapsulationKey(null, new ReadOnlySpan<byte>(new byte[32])));
+                Hpke.ImportDecapsulationKey(null, new ReadOnlySpan<byte>(new byte[32])));
         }
 
         [Fact]
         public void ImportDecapsulationKey_NullSuite_Array()
         {
             AssertExtensions.Throws<ArgumentNullException>("suite", static () =>
-                HPKE.ImportDecapsulationKey(null, new byte[32]));
+                Hpke.ImportDecapsulationKey(null, new byte[32]));
         }
 
         [Fact]
         public void ImportDecapsulationKey_NullSource()
         {
             AssertExtensions.Throws<ArgumentNullException>("source", static () =>
-                HPKE.ImportDecapsulationKey(HpkeSuite.DHKEM_P256_HKDF_SHA256_AES_128_GCM, (byte[])null));
+                Hpke.ImportDecapsulationKey(HpkeSuite.DHKEM_P256_HKDF_SHA256_AES_128_GCM, (byte[])null));
         }
 
         [Theory]
         [MemberData(nameof(NistSuites))]
         public void ExportEncapsulationKey_WrongSize(HpkeSuite suite)
         {
-            using HPKE key = HPKE.GenerateKey(suite);
+            using Hpke key = Hpke.GenerateKey(suite);
 
             AssertExtensions.Throws<ArgumentException>("destination", () =>
                 key.ExportEncapsulationKey(new byte[suite.EncapsulationKeySizeInBytes - 1]));
@@ -89,7 +89,7 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(NistSuites))]
         public void ExportDecapsulationKey_WrongSize(HpkeSuite suite)
         {
-            using HPKE key = HPKE.GenerateKey(suite);
+            using Hpke key = Hpke.GenerateKey(suite);
 
             AssertExtensions.Throws<ArgumentException>("destination", () =>
                 key.ExportDecapsulationKey(new byte[suite.DecapsulationKeySizeInBytes - 1]));
@@ -102,9 +102,9 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(NistSuites))]
         public void SingleShotSealOpen_RoundTrip(HpkeSuite suite)
         {
-            using HPKE key = HPKE.GenerateKey(suite);
+            using Hpke key = Hpke.GenerateKey(suite);
 
-            byte[] plaintext = "Hello, HPKE!"u8.ToArray();
+            byte[] plaintext = "Hello, Hpke!"u8.ToArray();
             byte[] aad = "additional data"u8.ToArray();
 
             (byte[] kemCiphertext, byte[] ciphertext) = key.Seal(plaintext, aad);
@@ -120,7 +120,7 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(NistSuites))]
         public void SingleShotSealOpen_SpanOverloads(HpkeSuite suite)
         {
-            using HPKE key = HPKE.GenerateKey(suite);
+            using Hpke key = Hpke.GenerateKey(suite);
 
             ReadOnlySpan<byte> plaintext = "Span overload test"u8;
             Span<byte> kemCiphertext = new byte[suite.EncapsulatedKeySizeInBytes];
@@ -138,7 +138,7 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(NistSuites))]
         public void SingleShotSealOpen_WithInfo(HpkeSuite suite)
         {
-            using HPKE key = HPKE.GenerateKey(suite);
+            using Hpke key = Hpke.GenerateKey(suite);
 
             byte[] plaintext = "with info"u8.ToArray();
             byte[] info = "application context"u8.ToArray();
@@ -153,7 +153,7 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(NistSuites))]
         public void SingleShotSealOpen_WrongInfo_Fails(HpkeSuite suite)
         {
-            using HPKE key = HPKE.GenerateKey(suite);
+            using Hpke key = Hpke.GenerateKey(suite);
 
             byte[] plaintext = "wrong info test"u8.ToArray();
             byte[] info1 = "info one"u8.ToArray();
@@ -169,8 +169,8 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(NistSuites))]
         public void SingleShotSealOpen_WrongKey_Fails(HpkeSuite suite)
         {
-            using HPKE sender = HPKE.GenerateKey(suite);
-            using HPKE wrongRecipient = HPKE.GenerateKey(suite);
+            using Hpke sender = Hpke.GenerateKey(suite);
+            using Hpke wrongRecipient = Hpke.GenerateKey(suite);
 
             byte[] plaintext = "wrong key test"u8.ToArray();
 
@@ -184,7 +184,7 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(NistSuites))]
         public void SingleShotSealOpen_WrongAad_Fails(HpkeSuite suite)
         {
-            using HPKE key = HPKE.GenerateKey(suite);
+            using Hpke key = Hpke.GenerateKey(suite);
 
             byte[] plaintext = "wrong aad test"u8.ToArray();
             byte[] aad1 = "aad one"u8.ToArray();
@@ -200,7 +200,7 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(NistSuites))]
         public void SingleShotSealOpen_TamperedCiphertext_Fails(HpkeSuite suite)
         {
-            using HPKE key = HPKE.GenerateKey(suite);
+            using Hpke key = Hpke.GenerateKey(suite);
 
             byte[] plaintext = "tampered ciphertext test"u8.ToArray();
 
@@ -216,7 +216,7 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(NistSuites))]
         public void SingleShotSealOpen_EmptyPlaintext(HpkeSuite suite)
         {
-            using HPKE key = HPKE.GenerateKey(suite);
+            using Hpke key = Hpke.GenerateKey(suite);
 
             (byte[] kemCiphertext, byte[] ciphertext) = key.Seal(ReadOnlySpan<byte>.Empty);
 
@@ -230,7 +230,7 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(NistSuites))]
         public void Context_MultiMessage_RoundTrip(HpkeSuite suite)
         {
-            using HPKE key = HPKE.GenerateKey(suite);
+            using Hpke key = Hpke.GenerateKey(suite);
 
             (byte[] kemCiphertext, HpkeSenderContext senderCtx) = key.SetupSender();
             using (senderCtx)
@@ -251,7 +251,7 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(NistSuites))]
         public void Context_MultiMessage_WithAad(HpkeSuite suite)
         {
-            using HPKE key = HPKE.GenerateKey(suite);
+            using Hpke key = Hpke.GenerateKey(suite);
 
             (byte[] kemCiphertext, HpkeSenderContext senderCtx) = key.SetupSender();
             using (senderCtx)
@@ -273,7 +273,7 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(NistSuites))]
         public void Context_MultiMessage_SpanOverloads(HpkeSuite suite)
         {
-            using HPKE key = HPKE.GenerateKey(suite);
+            using Hpke key = Hpke.GenerateKey(suite);
 
             Span<byte> kemCiphertext = new byte[suite.EncapsulatedKeySizeInBytes];
             using HpkeSenderContext senderCtx = key.SetupSender(kemCiphertext);
@@ -293,7 +293,7 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(NistSuites))]
         public void Context_OutOfOrder_WrongSequence_Fails(HpkeSuite suite)
         {
-            using HPKE key = HPKE.GenerateKey(suite);
+            using Hpke key = Hpke.GenerateKey(suite);
 
             (byte[] kemCiphertext, HpkeSenderContext senderCtx) = key.SetupSender();
             using (senderCtx)
@@ -320,7 +320,7 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(NistSuites))]
         public void Context_ExplicitSequenceNumber_DoesNotAffectInternalCounter(HpkeSuite suite)
         {
-            using HPKE key = HPKE.GenerateKey(suite);
+            using Hpke key = Hpke.GenerateKey(suite);
 
             (byte[] kemCiphertext, HpkeSenderContext senderCtx) = key.SetupSender();
             using (senderCtx)
@@ -353,7 +353,7 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(NistSuites))]
         public void Context_Export_SameSecret(HpkeSuite suite)
         {
-            using HPKE key = HPKE.GenerateKey(suite);
+            using Hpke key = Hpke.GenerateKey(suite);
 
             (byte[] kemCiphertext, HpkeSenderContext senderCtx) = key.SetupSender();
             using (senderCtx)
@@ -374,7 +374,7 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(NistSuites))]
         public void Context_Export_DifferentContexts_DifferentSecrets(HpkeSuite suite)
         {
-            using HPKE key = HPKE.GenerateKey(suite);
+            using Hpke key = Hpke.GenerateKey(suite);
 
             (byte[] kemCiphertext, HpkeSenderContext senderCtx) = key.SetupSender();
             using (senderCtx)
@@ -391,7 +391,7 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(NistSuites))]
         public void Context_Export_SpanOverload(HpkeSuite suite)
         {
-            using HPKE key = HPKE.GenerateKey(suite);
+            using Hpke key = Hpke.GenerateKey(suite);
 
             (byte[] kemCiphertext, HpkeSenderContext senderCtx) = key.SetupSender();
             using (senderCtx)
@@ -410,7 +410,7 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(NistSuites))]
         public void KeyExport_EncapsulationKey_RoundTrip(HpkeSuite suite)
         {
-            using HPKE original = HPKE.GenerateKey(suite);
+            using Hpke original = Hpke.GenerateKey(suite);
 
             byte[] encapsulationKey = original.ExportEncapsulationKey();
             Assert.Equal(suite.EncapsulationKeySizeInBytes, encapsulationKey.Length);
@@ -419,7 +419,7 @@ namespace System.Security.Cryptography.Tests
             original.ExportEncapsulationKey(spanDest);
             Assert.Equal(encapsulationKey, spanDest);
 
-            using HPKE imported = HPKE.ImportEncapsulationKey(suite, encapsulationKey);
+            using Hpke imported = Hpke.ImportEncapsulationKey(suite, encapsulationKey);
             byte[] reExported = imported.ExportEncapsulationKey();
             Assert.Equal(encapsulationKey, reExported);
         }
@@ -428,7 +428,7 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(NistSuites))]
         public void KeyExport_DecapsulationKey_RoundTrip(HpkeSuite suite)
         {
-            using HPKE original = HPKE.GenerateKey(suite);
+            using Hpke original = Hpke.GenerateKey(suite);
 
             byte[] decapsulationKey = original.ExportDecapsulationKey();
             Assert.Equal(suite.DecapsulationKeySizeInBytes, decapsulationKey.Length);
@@ -437,7 +437,7 @@ namespace System.Security.Cryptography.Tests
             original.ExportDecapsulationKey(spanDest);
             Assert.Equal(decapsulationKey, spanDest);
 
-            using HPKE imported = HPKE.ImportDecapsulationKey(suite, decapsulationKey);
+            using Hpke imported = Hpke.ImportDecapsulationKey(suite, decapsulationKey);
             byte[] reExported = imported.ExportDecapsulationKey();
             Assert.Equal(decapsulationKey, reExported);
         }
@@ -446,13 +446,13 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(NistSuites))]
         public void KeyExport_ImportedDecapsulationKey_CanOpen(HpkeSuite suite)
         {
-            using HPKE original = HPKE.GenerateKey(suite);
+            using Hpke original = Hpke.GenerateKey(suite);
 
             byte[] encapsulationKey = original.ExportEncapsulationKey();
             byte[] decapsulationKey = original.ExportDecapsulationKey();
 
-            using HPKE pubOnly = HPKE.ImportEncapsulationKey(suite, encapsulationKey);
-            using HPKE privKey = HPKE.ImportDecapsulationKey(suite, decapsulationKey);
+            using Hpke pubOnly = Hpke.ImportEncapsulationKey(suite, encapsulationKey);
+            using Hpke privKey = Hpke.ImportDecapsulationKey(suite, decapsulationKey);
 
             byte[] plaintext = "key roundtrip seal/open"u8.ToArray();
             (byte[] kemCiphertext, byte[] ciphertext) = pubOnly.Seal(plaintext);
@@ -465,10 +465,10 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(NistSuites))]
         public void KeyExport_PublicKeyOnly_CannotOpen(HpkeSuite suite)
         {
-            using HPKE key = HPKE.GenerateKey(suite);
+            using Hpke key = Hpke.GenerateKey(suite);
             byte[] encapsulationKey = key.ExportEncapsulationKey();
 
-            using HPKE pubOnly = HPKE.ImportEncapsulationKey(suite, encapsulationKey);
+            using Hpke pubOnly = Hpke.ImportEncapsulationKey(suite, encapsulationKey);
 
             byte[] plaintext = "cannot open test"u8.ToArray();
             (byte[] kemCiphertext, byte[] ciphertext) = pubOnly.Seal(plaintext);
@@ -481,10 +481,10 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(NistSuites))]
         public void KeyExport_PublicKeyOnly_CannotExportDecapsulationKey(HpkeSuite suite)
         {
-            using HPKE key = HPKE.GenerateKey(suite);
+            using Hpke key = Hpke.GenerateKey(suite);
             byte[] encapsulationKey = key.ExportEncapsulationKey();
 
-            using HPKE pubOnly = HPKE.ImportEncapsulationKey(suite, encapsulationKey);
+            using Hpke pubOnly = Hpke.ImportEncapsulationKey(suite, encapsulationKey);
 
             Assert.ThrowsAny<CryptographicException>(() =>
                 pubOnly.ExportDecapsulationKey());
@@ -494,7 +494,7 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(NistSuites))]
         public void Disposed_ThrowsObjectDisposedException(HpkeSuite suite)
         {
-            HPKE key = HPKE.GenerateKey(suite);
+            Hpke key = Hpke.GenerateKey(suite);
             key.Dispose();
 
             Assert.Throws<ObjectDisposedException>(() => key.ExportEncapsulationKey());
@@ -509,7 +509,7 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(NistSuites))]
         public void SenderContext_Disposed_ThrowsObjectDisposedException(HpkeSuite suite)
         {
-            using HPKE key = HPKE.GenerateKey(suite);
+            using Hpke key = Hpke.GenerateKey(suite);
             (_, HpkeSenderContext senderCtx) = key.SetupSender();
             senderCtx.Dispose();
 
@@ -521,7 +521,7 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(NistSuites))]
         public void ReceiverContext_Disposed_ThrowsObjectDisposedException(HpkeSuite suite)
         {
-            using HPKE key = HPKE.GenerateKey(suite);
+            using Hpke key = Hpke.GenerateKey(suite);
             (byte[] kemCiphertext, _) = key.SetupSender();
 
             HpkeReceiverContext receiverCtx = key.SetupReceiver(kemCiphertext);
@@ -536,7 +536,7 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(NistSuites))]
         public void Seal_WrongCiphertextSize_Throws(HpkeSuite suite)
         {
-            using HPKE key = HPKE.GenerateKey(suite);
+            using Hpke key = Hpke.GenerateKey(suite);
 
             byte[] plaintext = "test"u8.ToArray();
             byte[] kemCt = new byte[suite.EncapsulatedKeySizeInBytes];
@@ -550,7 +550,7 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(NistSuites))]
         public void Seal_WrongKemCiphertextSize_Throws(HpkeSuite suite)
         {
-            using HPKE key = HPKE.GenerateKey(suite);
+            using Hpke key = Hpke.GenerateKey(suite);
 
             byte[] plaintext = "test"u8.ToArray();
             byte[] kemCiphertextWrong = new byte[suite.EncapsulatedKeySizeInBytes + 1];
@@ -564,7 +564,7 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(NistSuites))]
         public void Open_CiphertextTooSmall_Throws(HpkeSuite suite)
         {
-            using HPKE key = HPKE.GenerateKey(suite);
+            using Hpke key = Hpke.GenerateKey(suite);
 
             byte[] kemCiphertext = new byte[suite.EncapsulatedKeySizeInBytes];
             byte[] tooSmall = new byte[suite.AeadTagSizeInBytes - 1];
@@ -577,7 +577,7 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(NistSuites))]
         public void ExplicitSequenceNumber_Negative_Throws(HpkeSuite suite)
         {
-            using HPKE key = HPKE.GenerateKey(suite);
+            using Hpke key = Hpke.GenerateKey(suite);
             (byte[] kemCiphertext, _) = key.SetupSender();
             using HpkeReceiverContext receiverCtx = key.SetupReceiver(kemCiphertext);
 
@@ -589,7 +589,7 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(NistSuites))]
         public void Export_ZeroLength_Throws(HpkeSuite suite)
         {
-            using HPKE key = HPKE.GenerateKey(suite);
+            using Hpke key = Hpke.GenerateKey(suite);
             (_, HpkeSenderContext senderCtx) = key.SetupSender();
             using (senderCtx)
             {
@@ -605,7 +605,7 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(NistSuites))]
         public void Context_WithInfo(HpkeSuite suite)
         {
-            using HPKE key = HPKE.GenerateKey(suite);
+            using Hpke key = Hpke.GenerateKey(suite);
             byte[] info = "context with info"u8.ToArray();
 
             (byte[] kemCiphertext, HpkeSenderContext senderCtx) = key.SetupSender(info: (ReadOnlySpan<byte>)info);
@@ -624,7 +624,7 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(NistSuites))]
         public void Context_MismatchedInfo_Fails(HpkeSuite suite)
         {
-            using HPKE key = HPKE.GenerateKey(suite);
+            using Hpke key = Hpke.GenerateKey(suite);
 
             (byte[] kemCiphertext, HpkeSenderContext senderCtx) = key.SetupSender("info A"u8);
             using (senderCtx)
@@ -642,7 +642,7 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(NistSuites))]
         public void DoubleDispose_DoesNotThrow(HpkeSuite suite)
         {
-            HPKE key = HPKE.GenerateKey(suite);
+            Hpke key = Hpke.GenerateKey(suite);
             key.Dispose();
             key.Dispose();
         }
@@ -651,7 +651,7 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(NistSuites))]
         public void Context_DoubleDispose_DoesNotThrow(HpkeSuite suite)
         {
-            using HPKE key = HPKE.GenerateKey(suite);
+            using Hpke key = Hpke.GenerateKey(suite);
             (_, HpkeSenderContext senderCtx) = key.SetupSender();
             senderCtx.Dispose();
             senderCtx.Dispose();
@@ -665,7 +665,7 @@ namespace System.Security.Cryptography.Tests
             byte[] pskId = "test-psk-id"u8.ToArray();
             RandomNumberGenerator.Fill(psk);
 
-            using HPKE key = HPKE.GenerateKey(suite);
+            using Hpke key = Hpke.GenerateKey(suite);
 
             (byte[] kemCiphertext, HpkeSenderContext senderCtx) = key.SetupSenderPsk(psk, pskId);
 
@@ -673,7 +673,7 @@ namespace System.Security.Cryptography.Tests
             {
                 using HpkeReceiverContext receiverCtx = key.SetupReceiverPsk(kemCiphertext, psk, pskId);
 
-                byte[] plaintext = "Hello, PSK HPKE!"u8.ToArray();
+                byte[] plaintext = "Hello, PSK Hpke!"u8.ToArray();
                 byte[] aad = "associated-data"u8.ToArray();
 
                 byte[] ciphertext = senderCtx.Seal(plaintext, aad);
@@ -694,13 +694,13 @@ namespace System.Security.Cryptography.Tests
             byte[] wrongPsk = new byte[32];
             RandomNumberGenerator.Fill(wrongPsk);
 
-            using HPKE key = HPKE.GenerateKey(suite);
+            using Hpke key = Hpke.GenerateKey(suite);
 
             (byte[] kemCiphertext, HpkeSenderContext senderCtx) = key.SetupSenderPsk(psk, pskId);
 
             using (senderCtx)
             {
-                byte[] plaintext = "Hello, PSK HPKE!"u8.ToArray();
+                byte[] plaintext = "Hello, PSK Hpke!"u8.ToArray();
                 byte[] aad = "associated-data"u8.ToArray();
 
                 byte[] ciphertext = senderCtx.Seal(plaintext, aad);
@@ -720,13 +720,13 @@ namespace System.Security.Cryptography.Tests
 
             byte[] wrongPskId = "wrong-psk-id"u8.ToArray();
 
-            using HPKE key = HPKE.GenerateKey(suite);
+            using Hpke key = Hpke.GenerateKey(suite);
 
             (byte[] kemCiphertext, HpkeSenderContext senderCtx) = key.SetupSenderPsk(psk, pskId);
 
             using (senderCtx)
             {
-                byte[] plaintext = "Hello, PSK HPKE!"u8.ToArray();
+                byte[] plaintext = "Hello, PSK Hpke!"u8.ToArray();
                 byte[] aad = "associated-data"u8.ToArray();
 
                 byte[] ciphertext = senderCtx.Seal(plaintext, aad);
@@ -744,7 +744,7 @@ namespace System.Security.Cryptography.Tests
             byte[] pskId = "multi-msg-psk"u8.ToArray();
             RandomNumberGenerator.Fill(psk);
 
-            using HPKE key = HPKE.GenerateKey(suite);
+            using Hpke key = Hpke.GenerateKey(suite);
 
             (byte[] kemCiphertext, HpkeSenderContext senderCtx) = key.SetupSenderPsk(psk, pskId);
 
@@ -773,7 +773,7 @@ namespace System.Security.Cryptography.Tests
             byte[] info = "application-context"u8.ToArray();
             RandomNumberGenerator.Fill(psk);
 
-            using HPKE key = HPKE.GenerateKey(suite);
+            using Hpke key = Hpke.GenerateKey(suite);
 
             (byte[] kemCiphertext, HpkeSenderContext senderCtx) = key.SetupSenderPsk(psk, pskId, info);
 
@@ -792,7 +792,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void PskMode_EmptyPsk_Throws()
         {
-            using HPKE key = HPKE.GenerateKey(HpkeSuite.DHKEM_P256_HKDF_SHA256_AES_128_GCM);
+            using Hpke key = Hpke.GenerateKey(HpkeSuite.DHKEM_P256_HKDF_SHA256_AES_128_GCM);
             byte[] kemCt = new byte[key.Suite.EncapsulatedKeySizeInBytes];
 
             AssertExtensions.Throws<ArgumentException>("psk", () =>
@@ -805,7 +805,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void PskMode_EmptyPskId_Throws()
         {
-            using HPKE key = HPKE.GenerateKey(HpkeSuite.DHKEM_P256_HKDF_SHA256_AES_128_GCM);
+            using Hpke key = Hpke.GenerateKey(HpkeSuite.DHKEM_P256_HKDF_SHA256_AES_128_GCM);
             byte[] kemCt = new byte[key.Suite.EncapsulatedKeySizeInBytes];
 
             AssertExtensions.Throws<ArgumentException>("pskId", () =>
@@ -819,16 +819,16 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(NistSuites))]
         public void AuthMode_SetupSenderReceiver_RoundTrip(HpkeSuite suite)
         {
-            using HPKE recipientKey = HPKE.GenerateKey(suite);
-            using HPKE senderKey = HPKE.GenerateKey(suite);
-            using HPKE senderPublicKey = HPKE.ImportEncapsulationKey(suite, senderKey.ExportEncapsulationKey());
+            using Hpke recipientKey = Hpke.GenerateKey(suite);
+            using Hpke senderKey = Hpke.GenerateKey(suite);
+            using Hpke senderPublicKey = Hpke.ImportEncapsulationKey(suite, senderKey.ExportEncapsulationKey());
 
             (byte[] kemCiphertext, HpkeSenderContext senderCtx) = recipientKey.SetupSenderAuth(senderKey, default(ReadOnlySpan<byte>));
 
             using (senderCtx)
             using (HpkeReceiverContext receiverCtx = recipientKey.SetupReceiverAuth(kemCiphertext, senderPublicKey))
             {
-                byte[] plaintext = "Hello, Auth HPKE!"u8.ToArray();
+                byte[] plaintext = "Hello, Auth Hpke!"u8.ToArray();
                 byte[] aad = "associated-data"u8.ToArray();
 
                 byte[] ciphertext = senderCtx.Seal(plaintext, aad);
@@ -842,16 +842,16 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(NistSuites))]
         public void AuthMode_WrongSenderKey_FailsToDecrypt(HpkeSuite suite)
         {
-            using HPKE recipientKey = HPKE.GenerateKey(suite);
-            using HPKE senderKey = HPKE.GenerateKey(suite);
-            using HPKE wrongSenderKey = HPKE.GenerateKey(suite);
-            using HPKE wrongSenderPublicKey = HPKE.ImportEncapsulationKey(suite, wrongSenderKey.ExportEncapsulationKey());
+            using Hpke recipientKey = Hpke.GenerateKey(suite);
+            using Hpke senderKey = Hpke.GenerateKey(suite);
+            using Hpke wrongSenderKey = Hpke.GenerateKey(suite);
+            using Hpke wrongSenderPublicKey = Hpke.ImportEncapsulationKey(suite, wrongSenderKey.ExportEncapsulationKey());
 
             (byte[] kemCiphertext, HpkeSenderContext senderCtx) = recipientKey.SetupSenderAuth(senderKey, default(ReadOnlySpan<byte>));
 
             using (senderCtx)
             {
-                byte[] plaintext = "Hello, Auth HPKE!"u8.ToArray();
+                byte[] plaintext = "Hello, Auth Hpke!"u8.ToArray();
                 byte[] aad = "associated-data"u8.ToArray();
                 byte[] ciphertext = senderCtx.Seal(plaintext, aad);
 
@@ -864,8 +864,8 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(NistSuites))]
         public void AuthMode_DisposedSenderKey_Throws(HpkeSuite suite)
         {
-            using HPKE recipientKey = HPKE.GenerateKey(suite);
-            HPKE senderKey = HPKE.GenerateKey(suite);
+            using Hpke recipientKey = Hpke.GenerateKey(suite);
+            Hpke senderKey = Hpke.GenerateKey(suite);
             senderKey.Dispose();
 
             Assert.Throws<ObjectDisposedException>(() => recipientKey.SetupSenderAuth(senderKey, default(ReadOnlySpan<byte>)));
@@ -875,9 +875,9 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(NistSuites))]
         public void AuthMode_PublicOnlySenderKey_Throws(HpkeSuite suite)
         {
-            using HPKE recipientKey = HPKE.GenerateKey(suite);
-            using HPKE senderKey = HPKE.GenerateKey(suite);
-            using HPKE senderPublicKey = HPKE.ImportEncapsulationKey(suite, senderKey.ExportEncapsulationKey());
+            using Hpke recipientKey = Hpke.GenerateKey(suite);
+            using Hpke senderKey = Hpke.GenerateKey(suite);
+            using Hpke senderPublicKey = Hpke.ImportEncapsulationKey(suite, senderKey.ExportEncapsulationKey());
 
             Assert.ThrowsAny<CryptographicException>(() =>
                 recipientKey.SetupSenderAuth(senderPublicKey, default(ReadOnlySpan<byte>)));
@@ -886,8 +886,8 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public void AuthMode_MismatchedSuite_Throws()
         {
-            using HPKE recipientKey = HPKE.GenerateKey(HpkeSuite.DHKEM_P256_HKDF_SHA256_AES_128_GCM);
-            using HPKE senderKey = HPKE.GenerateKey(HpkeSuite.DHKEM_P384_HKDF_SHA384_AES_256_GCM);
+            using Hpke recipientKey = Hpke.GenerateKey(HpkeSuite.DHKEM_P256_HKDF_SHA256_AES_128_GCM);
+            using Hpke senderKey = Hpke.GenerateKey(HpkeSuite.DHKEM_P384_HKDF_SHA384_AES_256_GCM);
 
             AssertExtensions.Throws<ArgumentException>("senderKey", () =>
                 recipientKey.SetupSenderAuth(senderKey, default(ReadOnlySpan<byte>)));
@@ -901,16 +901,16 @@ namespace System.Security.Cryptography.Tests
             byte[] pskId = "test-auth-psk-id"u8.ToArray();
             RandomNumberGenerator.Fill(psk);
 
-            using HPKE recipientKey = HPKE.GenerateKey(suite);
-            using HPKE senderKey = HPKE.GenerateKey(suite);
-            using HPKE senderPublicKey = HPKE.ImportEncapsulationKey(suite, senderKey.ExportEncapsulationKey());
+            using Hpke recipientKey = Hpke.GenerateKey(suite);
+            using Hpke senderKey = Hpke.GenerateKey(suite);
+            using Hpke senderPublicKey = Hpke.ImportEncapsulationKey(suite, senderKey.ExportEncapsulationKey());
 
             (byte[] kemCiphertext, HpkeSenderContext senderCtx) = recipientKey.SetupSenderAuthPsk(senderKey, psk, pskId);
 
             using (senderCtx)
             using (HpkeReceiverContext receiverCtx = recipientKey.SetupReceiverAuthPsk(kemCiphertext, senderPublicKey, psk, pskId))
             {
-                byte[] plaintext = "Hello, AuthPSK HPKE!"u8.ToArray();
+                byte[] plaintext = "Hello, AuthPSK Hpke!"u8.ToArray();
                 byte[] aad = "associated-data"u8.ToArray();
 
                 byte[] ciphertext = senderCtx.Seal(plaintext, aad);
@@ -928,16 +928,16 @@ namespace System.Security.Cryptography.Tests
             byte[] pskId = "test-auth-psk-id"u8.ToArray();
             RandomNumberGenerator.Fill(psk);
 
-            using HPKE recipientKey = HPKE.GenerateKey(suite);
-            using HPKE senderKey = HPKE.GenerateKey(suite);
-            using HPKE wrongSenderKey = HPKE.GenerateKey(suite);
-            using HPKE wrongSenderPublicKey = HPKE.ImportEncapsulationKey(suite, wrongSenderKey.ExportEncapsulationKey());
+            using Hpke recipientKey = Hpke.GenerateKey(suite);
+            using Hpke senderKey = Hpke.GenerateKey(suite);
+            using Hpke wrongSenderKey = Hpke.GenerateKey(suite);
+            using Hpke wrongSenderPublicKey = Hpke.ImportEncapsulationKey(suite, wrongSenderKey.ExportEncapsulationKey());
 
             (byte[] kemCiphertext, HpkeSenderContext senderCtx) = recipientKey.SetupSenderAuthPsk(senderKey, psk, pskId);
 
             using (senderCtx)
             {
-                byte[] plaintext = "Hello, AuthPSK HPKE!"u8.ToArray();
+                byte[] plaintext = "Hello, AuthPSK Hpke!"u8.ToArray();
                 byte[] aad = "associated-data"u8.ToArray();
                 byte[] ciphertext = senderCtx.Seal(plaintext, aad);
 
@@ -954,8 +954,8 @@ namespace System.Security.Cryptography.Tests
             byte[] pskId = "test-auth-psk-id"u8.ToArray();
             RandomNumberGenerator.Fill(psk);
 
-            using HPKE recipientKey = HPKE.GenerateKey(suite);
-            HPKE senderKey = HPKE.GenerateKey(suite);
+            using Hpke recipientKey = Hpke.GenerateKey(suite);
+            Hpke senderKey = Hpke.GenerateKey(suite);
             senderKey.Dispose();
 
             Assert.Throws<ObjectDisposedException>(() => recipientKey.SetupSenderAuthPsk(senderKey, psk, pskId));
@@ -969,9 +969,9 @@ namespace System.Security.Cryptography.Tests
             byte[] pskId = "test-auth-psk-id"u8.ToArray();
             RandomNumberGenerator.Fill(psk);
 
-            using HPKE recipientKey = HPKE.GenerateKey(suite);
-            using HPKE senderKey = HPKE.GenerateKey(suite);
-            using HPKE senderPublicKey = HPKE.ImportEncapsulationKey(suite, senderKey.ExportEncapsulationKey());
+            using Hpke recipientKey = Hpke.GenerateKey(suite);
+            using Hpke senderKey = Hpke.GenerateKey(suite);
+            using Hpke senderPublicKey = Hpke.ImportEncapsulationKey(suite, senderKey.ExportEncapsulationKey());
 
             Assert.ThrowsAny<CryptographicException>(() =>
                 recipientKey.SetupSenderAuthPsk(senderPublicKey, psk, pskId));
@@ -984,8 +984,8 @@ namespace System.Security.Cryptography.Tests
             byte[] pskId = "test-auth-psk-id"u8.ToArray();
             RandomNumberGenerator.Fill(psk);
 
-            using HPKE recipientKey = HPKE.GenerateKey(HpkeSuite.DHKEM_P256_HKDF_SHA256_AES_128_GCM);
-            using HPKE senderKey = HPKE.GenerateKey(HpkeSuite.DHKEM_P384_HKDF_SHA384_AES_256_GCM);
+            using Hpke recipientKey = Hpke.GenerateKey(HpkeSuite.DHKEM_P256_HKDF_SHA256_AES_128_GCM);
+            using Hpke senderKey = Hpke.GenerateKey(HpkeSuite.DHKEM_P384_HKDF_SHA384_AES_256_GCM);
 
             AssertExtensions.Throws<ArgumentException>("senderKey", () =>
                 recipientKey.SetupSenderAuthPsk(senderKey, psk, pskId));

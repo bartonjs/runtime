@@ -7,9 +7,9 @@ namespace System.Security.Cryptography.Tests
 {
     public abstract class HpkeBaseTests
     {
-        public abstract HPKE GenerateKey(HpkeSuite suite);
-        public abstract HPKE ImportDecapsulationKey(HpkeSuite suite, ReadOnlySpan<byte> source);
-        public abstract HPKE ImportEncapsulationKey(HpkeSuite suite, ReadOnlySpan<byte> source);
+        public abstract Hpke GenerateKey(HpkeSuite suite);
+        public abstract Hpke ImportDecapsulationKey(HpkeSuite suite, ReadOnlySpan<byte> source);
+        public abstract Hpke ImportEncapsulationKey(HpkeSuite suite, ReadOnlySpan<byte> source);
 
         [Theory]
         [MemberData(nameof(HpkeTestData.BaseVectors), MemberType = typeof(HpkeTestData))]
@@ -22,7 +22,7 @@ namespace System.Security.Cryptography.Tests
             byte[] plaintext = Convert.FromHexString(vector.Plaintext0);
             byte[] ciphertext = Convert.FromHexString(vector.Ciphertext0);
 
-            using HPKE recipientKey = ImportDecapsulationKey(vector.Suite, skRm);
+            using Hpke recipientKey = ImportDecapsulationKey(vector.Suite, skRm);
             using HpkeReceiverContext receiverCtx = recipientKey.SetupReceiver(enc, info);
 
             byte[] decrypted = receiverCtx.Open(ciphertext, aad);
@@ -42,7 +42,7 @@ namespace System.Security.Cryptography.Tests
             byte[] plaintext0 = Convert.FromHexString(vector.Plaintext0);
             byte[] ciphertext0 = Convert.FromHexString(vector.Ciphertext0);
 
-            using HPKE recipientKey = ImportDecapsulationKey(vector.Suite, skRm);
+            using Hpke recipientKey = ImportDecapsulationKey(vector.Suite, skRm);
             using HpkeReceiverContext receiverCtx = recipientKey.SetupReceiverPsk(
                 new ReadOnlySpan<byte>(enc), psk, pskId, info);
 
@@ -82,8 +82,8 @@ namespace System.Security.Cryptography.Tests
             byte[] plaintext = Convert.FromHexString(vector.Plaintext0);
             byte[] ciphertext = Convert.FromHexString(vector.Ciphertext0);
 
-            using HPKE recipientKey = ImportDecapsulationKey(vector.Suite, skRm);
-            using HPKE senderPublicKey = ImportEncapsulationKey(vector.Suite, pkSm);
+            using Hpke recipientKey = ImportDecapsulationKey(vector.Suite, skRm);
+            using Hpke senderPublicKey = ImportEncapsulationKey(vector.Suite, pkSm);
             using HpkeReceiverContext receiverCtx = recipientKey.SetupReceiverAuth(enc, senderPublicKey, info);
 
             byte[] decrypted = receiverCtx.Open(ciphertext, aad);
@@ -104,8 +104,8 @@ namespace System.Security.Cryptography.Tests
             byte[] plaintext = Convert.FromHexString(vector.Plaintext0);
             byte[] ciphertext = Convert.FromHexString(vector.Ciphertext0);
 
-            using HPKE recipientKey = ImportDecapsulationKey(vector.Suite, skRm);
-            using HPKE senderPublicKey = ImportEncapsulationKey(vector.Suite, pkSm);
+            using Hpke recipientKey = ImportDecapsulationKey(vector.Suite, skRm);
+            using Hpke senderPublicKey = ImportEncapsulationKey(vector.Suite, pkSm);
             using HpkeReceiverContext receiverCtx = recipientKey.SetupReceiverAuthPsk(
                 enc, senderPublicKey, psk, pskId, info);
 

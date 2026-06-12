@@ -7,13 +7,13 @@ namespace System.Security.Cryptography
     {
         internal static partial bool SupportsAny() => false;
 
-        internal static partial HPKE GenerateKeyCore(HpkeSuite suite) =>
+        internal static partial Hpke GenerateKeyCore(HpkeSuite suite) =>
             throw new PlatformNotSupportedException();
 
-        internal static partial HPKE ImportEncapsulationKeyCore(HpkeSuite suite, ReadOnlySpan<byte> source) =>
+        internal static partial Hpke ImportEncapsulationKeyCore(HpkeSuite suite, ReadOnlySpan<byte> source) =>
             throw new PlatformNotSupportedException();
 
-        internal static partial HPKE ImportDecapsulationKeyCore(HpkeSuite suite, ReadOnlySpan<byte> source) =>
+        internal static partial Hpke ImportDecapsulationKeyCore(HpkeSuite suite, ReadOnlySpan<byte> source) =>
             throw new PlatformNotSupportedException();
     }
 }

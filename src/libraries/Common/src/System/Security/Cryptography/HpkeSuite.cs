@@ -7,19 +7,19 @@ using System.Diagnostics.CodeAnalysis;
 namespace System.Security.Cryptography
 {
     /// <summary>
-    ///   Represents a specific HPKE ciphersuite, which is a combination of a KEM, KDF, and AEAD algorithm.
+    ///   Represents a specific Hpke ciphersuite, which is a combination of a KEM, KDF, and AEAD algorithm.
     /// </summary>
     /// <remarks>
     ///   <para>
     ///     This algorithm is specified by RFC 9180.
     ///   </para>
     /// </remarks>
-    /// <seealso cref="HPKE" />
+    /// <seealso cref="Hpke" />
     [DebuggerDisplay("{Name,nq}")]
     public sealed class HpkeSuite : IEquatable<HpkeSuite>
     {
         /// <summary>
-        ///   Specifies the Key Encapsulation Mechanism (KEM) algorithm for an HPKE ciphersuite.
+        ///   Specifies the Key Encapsulation Mechanism (KEM) algorithm for an Hpke ciphersuite.
         /// </summary>
         public enum Kem
         {
@@ -40,7 +40,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Specifies the Key Derivation Function (KDF) algorithm for an HPKE ciphersuite.
+        ///   Specifies the Key Derivation Function (KDF) algorithm for an Hpke ciphersuite.
         /// </summary>
         public enum Kdf
         {
@@ -61,7 +61,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Specifies the Authenticated Encryption with Associated Data (AEAD) algorithm for an HPKE ciphersuite.
+        ///   Specifies the Authenticated Encryption with Associated Data (AEAD) algorithm for an Hpke ciphersuite.
         /// </summary>
         public enum Aead
         {
@@ -82,10 +82,10 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Gets an HPKE suite using DHKEM(P-256, HKDF-SHA256), HKDF-SHA256, and AES-128-GCM.
+        ///   Gets an Hpke suite using DHKEM(P-256, HKDF-SHA256), HKDF-SHA256, and AES-128-GCM.
         /// </summary>
         /// <value>
-        ///   An HPKE suite using DHKEM(P-256, HKDF-SHA256), HKDF-SHA256, and AES-128-GCM.
+        ///   An Hpke suite using DHKEM(P-256, HKDF-SHA256), HKDF-SHA256, and AES-128-GCM.
         /// </value>
         public static HpkeSuite DHKEM_P256_HKDF_SHA256_AES_128_GCM { get; } = new(
             Kem.DHKEM_P256_HKDF_SHA256,
@@ -93,10 +93,10 @@ namespace System.Security.Cryptography
             Aead.Aes128Gcm);
 
         /// <summary>
-        ///   Gets an HPKE suite using DHKEM(P-384, HKDF-SHA384), HKDF-SHA384, and AES-256-GCM.
+        ///   Gets an Hpke suite using DHKEM(P-384, HKDF-SHA384), HKDF-SHA384, and AES-256-GCM.
         /// </summary>
         /// <value>
-        ///   An HPKE suite using DHKEM(P-384, HKDF-SHA384), HKDF-SHA384, and AES-256-GCM.
+        ///   An Hpke suite using DHKEM(P-384, HKDF-SHA384), HKDF-SHA384, and AES-256-GCM.
         /// </value>
         public static HpkeSuite DHKEM_P384_HKDF_SHA384_AES_256_GCM { get; } = new(
             Kem.DHKEM_P384_HKDF_SHA384,
@@ -104,10 +104,10 @@ namespace System.Security.Cryptography
             Aead.Aes256Gcm);
 
         /// <summary>
-        ///   Gets an HPKE suite using DHKEM(X25519, HKDF-SHA256), HKDF-SHA256, and AES-128-GCM.
+        ///   Gets an Hpke suite using DHKEM(X25519, HKDF-SHA256), HKDF-SHA256, and AES-128-GCM.
         /// </summary>
         /// <value>
-        ///   An HPKE suite using DHKEM(X25519, HKDF-SHA256), HKDF-SHA256, and AES-128-GCM.
+        ///   An Hpke suite using DHKEM(X25519, HKDF-SHA256), HKDF-SHA256, and AES-128-GCM.
         /// </value>
         public static HpkeSuite DHKEM_X25519_HKDF_SHA256_AES_128_GCM { get; } = new(
             Kem.DHKEM_X25519_HKDF_SHA256,
@@ -115,10 +115,10 @@ namespace System.Security.Cryptography
             Aead.Aes128Gcm);
 
         /// <summary>
-        ///   Gets an HPKE suite using DHKEM(X25519, HKDF-SHA256), HKDF-SHA256, and ChaCha20Poly1305.
+        ///   Gets an Hpke suite using DHKEM(X25519, HKDF-SHA256), HKDF-SHA256, and ChaCha20Poly1305.
         /// </summary>
         /// <value>
-        ///   An HPKE suite using DHKEM(X25519, HKDF-SHA256), HKDF-SHA256, and ChaCha20Poly1305.
+        ///   An Hpke suite using DHKEM(X25519, HKDF-SHA256), HKDF-SHA256, and ChaCha20Poly1305.
         /// </value>
         public static HpkeSuite DHKEM_X25519_HKDF_SHA256_ChaCha20Poly1305 { get; } = new(
             Kem.DHKEM_X25519_HKDF_SHA256,
@@ -180,10 +180,10 @@ namespace System.Security.Cryptography
         public Aead AeadAlgorithm { get; }
 
         /// <summary>
-        ///   Gets the name of the HPKE ciphersuite.
+        ///   Gets the name of the Hpke ciphersuite.
         /// </summary>
         /// <value>
-        ///   A string representing the HPKE ciphersuite name.
+        ///   A string representing the Hpke ciphersuite name.
         /// </value>
         public string Name => GetName(KemAlgorithm, KdfAlgorithm, AeadAlgorithm);
 

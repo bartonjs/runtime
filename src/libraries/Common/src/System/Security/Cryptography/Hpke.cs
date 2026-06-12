@@ -11,17 +11,17 @@ namespace System.Security.Cryptography
     ///     This algorithm is specified by RFC 9180.
     ///   </para>
     ///   <para>
-    ///     An <see cref="HPKE" /> instance represents the KEM key material (encapsulation key,
+    ///     An <see cref="Hpke" /> instance represents the KEM key material (encapsulation key,
     ///     and optionally a decapsulation key) associated with a particular <see cref="HpkeSuite" />.
     ///   </para>
     ///   <para>
-    ///     Developers are encouraged to program against the <c>HPKE</c> base class,
+    ///     Developers are encouraged to program against the <c>Hpke</c> base class,
     ///     rather than any specific derived class.
     ///     The derived classes are intended for interop with the underlying system
     ///     cryptographic libraries.
     ///   </para>
     /// </remarks>
-    public abstract partial class HPKE : IDisposable
+    public abstract partial class Hpke : IDisposable
     {
         private bool _disposed;
 
@@ -42,7 +42,7 @@ namespace System.Security.Cryptography
         public HpkeSuite Suite { get; }
 
         /// <summary>
-        ///   Initializes a new instance of the <see cref="HPKE" /> class.
+        ///   Initializes a new instance of the <see cref="Hpke" /> class.
         /// </summary>
         /// <param name="suite">
         ///   The HPKE ciphersuite for this instance.
@@ -50,7 +50,7 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="suite" /> is <see langword="null" />.
         /// </exception>
-        protected HPKE(HpkeSuite suite)
+        protected Hpke(HpkeSuite suite)
         {
             ArgumentNullException.ThrowIfNull(suite);
             Suite = suite;
@@ -58,7 +58,7 @@ namespace System.Security.Cryptography
 
         internal void ThrowIfDisposed() => ObjectDisposedException.ThrowIf(_disposed, this);
 
-        private void ValidateSenderKey(HPKE senderKey)
+        private void ValidateSenderKey(Hpke senderKey)
         {
             ArgumentNullException.ThrowIfNull(senderKey);
             senderKey.ThrowIfDisposed();
@@ -88,7 +88,7 @@ namespace System.Security.Cryptography
         ///   The platform does not support HPKE. Callers can use the <see cref="IsSupported" /> property
         ///   to determine if the platform supports HPKE.
         /// </exception>
-        public static HPKE GenerateKey(HpkeSuite suite)
+        public static Hpke GenerateKey(HpkeSuite suite)
         {
             ArgumentNullException.ThrowIfNull(suite);
 
@@ -105,7 +105,7 @@ namespace System.Security.Cryptography
         ///   The buffer containing the encapsulation key to import.
         /// </param>
         /// <returns>
-        ///   An <see cref="HPKE" /> instance containing only the encapsulation key.
+        ///   An <see cref="Hpke" /> instance containing only the encapsulation key.
         /// </returns>
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="suite" /> is <see langword="null" />.
@@ -116,7 +116,7 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   The key could not be imported.
         /// </exception>
-        public static HPKE ImportEncapsulationKey(HpkeSuite suite, ReadOnlySpan<byte> source)
+        public static Hpke ImportEncapsulationKey(HpkeSuite suite, ReadOnlySpan<byte> source)
         {
             ArgumentNullException.ThrowIfNull(suite);
 
@@ -133,7 +133,7 @@ namespace System.Security.Cryptography
         ///   The byte array containing the encapsulation key to import.
         /// </param>
         /// <returns>
-        ///   An <see cref="HPKE" /> instance containing only the encapsulation key.
+        ///   An <see cref="Hpke" /> instance containing only the encapsulation key.
         /// </returns>
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="suite" /> or <paramref name="source" /> is <see langword="null" />.
@@ -144,7 +144,7 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   The key could not be imported.
         /// </exception>
-        public static HPKE ImportEncapsulationKey(HpkeSuite suite, byte[] source)
+        public static Hpke ImportEncapsulationKey(HpkeSuite suite, byte[] source)
         {
             ArgumentNullException.ThrowIfNull(suite);
             ArgumentNullException.ThrowIfNull(source);
@@ -162,7 +162,7 @@ namespace System.Security.Cryptography
         ///   The buffer containing the decapsulation key to import.
         /// </param>
         /// <returns>
-        ///   An <see cref="HPKE" /> instance containing both the decapsulation and encapsulation keys.
+        ///   An <see cref="Hpke" /> instance containing both the decapsulation and encapsulation keys.
         /// </returns>
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="suite" /> is <see langword="null" />.
@@ -173,7 +173,7 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   The key could not be imported.
         /// </exception>
-        public static HPKE ImportDecapsulationKey(HpkeSuite suite, ReadOnlySpan<byte> source)
+        public static Hpke ImportDecapsulationKey(HpkeSuite suite, ReadOnlySpan<byte> source)
         {
             ArgumentNullException.ThrowIfNull(suite);
 
@@ -190,7 +190,7 @@ namespace System.Security.Cryptography
         ///   The byte array containing the decapsulation key to import.
         /// </param>
         /// <returns>
-        ///   An <see cref="HPKE" /> instance containing both the decapsulation and encapsulation keys.
+        ///   An <see cref="Hpke" /> instance containing both the decapsulation and encapsulation keys.
         /// </returns>
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="suite" /> or <paramref name="source" /> is <see langword="null" />.
@@ -201,7 +201,7 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException">
         ///   The key could not be imported.
         /// </exception>
-        public static HPKE ImportDecapsulationKey(HpkeSuite suite, byte[] source)
+        public static Hpke ImportDecapsulationKey(HpkeSuite suite, byte[] source)
         {
             ArgumentNullException.ThrowIfNull(suite);
             ArgumentNullException.ThrowIfNull(source);
@@ -1197,7 +1197,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public HpkeSenderContext SetupSenderAuth(
             Span<byte> kemCiphertext,
-            HPKE senderKey,
+            Hpke senderKey,
             ReadOnlySpan<byte> info = default)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
@@ -1248,7 +1248,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public HpkeSenderContext SetupSenderAuth(
             byte[] kemCiphertext,
-            HPKE senderKey,
+            Hpke senderKey,
             byte[]? info = null)
         {
             ArgumentNullException.ThrowIfNull(kemCiphertext);
@@ -1284,7 +1284,7 @@ namespace System.Security.Cryptography
         ///   <paramref name="senderKey" /> has already been disposed.
         /// </exception>
         public (byte[] KemCiphertext, HpkeSenderContext Context) SetupSenderAuth(
-            HPKE senderKey,
+            Hpke senderKey,
             ReadOnlySpan<byte> info = default)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
@@ -1320,7 +1320,7 @@ namespace System.Security.Cryptography
         ///   <paramref name="senderKey" /> has already been disposed.
         /// </exception>
         public (byte[] KemCiphertext, HpkeSenderContext Context) SetupSenderAuth(
-            HPKE senderKey,
+            Hpke senderKey,
             byte[]? info = null)
         {
             ArgumentNullException.ThrowIfNull(senderKey);
@@ -1360,7 +1360,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public HpkeReceiverContext SetupReceiverAuth(
             ReadOnlySpan<byte> kemCiphertext,
-            HPKE senderKey,
+            Hpke senderKey,
             ReadOnlySpan<byte> info = default)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
@@ -1410,7 +1410,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public HpkeReceiverContext SetupReceiverAuth(
             byte[] kemCiphertext,
-            HPKE senderKey,
+            Hpke senderKey,
             byte[]? info = null)
         {
             ArgumentNullException.ThrowIfNull(kemCiphertext);
@@ -1466,7 +1466,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public HpkeSenderContext SetupSenderAuthPsk(
             Span<byte> kemCiphertext,
-            HPKE senderKey,
+            Hpke senderKey,
             ReadOnlySpan<byte> psk,
             ReadOnlySpan<byte> pskId,
             ReadOnlySpan<byte> info = default)
@@ -1543,7 +1543,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public HpkeSenderContext SetupSenderAuthPsk(
             byte[] kemCiphertext,
-            HPKE senderKey,
+            Hpke senderKey,
             byte[] psk,
             byte[] pskId,
             byte[]? info = null)
@@ -1596,7 +1596,7 @@ namespace System.Security.Cryptography
         ///   <paramref name="senderKey" /> has already been disposed.
         /// </exception>
         public (byte[] KemCiphertext, HpkeSenderContext Context) SetupSenderAuthPsk(
-            HPKE senderKey,
+            Hpke senderKey,
             ReadOnlySpan<byte> psk,
             ReadOnlySpan<byte> pskId,
             ReadOnlySpan<byte> info = default)
@@ -1659,7 +1659,7 @@ namespace System.Security.Cryptography
         ///   <paramref name="senderKey" /> has already been disposed.
         /// </exception>
         public (byte[] KemCiphertext, HpkeSenderContext Context) SetupSenderAuthPsk(
-            HPKE senderKey,
+            Hpke senderKey,
             byte[] psk,
             byte[] pskId,
             byte[]? info = null)
@@ -1717,7 +1717,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public HpkeReceiverContext SetupReceiverAuthPsk(
             ReadOnlySpan<byte> kemCiphertext,
-            HPKE senderKey,
+            Hpke senderKey,
             ReadOnlySpan<byte> psk,
             ReadOnlySpan<byte> pskId,
             ReadOnlySpan<byte> info = default)
@@ -1793,7 +1793,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public HpkeReceiverContext SetupReceiverAuthPsk(
             byte[] kemCiphertext,
-            HPKE senderKey,
+            Hpke senderKey,
             byte[] psk,
             byte[] pskId,
             byte[]? info = null)
@@ -1892,7 +1892,7 @@ namespace System.Security.Cryptography
         /// <returns>A sender encryption context.</returns>
         protected abstract HpkeSenderContext SetupSenderAuthCore(
             Span<byte> kemCiphertext,
-            HPKE senderKey,
+            Hpke senderKey,
             ReadOnlySpan<byte> info);
 
         /// <summary>
@@ -1906,7 +1906,7 @@ namespace System.Security.Cryptography
         /// <returns>A sender encryption context.</returns>
         protected abstract HpkeSenderContext SetupSenderAuthPskCore(
             Span<byte> kemCiphertext,
-            HPKE senderKey,
+            Hpke senderKey,
             ReadOnlySpan<byte> info,
             ReadOnlySpan<byte> psk,
             ReadOnlySpan<byte> pskId);
@@ -1944,7 +1944,7 @@ namespace System.Security.Cryptography
         /// <returns>A receiver decryption context.</returns>
         protected abstract HpkeReceiverContext SetupReceiverAuthCore(
             ReadOnlySpan<byte> kemCiphertext,
-            HPKE senderKey,
+            Hpke senderKey,
             ReadOnlySpan<byte> info);
 
         /// <summary>
@@ -1958,13 +1958,13 @@ namespace System.Security.Cryptography
         /// <returns>A receiver decryption context.</returns>
         protected abstract HpkeReceiverContext SetupReceiverAuthPskCore(
             ReadOnlySpan<byte> kemCiphertext,
-            HPKE senderKey,
+            Hpke senderKey,
             ReadOnlySpan<byte> info,
             ReadOnlySpan<byte> psk,
             ReadOnlySpan<byte> pskId);
 
         /// <summary>
-        ///   Releases the resources used by this <see cref="HPKE" /> instance.
+        ///   Releases the resources used by this <see cref="Hpke" /> instance.
         /// </summary>
         public void Dispose()
         {
@@ -1976,7 +1976,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Releases the resources used by this <see cref="HPKE" /> instance.
+        ///   Releases the resources used by this <see cref="Hpke" /> instance.
         /// </summary>
         /// <param name="disposing">
         ///   <see langword="true" /> to release both managed and unmanaged resources;

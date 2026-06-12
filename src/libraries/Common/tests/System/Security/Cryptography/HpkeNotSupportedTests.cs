@@ -8,13 +8,13 @@ namespace System.Security.Cryptography.Tests
     [ConditionalClass(typeof(HpkeNotSupportedTests), nameof(HpkeNotSupportedTests.IsNotSupported))]
     public static class HpkeNotSupportedTests
     {
-        public static bool IsNotSupported => !HPKE.IsSupported;
+        public static bool IsNotSupported => !Hpke.IsSupported;
 
         [Fact]
         public static void GenerateKey_NotSupported()
         {
             Assert.Throws<PlatformNotSupportedException>(() =>
-                HPKE.GenerateKey(HpkeSuite.DHKEM_P256_HKDF_SHA256_AES_128_GCM));
+                Hpke.GenerateKey(HpkeSuite.DHKEM_P256_HKDF_SHA256_AES_128_GCM));
         }
 
         [Fact]
@@ -23,7 +23,7 @@ namespace System.Security.Cryptography.Tests
             HpkeSuite suite = HpkeSuite.DHKEM_P256_HKDF_SHA256_AES_128_GCM;
 
             Assert.Throws<PlatformNotSupportedException>(() =>
-                HPKE.ImportEncapsulationKey(suite, new byte[suite.EncapsulationKeySizeInBytes]));
+                Hpke.ImportEncapsulationKey(suite, new byte[suite.EncapsulationKeySizeInBytes]));
         }
 
         [Fact]
@@ -32,7 +32,7 @@ namespace System.Security.Cryptography.Tests
             HpkeSuite suite = HpkeSuite.DHKEM_P256_HKDF_SHA256_AES_128_GCM;
 
             Assert.Throws<PlatformNotSupportedException>(() =>
-                HPKE.ImportEncapsulationKey(suite, (ReadOnlySpan<byte>)new byte[suite.EncapsulationKeySizeInBytes]));
+                Hpke.ImportEncapsulationKey(suite, (ReadOnlySpan<byte>)new byte[suite.EncapsulationKeySizeInBytes]));
         }
 
         [Fact]
@@ -41,7 +41,7 @@ namespace System.Security.Cryptography.Tests
             HpkeSuite suite = HpkeSuite.DHKEM_P256_HKDF_SHA256_AES_128_GCM;
 
             Assert.Throws<PlatformNotSupportedException>(() =>
-                HPKE.ImportDecapsulationKey(suite, new byte[suite.DecapsulationKeySizeInBytes]));
+                Hpke.ImportDecapsulationKey(suite, new byte[suite.DecapsulationKeySizeInBytes]));
         }
 
         [Fact]
@@ -50,7 +50,7 @@ namespace System.Security.Cryptography.Tests
             HpkeSuite suite = HpkeSuite.DHKEM_P256_HKDF_SHA256_AES_128_GCM;
 
             Assert.Throws<PlatformNotSupportedException>(() =>
-                HPKE.ImportDecapsulationKey(suite, (ReadOnlySpan<byte>)new byte[suite.DecapsulationKeySizeInBytes]));
+                Hpke.ImportDecapsulationKey(suite, (ReadOnlySpan<byte>)new byte[suite.DecapsulationKeySizeInBytes]));
         }
     }
 }

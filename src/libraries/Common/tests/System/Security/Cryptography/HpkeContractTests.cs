@@ -1058,7 +1058,7 @@ namespace System.Security.Cryptography.Tests
 
             using HpkeContract hpke = new(s_suite)
             {
-                OnSetupSenderAuthCore = (Span<byte> kemDest, HPKE sender, ReadOnlySpan<byte> i) =>
+                OnSetupSenderAuthCore = (Span<byte> kemDest, Hpke sender, ReadOnlySpan<byte> i) =>
                 {
                     AssertExtensions.Same(kemCt, kemDest);
                     Assert.Same(senderKey, sender);
@@ -1079,7 +1079,7 @@ namespace System.Security.Cryptography.Tests
 
             using HpkeContract hpke = new(s_suite)
             {
-                OnSetupSenderAuthCore = (Span<byte> kemDest, HPKE sender, ReadOnlySpan<byte> i) =>
+                OnSetupSenderAuthCore = (Span<byte> kemDest, Hpke sender, ReadOnlySpan<byte> i) =>
                 {
                     Assert.Equal(s_suite.EncapsulatedKeySizeInBytes, kemDest.Length);
                     Assert.Same(senderKey, sender);
@@ -1115,7 +1115,7 @@ namespace System.Security.Cryptography.Tests
         {
             using HpkeContract hpke = new(s_suite);
             AssertExtensions.Throws<ArgumentNullException>("senderKey", () =>
-                hpke.SetupSenderAuth((HPKE)null, (byte[])null));
+                hpke.SetupSenderAuth((Hpke)null, (byte[])null));
         }
 
         [Fact]
@@ -1128,7 +1128,7 @@ namespace System.Security.Cryptography.Tests
 
             using HpkeContract hpke = new(s_suite)
             {
-                OnSetupSenderAuthCore = (Span<byte> kemDest, HPKE sender, ReadOnlySpan<byte> i) =>
+                OnSetupSenderAuthCore = (Span<byte> kemDest, Hpke sender, ReadOnlySpan<byte> i) =>
                 {
                     AssertExtensions.Same(kemCt, kemDest);
                     Assert.Same(senderKey, sender);
@@ -1192,7 +1192,7 @@ namespace System.Security.Cryptography.Tests
 
             using HpkeContract hpke = new(s_suite)
             {
-                OnSetupReceiverAuthCore = (ReadOnlySpan<byte> kemSrc, HPKE sender, ReadOnlySpan<byte> i) =>
+                OnSetupReceiverAuthCore = (ReadOnlySpan<byte> kemSrc, Hpke sender, ReadOnlySpan<byte> i) =>
                 {
                     AssertExtensions.Same(kemCt, kemSrc);
                     Assert.Same(senderKey, sender);
@@ -1233,7 +1233,7 @@ namespace System.Security.Cryptography.Tests
 
             using HpkeContract hpke = new(s_suite)
             {
-                OnSetupReceiverAuthCore = (ReadOnlySpan<byte> kemSrc, HPKE sender, ReadOnlySpan<byte> i) =>
+                OnSetupReceiverAuthCore = (ReadOnlySpan<byte> kemSrc, Hpke sender, ReadOnlySpan<byte> i) =>
                 {
                     AssertExtensions.Same(kemCt, kemSrc);
                     Assert.Same(senderKey, sender);
@@ -1300,7 +1300,7 @@ namespace System.Security.Cryptography.Tests
 
             using HpkeContract hpke = new(s_suite)
             {
-                OnSetupSenderAuthPskCore = (Span<byte> kemDest, HPKE sender, ReadOnlySpan<byte> i, ReadOnlySpan<byte> p, ReadOnlySpan<byte> pid) =>
+                OnSetupSenderAuthPskCore = (Span<byte> kemDest, Hpke sender, ReadOnlySpan<byte> i, ReadOnlySpan<byte> p, ReadOnlySpan<byte> pid) =>
                 {
                     AssertExtensions.Same(kemCt, kemDest);
                     Assert.Same(senderKey, sender);
@@ -1325,7 +1325,7 @@ namespace System.Security.Cryptography.Tests
 
             using HpkeContract hpke = new(s_suite)
             {
-                OnSetupSenderAuthPskCore = (Span<byte> kemDest, HPKE sender, ReadOnlySpan<byte> i, ReadOnlySpan<byte> p, ReadOnlySpan<byte> pid) =>
+                OnSetupSenderAuthPskCore = (Span<byte> kemDest, Hpke sender, ReadOnlySpan<byte> i, ReadOnlySpan<byte> p, ReadOnlySpan<byte> pid) =>
                 {
                     Assert.Equal(s_suite.EncapsulatedKeySizeInBytes, kemDest.Length);
                     Assert.Same(senderKey, sender);
@@ -1381,7 +1381,7 @@ namespace System.Security.Cryptography.Tests
 
             using HpkeContract hpke = new(s_suite)
             {
-                OnSetupSenderAuthPskCore = (Span<byte> kemDest, HPKE sender, ReadOnlySpan<byte> i, ReadOnlySpan<byte> p, ReadOnlySpan<byte> pid) =>
+                OnSetupSenderAuthPskCore = (Span<byte> kemDest, Hpke sender, ReadOnlySpan<byte> i, ReadOnlySpan<byte> p, ReadOnlySpan<byte> pid) =>
                 {
                     AssertExtensions.Same(kemCt, kemDest);
                     Assert.Same(senderKey, sender);
@@ -1450,7 +1450,7 @@ namespace System.Security.Cryptography.Tests
 
             using HpkeContract hpke = new(s_suite)
             {
-                OnSetupReceiverAuthPskCore = (ReadOnlySpan<byte> kemSrc, HPKE sender, ReadOnlySpan<byte> i, ReadOnlySpan<byte> p, ReadOnlySpan<byte> pid) =>
+                OnSetupReceiverAuthPskCore = (ReadOnlySpan<byte> kemSrc, Hpke sender, ReadOnlySpan<byte> i, ReadOnlySpan<byte> p, ReadOnlySpan<byte> pid) =>
                 {
                     AssertExtensions.Same(kemCt, kemSrc);
                     Assert.Same(senderKey, sender);
@@ -1506,7 +1506,7 @@ namespace System.Security.Cryptography.Tests
 
             using HpkeContract hpke = new(s_suite)
             {
-                OnSetupReceiverAuthPskCore = (ReadOnlySpan<byte> kemSrc, HPKE sender, ReadOnlySpan<byte> i, ReadOnlySpan<byte> p, ReadOnlySpan<byte> pid) =>
+                OnSetupReceiverAuthPskCore = (ReadOnlySpan<byte> kemSrc, Hpke sender, ReadOnlySpan<byte> i, ReadOnlySpan<byte> p, ReadOnlySpan<byte> pid) =>
                 {
                     AssertExtensions.Same(kemCt, kemSrc);
                     Assert.Same(senderKey, sender);
@@ -2203,7 +2203,7 @@ namespace System.Security.Cryptography.Tests
         }
     }
 
-    internal sealed class HpkeContract : HPKE
+    internal sealed class HpkeContract : Hpke
     {
         internal ExportKeyCoreCallback OnExportEncapsulationKeyCore { get; set; }
         internal ExportKeyCoreCallback OnExportDecapsulationKeyCore { get; set; }
@@ -2263,12 +2263,12 @@ namespace System.Security.Cryptography.Tests
             return GetCallback(OnSetupSenderPskCore)(kemCiphertext, info, psk, pskId);
         }
 
-        protected override HpkeSenderContext SetupSenderAuthCore(Span<byte> kemCiphertext, HPKE senderKey, ReadOnlySpan<byte> info)
+        protected override HpkeSenderContext SetupSenderAuthCore(Span<byte> kemCiphertext, Hpke senderKey, ReadOnlySpan<byte> info)
         {
             return GetCallback(OnSetupSenderAuthCore)(kemCiphertext, senderKey, info);
         }
 
-        protected override HpkeSenderContext SetupSenderAuthPskCore(Span<byte> kemCiphertext, HPKE senderKey, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId)
+        protected override HpkeSenderContext SetupSenderAuthPskCore(Span<byte> kemCiphertext, Hpke senderKey, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId)
         {
             return GetCallback(OnSetupSenderAuthPskCore)(kemCiphertext, senderKey, info, psk, pskId);
         }
@@ -2283,12 +2283,12 @@ namespace System.Security.Cryptography.Tests
             return GetCallback(OnSetupReceiverPskCore)(kemCiphertext, info, psk, pskId);
         }
 
-        protected override HpkeReceiverContext SetupReceiverAuthCore(ReadOnlySpan<byte> kemCiphertext, HPKE senderKey, ReadOnlySpan<byte> info)
+        protected override HpkeReceiverContext SetupReceiverAuthCore(ReadOnlySpan<byte> kemCiphertext, Hpke senderKey, ReadOnlySpan<byte> info)
         {
             return GetCallback(OnSetupReceiverAuthCore)(kemCiphertext, senderKey, info);
         }
 
-        protected override HpkeReceiverContext SetupReceiverAuthPskCore(ReadOnlySpan<byte> kemCiphertext, HPKE senderKey, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId)
+        protected override HpkeReceiverContext SetupReceiverAuthPskCore(ReadOnlySpan<byte> kemCiphertext, Hpke senderKey, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId)
         {
             return GetCallback(OnSetupReceiverAuthPskCore)(kemCiphertext, senderKey, info, psk, pskId);
         }
@@ -2309,12 +2309,12 @@ namespace System.Security.Cryptography.Tests
         internal delegate void OpenCoreCallback(ReadOnlySpan<byte> kemCiphertext, ReadOnlySpan<byte> ciphertext, Span<byte> plaintext, ReadOnlySpan<byte> aad, ReadOnlySpan<byte> info);
         internal delegate HpkeSenderContext SetupSenderCoreCallback(Span<byte> kemCiphertext, ReadOnlySpan<byte> info);
         internal delegate HpkeSenderContext SetupSenderPskCoreCallback(Span<byte> kemCiphertext, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId);
-        internal delegate HpkeSenderContext SetupSenderAuthCoreCallback(Span<byte> kemCiphertext, HPKE senderKey, ReadOnlySpan<byte> info);
-        internal delegate HpkeSenderContext SetupSenderAuthPskCoreCallback(Span<byte> kemCiphertext, HPKE senderKey, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId);
+        internal delegate HpkeSenderContext SetupSenderAuthCoreCallback(Span<byte> kemCiphertext, Hpke senderKey, ReadOnlySpan<byte> info);
+        internal delegate HpkeSenderContext SetupSenderAuthPskCoreCallback(Span<byte> kemCiphertext, Hpke senderKey, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId);
         internal delegate HpkeReceiverContext SetupReceiverCoreCallback(ReadOnlySpan<byte> kemCiphertext, ReadOnlySpan<byte> info);
         internal delegate HpkeReceiverContext SetupReceiverPskCoreCallback(ReadOnlySpan<byte> kemCiphertext, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId);
-        internal delegate HpkeReceiverContext SetupReceiverAuthCoreCallback(ReadOnlySpan<byte> kemCiphertext, HPKE senderKey, ReadOnlySpan<byte> info);
-        internal delegate HpkeReceiverContext SetupReceiverAuthPskCoreCallback(ReadOnlySpan<byte> kemCiphertext, HPKE senderKey, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId);
+        internal delegate HpkeReceiverContext SetupReceiverAuthCoreCallback(ReadOnlySpan<byte> kemCiphertext, Hpke senderKey, ReadOnlySpan<byte> info);
+        internal delegate HpkeReceiverContext SetupReceiverAuthPskCoreCallback(ReadOnlySpan<byte> kemCiphertext, Hpke senderKey, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId);
     }
 
     internal sealed class HpkeSenderContract : HpkeSenderContext

@@ -4,7 +4,7 @@
 namespace System.Security.Cryptography
 {
     /// <summary>
-    ///   Represents the sender side of an established HPKE encryption context,
+    ///   Represents the sender side of an established Hpke encryption context,
     ///   providing sequential encryption and secret export operations.
     /// </summary>
     /// <remarks>
@@ -143,7 +143,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Exports a secret from this HPKE context.
+        ///   Exports a secret from this Hpke context.
         /// </summary>
         /// <param name="exporterContext">
         ///   The exporter context string, which binds the exported secret to a specific purpose.
@@ -168,7 +168,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Exports a secret from this HPKE context.
+        ///   Exports a secret from this Hpke context.
         /// </summary>
         /// <param name="exporterContext">
         ///   The exporter context string, which binds the exported secret to a specific purpose.
@@ -194,7 +194,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Exports a secret from this HPKE context.
+        ///   Exports a secret from this Hpke context.
         /// </summary>
         /// <param name="exporterContext">
         ///   The exporter context string, which binds the exported secret to a specific purpose.
@@ -221,7 +221,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Exports a secret from this HPKE context.
+        ///   Exports a secret from this Hpke context.
         /// </summary>
         /// <param name="exporterContext">
         ///   The exporter context string, which binds the exported secret to a specific purpose.
@@ -257,7 +257,7 @@ namespace System.Security.Cryptography
         protected abstract void SealCore(ReadOnlySpan<byte> plaintext, Span<byte> ciphertext, ReadOnlySpan<byte> aad);
 
         /// <summary>
-        ///   When overridden in a derived class, exports a secret from the HPKE context.
+        ///   When overridden in a derived class, exports a secret from the Hpke context.
         /// </summary>
         /// <param name="exporterContext">The exporter context string.</param>
         /// <param name="destination">

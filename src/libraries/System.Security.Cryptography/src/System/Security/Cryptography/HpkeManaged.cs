@@ -12,7 +12,7 @@ namespace System.Security.Cryptography
     ///   curves, HKDF-SHA256/SHA384, and AES-GCM/ChaCha20Poly1305 AEAD.
     ///   This is a proof-of-concept to validate the public API shape.
     /// </summary>
-    internal sealed class HpkeManaged : HPKE
+    internal sealed class HpkeManaged : Hpke
     {
         private readonly ECDiffieHellman? _privateKey;
         private readonly ECParameters _publicKeyParameters;
@@ -68,7 +68,7 @@ namespace System.Security.Cryptography
             return _publicKeyParameters;
         }
 
-        private static ECParameters ExportPublicKeyParameters(HPKE key, HpkeSuite suite)
+        private static ECParameters ExportPublicKeyParameters(Hpke key, HpkeSuite suite)
         {
             if (key is HpkeManaged managed)
             {
@@ -207,7 +207,7 @@ namespace System.Security.Cryptography
 
         protected override HpkeSenderContext SetupSenderAuthCore(
             Span<byte> kemCiphertext,
-            HPKE senderKey,
+            Hpke senderKey,
             ReadOnlySpan<byte> info)
         {
             return SetupSenderAuthPskCore(kemCiphertext, senderKey, info, default, default);
@@ -215,7 +215,7 @@ namespace System.Security.Cryptography
 
         protected override HpkeSenderContext SetupSenderAuthPskCore(
             Span<byte> kemCiphertext,
-            HPKE senderKey,
+            Hpke senderKey,
             ReadOnlySpan<byte> info,
             ReadOnlySpan<byte> psk,
             ReadOnlySpan<byte> pskId)
@@ -331,7 +331,7 @@ namespace System.Security.Cryptography
 
         protected override HpkeReceiverContext SetupReceiverAuthCore(
             ReadOnlySpan<byte> kemCiphertext,
-            HPKE senderKey,
+            Hpke senderKey,
             ReadOnlySpan<byte> info)
         {
             return SetupReceiverAuthPskCore(kemCiphertext, senderKey, info, default, default);
@@ -339,7 +339,7 @@ namespace System.Security.Cryptography
 
         protected override HpkeReceiverContext SetupReceiverAuthPskCore(
             ReadOnlySpan<byte> kemCiphertext,
-            HPKE senderKey,
+            Hpke senderKey,
             ReadOnlySpan<byte> info,
             ReadOnlySpan<byte> psk,
             ReadOnlySpan<byte> pskId)

@@ -428,8 +428,8 @@
              Link="Common\System\Security\Cryptography\MLKemCng.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\MLKemPkcs8.cs"
             Link="Common\System\Security\Cryptography\MLKemPkcs8.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\HPKE.cs"
-             Link="Common\System\Security\Cryptography\HPKE.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\Hpke.cs"
+             Link="Common\System\Security\Cryptography\Hpke.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\HpkeImplementation.cs"
              Link="Common\System\Security\Cryptography\HpkeImplementation.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\HpkeReceiverContext.cs"

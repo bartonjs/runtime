@@ -5,22 +5,22 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    [ConditionalClass(typeof(HPKE), nameof(HPKE.IsSupported))]
+    [ConditionalClass(typeof(Hpke), nameof(Hpke.IsSupported))]
     public class HpkeImplementationTests : HpkeBaseTests
     {
-        public override HPKE GenerateKey(HpkeSuite suite)
+        public override Hpke GenerateKey(HpkeSuite suite)
         {
-            return HPKE.GenerateKey(suite);
+            return Hpke.GenerateKey(suite);
         }
 
-        public override HPKE ImportDecapsulationKey(HpkeSuite suite, ReadOnlySpan<byte> source)
+        public override Hpke ImportDecapsulationKey(HpkeSuite suite, ReadOnlySpan<byte> source)
         {
-            return HPKE.ImportDecapsulationKey(suite, source);
+            return Hpke.ImportDecapsulationKey(suite, source);
         }
 
-        public override HPKE ImportEncapsulationKey(HpkeSuite suite, ReadOnlySpan<byte> source)
+        public override Hpke ImportEncapsulationKey(HpkeSuite suite, ReadOnlySpan<byte> source)
         {
-            return HPKE.ImportEncapsulationKey(suite, source);
+            return Hpke.ImportEncapsulationKey(suite, source);
         }
     }
 }
