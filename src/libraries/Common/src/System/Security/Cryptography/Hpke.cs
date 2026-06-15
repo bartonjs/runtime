@@ -306,7 +306,7 @@ namespace System.Security.Cryptography
         /// <param name="plaintext">
         ///   The plaintext to encrypt.
         /// </param>
-        /// <param name="kemCiphertext">
+        /// <param name="encapsulatedKey">
         ///   The buffer to receive the KEM ciphertext, which the recipient needs for decryption.
         /// </param>
         /// <param name="ciphertext">
@@ -320,7 +320,7 @@ namespace System.Security.Cryptography
         ///   The info parameter for the HPKE key schedule.
         /// </param>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="kemCiphertext" /> is not the correct size, or
+        ///   <paramref name="encapsulatedKey" /> is not the correct size, or
         ///   <paramref name="ciphertext" /> is not the correct size.
         /// </exception>
         /// <exception cref="CryptographicException">
@@ -329,18 +329,18 @@ namespace System.Security.Cryptography
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public void Seal(
             ReadOnlySpan<byte> plaintext,
-            Span<byte> kemCiphertext,
+            Span<byte> encapsulatedKey,
             Span<byte> ciphertext,
             ReadOnlySpan<byte> aad = default,
             ReadOnlySpan<byte> info = default)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
 
-            if (kemCiphertext.Length != Suite.EncapsulatedKeySizeInBytes)
+            if (encapsulatedKey.Length != Suite.EncapsulatedKeySizeInBytes)
             {
                 throw new ArgumentException(
                     SR.Format(SR.Argument_DestinationImprecise, Suite.EncapsulatedKeySizeInBytes),
-                    nameof(kemCiphertext));
+                    nameof(encapsulatedKey));
             }
 
             if (ciphertext.Length != plaintext.Length + Suite.AeadTagSizeInBytes)
@@ -350,7 +350,7 @@ namespace System.Security.Cryptography
                     nameof(ciphertext));
             }
 
-            SealCore(plaintext, kemCiphertext, ciphertext, aad, info);
+            SealCore(plaintext, encapsulatedKey, ciphertext, aad, info);
         }
 
         /// <summary>
@@ -360,7 +360,7 @@ namespace System.Security.Cryptography
         /// <param name="plaintext">
         ///   The plaintext to encrypt.
         /// </param>
-        /// <param name="kemCiphertext">
+        /// <param name="encapsulatedKey">
         ///   When this method returns, contains the KEM ciphertext produced by the sender, which the recipient needs to create the
         ///   corresponding receiver context.
         /// </param>
@@ -379,17 +379,17 @@ namespace System.Security.Cryptography
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public void Seal(
             ReadOnlySpan<byte> plaintext,
-            out byte[] kemCiphertext,
+            out byte[] encapsulatedKey,
             out byte[] ciphertext,
             ReadOnlySpan<byte> aad = default,
             ReadOnlySpan<byte> info = default)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
 
-            kemCiphertext = new byte[Suite.EncapsulatedKeySizeInBytes];
+            encapsulatedKey = new byte[Suite.EncapsulatedKeySizeInBytes];
             ciphertext = new byte[plaintext.Length + Suite.AeadTagSizeInBytes];
 
-            SealCore(plaintext, kemCiphertext, ciphertext, aad, info);
+            SealCore(plaintext, encapsulatedKey, ciphertext, aad, info);
         }
 
         /// <summary>
@@ -399,7 +399,7 @@ namespace System.Security.Cryptography
         /// <param name="plaintext">
         ///   The plaintext to encrypt.
         /// </param>
-        /// <param name="kemCiphertext">
+        /// <param name="encapsulatedKey">
         ///   When this method returns, contains the KEM ciphertext produced by the sender, which the recipient needs to create the
         ///   corresponding receiver context.
         /// </param>
@@ -418,7 +418,7 @@ namespace System.Security.Cryptography
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public void Seal(
             byte[] plaintext,
-            out byte[] kemCiphertext,
+            out byte[] encapsulatedKey,
             out byte[] ciphertext,
             byte[]? aad = null,
             byte[]? info = null)
@@ -427,7 +427,7 @@ namespace System.Security.Cryptography
 
             Seal(
                 new ReadOnlySpan<byte>(plaintext),
-                out kemCiphertext,
+                out encapsulatedKey,
                 out ciphertext,
                 new ReadOnlySpan<byte>(aad),
                 new ReadOnlySpan<byte>(info));
@@ -436,7 +436,7 @@ namespace System.Security.Cryptography
         /// <summary>
         ///   Decrypts and authenticates a single ciphertext message using Base mode HPKE.
         /// </summary>
-        /// <param name="kemCiphertext">
+        /// <param name="encapsulatedKey">
         ///   The KEM ciphertext produced by the sender.
         /// </param>
         /// <param name="ciphertext">
@@ -453,7 +453,7 @@ namespace System.Security.Cryptography
         ///   The info parameter for the HPKE key schedule.
         /// </param>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="kemCiphertext" /> is not the correct size, or
+        ///   <paramref name="encapsulatedKey" /> is not the correct size, or
         ///   <paramref name="plaintext" /> is not the correct size, or
         ///   <paramref name="ciphertext" /> is too small to contain a valid authentication tag.
         /// </exception>
@@ -462,7 +462,7 @@ namespace System.Security.Cryptography
         /// </exception>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public void Open(
-            ReadOnlySpan<byte> kemCiphertext,
+            ReadOnlySpan<byte> encapsulatedKey,
             ReadOnlySpan<byte> ciphertext,
             Span<byte> plaintext,
             ReadOnlySpan<byte> aad = default,
@@ -470,11 +470,11 @@ namespace System.Security.Cryptography
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
 
-            if (kemCiphertext.Length != Suite.EncapsulatedKeySizeInBytes)
+            if (encapsulatedKey.Length != Suite.EncapsulatedKeySizeInBytes)
             {
                 throw new ArgumentException(
                     SR.Format(SR.Argument_DestinationImprecise, Suite.EncapsulatedKeySizeInBytes),
-                    nameof(kemCiphertext));
+                    nameof(encapsulatedKey));
             }
 
             if (ciphertext.Length < Suite.AeadTagSizeInBytes)
@@ -491,13 +491,13 @@ namespace System.Security.Cryptography
                     nameof(plaintext));
             }
 
-            OpenCore(kemCiphertext, ciphertext, plaintext, aad, info);
+            OpenCore(encapsulatedKey, ciphertext, plaintext, aad, info);
         }
 
         /// <summary>
         ///   Decrypts and authenticates a single ciphertext message using Base mode HPKE.
         /// </summary>
-        /// <param name="kemCiphertext">
+        /// <param name="encapsulatedKey">
         ///   The KEM ciphertext produced by the sender.
         /// </param>
         /// <param name="ciphertext">
@@ -513,7 +513,7 @@ namespace System.Security.Cryptography
         ///   The decrypted plaintext.
         /// </returns>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="kemCiphertext" /> is not the correct size, or
+        ///   <paramref name="encapsulatedKey" /> is not the correct size, or
         ///   <paramref name="ciphertext" /> is too small to contain a valid authentication tag.
         /// </exception>
         /// <exception cref="CryptographicException">
@@ -521,18 +521,18 @@ namespace System.Security.Cryptography
         /// </exception>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public byte[] Open(
-            ReadOnlySpan<byte> kemCiphertext,
+            ReadOnlySpan<byte> encapsulatedKey,
             ReadOnlySpan<byte> ciphertext,
             ReadOnlySpan<byte> aad = default,
             ReadOnlySpan<byte> info = default)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
 
-            if (kemCiphertext.Length != Suite.EncapsulatedKeySizeInBytes)
+            if (encapsulatedKey.Length != Suite.EncapsulatedKeySizeInBytes)
             {
                 throw new ArgumentException(
                     SR.Format(SR.Argument_DestinationImprecise, Suite.EncapsulatedKeySizeInBytes),
-                    nameof(kemCiphertext));
+                    nameof(encapsulatedKey));
             }
 
             if (ciphertext.Length < Suite.AeadTagSizeInBytes)
@@ -543,7 +543,7 @@ namespace System.Security.Cryptography
             }
 
             byte[] plaintext = new byte[ciphertext.Length - Suite.AeadTagSizeInBytes];
-            OpenCore(kemCiphertext, ciphertext, plaintext, aad, info);
+            OpenCore(encapsulatedKey, ciphertext, plaintext, aad, info);
 
             return plaintext;
         }
@@ -551,7 +551,7 @@ namespace System.Security.Cryptography
         /// <summary>
         ///   Decrypts and authenticates a single ciphertext message using Base mode HPKE.
         /// </summary>
-        /// <param name="kemCiphertext">
+        /// <param name="encapsulatedKey">
         ///   The KEM ciphertext produced by the sender.
         /// </param>
         /// <param name="ciphertext">
@@ -567,10 +567,10 @@ namespace System.Security.Cryptography
         ///   The decrypted plaintext.
         /// </returns>
         /// <exception cref="ArgumentNullException">
-        ///   <paramref name="kemCiphertext" /> or <paramref name="ciphertext" /> is <see langword="null" />.
+        ///   <paramref name="encapsulatedKey" /> or <paramref name="ciphertext" /> is <see langword="null" />.
         /// </exception>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="kemCiphertext" /> is not the correct size, or
+        ///   <paramref name="encapsulatedKey" /> is not the correct size, or
         ///   <paramref name="ciphertext" /> is too small to contain a valid authentication tag.
         /// </exception>
         /// <exception cref="CryptographicException">
@@ -578,16 +578,16 @@ namespace System.Security.Cryptography
         /// </exception>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public byte[] Open(
-            byte[] kemCiphertext,
+            byte[] encapsulatedKey,
             byte[] ciphertext,
             byte[]? aad = null,
             byte[]? info = null)
         {
-            ArgumentNullException.ThrowIfNull(kemCiphertext);
+            ArgumentNullException.ThrowIfNull(encapsulatedKey);
             ArgumentNullException.ThrowIfNull(ciphertext);
 
             return Open(
-                new ReadOnlySpan<byte>(kemCiphertext),
+                new ReadOnlySpan<byte>(encapsulatedKey),
                 new ReadOnlySpan<byte>(ciphertext),
                 new ReadOnlySpan<byte>(aad),
                 new ReadOnlySpan<byte>(info));
@@ -597,7 +597,7 @@ namespace System.Security.Cryptography
         ///   Creates a sender encryption context for multi-message encryption, writing the KEM ciphertext
         ///   into the provided buffer.
         /// </summary>
-        /// <param name="kemCiphertext">
+        /// <param name="encapsulatedKey">
         ///   The buffer to receive the KEM ciphertext, which the recipient needs to create the
         ///   corresponding receiver context.
         /// </param>
@@ -608,32 +608,32 @@ namespace System.Security.Cryptography
         ///   A sender context that can be used for sequential encryption and secret export operations.
         /// </returns>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="kemCiphertext" /> is not the correct size.
+        ///   <paramref name="encapsulatedKey" /> is not the correct size.
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   An error occurred creating the sender context.
         /// </exception>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public HpkeSenderContext SetupSender(
-            Span<byte> kemCiphertext,
+            Span<byte> encapsulatedKey,
             ReadOnlySpan<byte> info = default)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
 
-            if (kemCiphertext.Length != Suite.EncapsulatedKeySizeInBytes)
+            if (encapsulatedKey.Length != Suite.EncapsulatedKeySizeInBytes)
             {
                 throw new ArgumentException(
                     SR.Format(SR.Argument_DestinationImprecise, Suite.EncapsulatedKeySizeInBytes),
-                    nameof(kemCiphertext));
+                    nameof(encapsulatedKey));
             }
 
-            return SetupSenderCore(kemCiphertext, info);
+            return SetupSenderCore(encapsulatedKey, info);
         }
 
         /// <summary>
         ///   Creates a sender encryption context for multi-message encryption.
         /// </summary>
-        /// <param name="kemCiphertext">
+        /// <param name="encapsulatedKey">
         ///   When this method returns, contains the KEM ciphertext produced by the sender, which the recipient needs to create the
         ///   corresponding receiver context.
         /// </param>
@@ -648,20 +648,20 @@ namespace System.Security.Cryptography
         /// </exception>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public HpkeSenderContext SetupSender(
-            out byte[] kemCiphertext,
+            out byte[] encapsulatedKey,
             ReadOnlySpan<byte> info = default)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
 
-            kemCiphertext = new byte[Suite.EncapsulatedKeySizeInBytes];
+            encapsulatedKey = new byte[Suite.EncapsulatedKeySizeInBytes];
 
-            return SetupSenderCore(kemCiphertext, info);
+            return SetupSenderCore(encapsulatedKey, info);
         }
 
         /// <summary>
         ///   Creates a receiver decryption context for multi-message decryption.
         /// </summary>
-        /// <param name="kemCiphertext">
+        /// <param name="encapsulatedKey">
         ///   The KEM ciphertext produced by the sender.
         /// </param>
         /// <param name="info">
@@ -671,32 +671,32 @@ namespace System.Security.Cryptography
         ///   A receiver context that can be used for sequential decryption and secret export operations.
         /// </returns>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="kemCiphertext" /> is not the correct size.
+        ///   <paramref name="encapsulatedKey" /> is not the correct size.
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   An error occurred creating the receiver context, or this instance does not contain a decapsulation key.
         /// </exception>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public HpkeReceiverContext SetupReceiver(
-            ReadOnlySpan<byte> kemCiphertext,
+            ReadOnlySpan<byte> encapsulatedKey,
             ReadOnlySpan<byte> info = default)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
 
-            if (kemCiphertext.Length != Suite.EncapsulatedKeySizeInBytes)
+            if (encapsulatedKey.Length != Suite.EncapsulatedKeySizeInBytes)
             {
                 throw new ArgumentException(
                     SR.Format(SR.Argument_DestinationImprecise, Suite.EncapsulatedKeySizeInBytes),
-                    nameof(kemCiphertext));
+                    nameof(encapsulatedKey));
             }
 
-            return SetupReceiverCore(kemCiphertext, info);
+            return SetupReceiverCore(encapsulatedKey, info);
         }
 
         /// <summary>
         ///   Creates a receiver decryption context for multi-message decryption.
         /// </summary>
-        /// <param name="kemCiphertext">
+        /// <param name="encapsulatedKey">
         ///   The KEM ciphertext produced by the sender.
         /// </param>
         /// <param name="info">
@@ -706,23 +706,23 @@ namespace System.Security.Cryptography
         ///   A receiver context that can be used for sequential decryption and secret export operations.
         /// </returns>
         /// <exception cref="ArgumentNullException">
-        ///   <paramref name="kemCiphertext" /> is <see langword="null" />.
+        ///   <paramref name="encapsulatedKey" /> is <see langword="null" />.
         /// </exception>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="kemCiphertext" /> is not the correct size.
+        ///   <paramref name="encapsulatedKey" /> is not the correct size.
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   An error occurred creating the receiver context, or this instance does not contain a decapsulation key.
         /// </exception>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public HpkeReceiverContext SetupReceiver(
-            byte[] kemCiphertext,
+            byte[] encapsulatedKey,
             byte[]? info = null)
         {
-            ArgumentNullException.ThrowIfNull(kemCiphertext);
+            ArgumentNullException.ThrowIfNull(encapsulatedKey);
 
             return SetupReceiver(
-                new ReadOnlySpan<byte>(kemCiphertext),
+                new ReadOnlySpan<byte>(encapsulatedKey),
                 new ReadOnlySpan<byte>(info));
         }
 
@@ -736,7 +736,7 @@ namespace System.Security.Cryptography
         /// <param name="pskId">
         ///   The pre-shared key identifier.
         /// </param>
-        /// <param name="kemCiphertext">
+        /// <param name="encapsulatedKey">
         ///   The buffer to receive the KEM ciphertext, which the recipient needs to create the
         ///   corresponding receiver context. This must be exactly
         ///   <see cref="HpkeSuite.EncapsulatedKeySizeInBytes" /> bytes long.
@@ -748,7 +748,7 @@ namespace System.Security.Cryptography
         ///   A sender context that can be used for sequential encryption and secret export operations.
         /// </returns>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="kemCiphertext" /> is not the correct size.
+        ///   <paramref name="encapsulatedKey" /> is not the correct size.
         ///   -or-
         ///   <paramref name="psk" /> is empty.
         ///   -or-
@@ -761,16 +761,16 @@ namespace System.Security.Cryptography
         public HpkeSenderContext SetupSenderPsk(
             ReadOnlySpan<byte> psk,
             ReadOnlySpan<byte> pskId,
-            Span<byte> kemCiphertext,
+            Span<byte> encapsulatedKey,
             ReadOnlySpan<byte> info = default)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
 
-            if (kemCiphertext.Length != Suite.EncapsulatedKeySizeInBytes)
+            if (encapsulatedKey.Length != Suite.EncapsulatedKeySizeInBytes)
             {
                 throw new ArgumentException(
                     SR.Format(SR.Argument_DestinationImprecise, Suite.EncapsulatedKeySizeInBytes),
-                    nameof(kemCiphertext));
+                    nameof(encapsulatedKey));
             }
 
             if (psk.IsEmpty)
@@ -783,7 +783,7 @@ namespace System.Security.Cryptography
                 throw new ArgumentException(SR.Argument_EmptySpan, nameof(pskId));
             }
 
-            return SetupSenderPskCore(kemCiphertext, info, psk, pskId);
+            return SetupSenderPskCore(encapsulatedKey, info, psk, pskId);
         }
 
         /// <summary>
@@ -795,7 +795,7 @@ namespace System.Security.Cryptography
         /// <param name="pskId">
         ///   The pre-shared key identifier.
         /// </param>
-        /// <param name="kemCiphertext">
+        /// <param name="encapsulatedKey">
         ///   When this method returns, contains the KEM ciphertext produced by the sender, which the recipient needs to create the
         ///   corresponding receiver context.
         /// </param>
@@ -817,7 +817,7 @@ namespace System.Security.Cryptography
         public HpkeSenderContext SetupSenderPsk(
             ReadOnlySpan<byte> psk,
             ReadOnlySpan<byte> pskId,
-            out byte[] kemCiphertext,
+            out byte[] encapsulatedKey,
             ReadOnlySpan<byte> info = default)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
@@ -832,9 +832,9 @@ namespace System.Security.Cryptography
                 throw new ArgumentException(SR.Argument_EmptySpan, nameof(pskId));
             }
 
-            kemCiphertext = new byte[Suite.EncapsulatedKeySizeInBytes];
+            encapsulatedKey = new byte[Suite.EncapsulatedKeySizeInBytes];
 
-            return SetupSenderPskCore(kemCiphertext, info, psk, pskId);
+            return SetupSenderPskCore(encapsulatedKey, info, psk, pskId);
         }
 
         /// <summary>
@@ -846,7 +846,7 @@ namespace System.Security.Cryptography
         /// <param name="pskId">
         ///   The pre-shared key identifier.
         /// </param>
-        /// <param name="kemCiphertext">
+        /// <param name="encapsulatedKey">
         ///   When this method returns, contains the KEM ciphertext produced by the sender, which the recipient needs to create the
         ///   corresponding receiver context.
         /// </param>
@@ -873,7 +873,7 @@ namespace System.Security.Cryptography
         public HpkeSenderContext SetupSenderPsk(
             byte[] psk,
             byte[] pskId,
-            out byte[] kemCiphertext,
+            out byte[] encapsulatedKey,
             byte[]? info = null)
         {
             ArgumentNullException.ThrowIfNull(psk);
@@ -882,14 +882,14 @@ namespace System.Security.Cryptography
             return SetupSenderPsk(
                 new ReadOnlySpan<byte>(psk),
                 new ReadOnlySpan<byte>(pskId),
-                out kemCiphertext,
+                out encapsulatedKey,
                 new ReadOnlySpan<byte>(info));
         }
 
         /// <summary>
         ///   Creates a receiver decryption context for multi-message decryption using PSK mode.
         /// </summary>
-        /// <param name="kemCiphertext">
+        /// <param name="encapsulatedKey">
         ///   The KEM ciphertext produced by the sender.
         /// </param>
         /// <param name="psk">
@@ -905,7 +905,7 @@ namespace System.Security.Cryptography
         ///   A receiver context that can be used for sequential decryption and secret export operations.
         /// </returns>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="kemCiphertext" /> is not the correct size.
+        ///   <paramref name="encapsulatedKey" /> is not the correct size.
         ///   -or-
         ///   <paramref name="psk" /> is empty.
         ///   -or-
@@ -916,18 +916,18 @@ namespace System.Security.Cryptography
         /// </exception>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public HpkeReceiverContext SetupReceiverPsk(
-            ReadOnlySpan<byte> kemCiphertext,
+            ReadOnlySpan<byte> encapsulatedKey,
             ReadOnlySpan<byte> psk,
             ReadOnlySpan<byte> pskId,
             ReadOnlySpan<byte> info = default)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
 
-            if (kemCiphertext.Length != Suite.EncapsulatedKeySizeInBytes)
+            if (encapsulatedKey.Length != Suite.EncapsulatedKeySizeInBytes)
             {
                 throw new ArgumentException(
                     SR.Format(SR.Argument_DestinationImprecise, Suite.EncapsulatedKeySizeInBytes),
-                    nameof(kemCiphertext));
+                    nameof(encapsulatedKey));
             }
 
             if (psk.IsEmpty)
@@ -940,13 +940,13 @@ namespace System.Security.Cryptography
                 throw new ArgumentException(SR.Argument_EmptySpan, nameof(pskId));
             }
 
-            return SetupReceiverPskCore(kemCiphertext, info, psk, pskId);
+            return SetupReceiverPskCore(encapsulatedKey, info, psk, pskId);
         }
 
         /// <summary>
         ///   Creates a receiver decryption context for multi-message decryption using PSK mode.
         /// </summary>
-        /// <param name="kemCiphertext">
+        /// <param name="encapsulatedKey">
         ///   The KEM ciphertext produced by the sender.
         /// </param>
         /// <param name="psk">
@@ -962,14 +962,14 @@ namespace System.Security.Cryptography
         ///   A receiver context that can be used for sequential decryption and secret export operations.
         /// </returns>
         /// <exception cref="ArgumentNullException">
-        ///   <paramref name="kemCiphertext" /> is <see langword="null" />.
+        ///   <paramref name="encapsulatedKey" /> is <see langword="null" />.
         ///   -or-
         ///   <paramref name="psk" /> is <see langword="null" />.
         ///   -or-
         ///   <paramref name="pskId" /> is <see langword="null" />.
         /// </exception>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="kemCiphertext" /> is not the correct size.
+        ///   <paramref name="encapsulatedKey" /> is not the correct size.
         ///   -or-
         ///   <paramref name="psk" /> is empty.
         ///   -or-
@@ -980,17 +980,17 @@ namespace System.Security.Cryptography
         /// </exception>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public HpkeReceiverContext SetupReceiverPsk(
-            byte[] kemCiphertext,
+            byte[] encapsulatedKey,
             byte[] psk,
             byte[] pskId,
             byte[]? info = null)
         {
-            ArgumentNullException.ThrowIfNull(kemCiphertext);
+            ArgumentNullException.ThrowIfNull(encapsulatedKey);
             ArgumentNullException.ThrowIfNull(psk);
             ArgumentNullException.ThrowIfNull(pskId);
 
             return SetupReceiverPsk(
-                new ReadOnlySpan<byte>(kemCiphertext),
+                new ReadOnlySpan<byte>(encapsulatedKey),
                 new ReadOnlySpan<byte>(psk),
                 new ReadOnlySpan<byte>(pskId),
                 new ReadOnlySpan<byte>(info));
@@ -1000,7 +1000,7 @@ namespace System.Security.Cryptography
         ///   Creates a sender encryption context for multi-message encryption using Auth mode,
         ///   writing the KEM ciphertext into the provided buffer.
         /// </summary>
-        /// <param name="kemCiphertext">
+        /// <param name="encapsulatedKey">
         ///   The buffer to receive the KEM ciphertext, which the recipient needs to create the
         ///   corresponding receiver context. This must be exactly
         ///   <see cref="HpkeSuite.EncapsulatedKeySizeInBytes" /> bytes long.
@@ -1018,7 +1018,7 @@ namespace System.Security.Cryptography
         ///   <paramref name="senderKey" /> is <see langword="null" />.
         /// </exception>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="kemCiphertext" /> is not the correct size.
+        ///   <paramref name="encapsulatedKey" /> is not the correct size.
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   An error occurred creating the sender context, or <paramref name="senderKey" /> does not contain a decapsulation key.
@@ -1029,27 +1029,27 @@ namespace System.Security.Cryptography
         ///   <paramref name="senderKey" /> has already been disposed.
         /// </exception>
         public HpkeSenderContext SetupSenderAuth(
-            Span<byte> kemCiphertext,
+            Span<byte> encapsulatedKey,
             Hpke senderKey,
             ReadOnlySpan<byte> info = default)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
             ValidateSenderKey(senderKey);
 
-            if (kemCiphertext.Length != Suite.EncapsulatedKeySizeInBytes)
+            if (encapsulatedKey.Length != Suite.EncapsulatedKeySizeInBytes)
             {
                 throw new ArgumentException(
                     SR.Format(SR.Argument_DestinationImprecise, Suite.EncapsulatedKeySizeInBytes),
-                    nameof(kemCiphertext));
+                    nameof(encapsulatedKey));
             }
 
-            return SetupSenderAuthCore(kemCiphertext, senderKey, info);
+            return SetupSenderAuthCore(encapsulatedKey, senderKey, info);
         }
 
         /// <summary>
         ///   Creates a sender encryption context for multi-message encryption using Auth mode.
         /// </summary>
-        /// <param name="kemCiphertext">
+        /// <param name="encapsulatedKey">
         ///   When this method returns, contains the KEM ciphertext produced by the sender, which the recipient needs to create the
         ///   corresponding receiver context.
         /// </param>
@@ -1074,22 +1074,22 @@ namespace System.Security.Cryptography
         ///   <paramref name="senderKey" /> has already been disposed.
         /// </exception>
         public HpkeSenderContext SetupSenderAuth(
-            out byte[] kemCiphertext,
+            out byte[] encapsulatedKey,
             Hpke senderKey,
             ReadOnlySpan<byte> info = default)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
             ValidateSenderKey(senderKey);
 
-            kemCiphertext = new byte[Suite.EncapsulatedKeySizeInBytes];
+            encapsulatedKey = new byte[Suite.EncapsulatedKeySizeInBytes];
 
-            return SetupSenderAuthCore(kemCiphertext, senderKey, info);
+            return SetupSenderAuthCore(encapsulatedKey, senderKey, info);
         }
 
         /// <summary>
         ///   Creates a sender encryption context for multi-message encryption using Auth mode.
         /// </summary>
-        /// <param name="kemCiphertext">
+        /// <param name="encapsulatedKey">
         ///   When this method returns, contains the KEM ciphertext produced by the sender, which the recipient needs to create the
         ///   corresponding receiver context.
         /// </param>
@@ -1114,19 +1114,19 @@ namespace System.Security.Cryptography
         ///   <paramref name="senderKey" /> has already been disposed.
         /// </exception>
         public HpkeSenderContext SetupSenderAuth(
-            out byte[] kemCiphertext,
+            out byte[] encapsulatedKey,
             Hpke senderKey,
             byte[]? info = null)
         {
             ArgumentNullException.ThrowIfNull(senderKey);
 
-            return SetupSenderAuth(out kemCiphertext, senderKey, new ReadOnlySpan<byte>(info));
+            return SetupSenderAuth(out encapsulatedKey, senderKey, new ReadOnlySpan<byte>(info));
         }
 
         /// <summary>
         ///   Creates a receiver decryption context for multi-message decryption using Auth mode.
         /// </summary>
-        /// <param name="kemCiphertext">
+        /// <param name="encapsulatedKey">
         ///   The KEM ciphertext produced by the sender.
         /// </param>
         /// <param name="senderKey">
@@ -1142,7 +1142,7 @@ namespace System.Security.Cryptography
         ///   <paramref name="senderKey" /> is <see langword="null" />.
         /// </exception>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="kemCiphertext" /> is not the correct size.
+        ///   <paramref name="encapsulatedKey" /> is not the correct size.
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   An error occurred creating the receiver context, this instance does not contain a decapsulation key,
@@ -1154,27 +1154,27 @@ namespace System.Security.Cryptography
         ///   <paramref name="senderKey" /> has already been disposed.
         /// </exception>
         public HpkeReceiverContext SetupReceiverAuth(
-            ReadOnlySpan<byte> kemCiphertext,
+            ReadOnlySpan<byte> encapsulatedKey,
             Hpke senderKey,
             ReadOnlySpan<byte> info = default)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
             ValidateSenderKey(senderKey);
 
-            if (kemCiphertext.Length != Suite.EncapsulatedKeySizeInBytes)
+            if (encapsulatedKey.Length != Suite.EncapsulatedKeySizeInBytes)
             {
                 throw new ArgumentException(
                     SR.Format(SR.Argument_DestinationImprecise, Suite.EncapsulatedKeySizeInBytes),
-                    nameof(kemCiphertext));
+                    nameof(encapsulatedKey));
             }
 
-            return SetupReceiverAuthCore(kemCiphertext, senderKey, info);
+            return SetupReceiverAuthCore(encapsulatedKey, senderKey, info);
         }
 
         /// <summary>
         ///   Creates a receiver decryption context for multi-message decryption using Auth mode.
         /// </summary>
-        /// <param name="kemCiphertext">
+        /// <param name="encapsulatedKey">
         ///   The KEM ciphertext produced by the sender.
         /// </param>
         /// <param name="senderKey">
@@ -1187,12 +1187,12 @@ namespace System.Security.Cryptography
         ///   A receiver context that can be used for sequential decryption and secret export operations.
         /// </returns>
         /// <exception cref="ArgumentNullException">
-        ///   <paramref name="kemCiphertext" /> is <see langword="null" />.
+        ///   <paramref name="encapsulatedKey" /> is <see langword="null" />.
         ///   -or-
         ///   <paramref name="senderKey" /> is <see langword="null" />.
         /// </exception>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="kemCiphertext" /> is not the correct size.
+        ///   <paramref name="encapsulatedKey" /> is not the correct size.
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   An error occurred creating the receiver context, this instance does not contain a decapsulation key,
@@ -1204,15 +1204,15 @@ namespace System.Security.Cryptography
         ///   <paramref name="senderKey" /> has already been disposed.
         /// </exception>
         public HpkeReceiverContext SetupReceiverAuth(
-            byte[] kemCiphertext,
+            byte[] encapsulatedKey,
             Hpke senderKey,
             byte[]? info = null)
         {
-            ArgumentNullException.ThrowIfNull(kemCiphertext);
+            ArgumentNullException.ThrowIfNull(encapsulatedKey);
             ArgumentNullException.ThrowIfNull(senderKey);
 
             return SetupReceiverAuth(
-                new ReadOnlySpan<byte>(kemCiphertext),
+                new ReadOnlySpan<byte>(encapsulatedKey),
                 senderKey,
                 new ReadOnlySpan<byte>(info));
         }
@@ -1221,7 +1221,7 @@ namespace System.Security.Cryptography
         ///   Creates a sender encryption context for multi-message encryption using AuthPSK mode,
         ///   writing the KEM ciphertext into the provided buffer.
         /// </summary>
-        /// <param name="kemCiphertext">
+        /// <param name="encapsulatedKey">
         ///   The buffer to receive the KEM ciphertext, which the recipient needs to create the
         ///   corresponding receiver context. This must be exactly
         ///   <see cref="HpkeSuite.EncapsulatedKeySizeInBytes" /> bytes long.
@@ -1245,7 +1245,7 @@ namespace System.Security.Cryptography
         ///   <paramref name="senderKey" /> is <see langword="null" />.
         /// </exception>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="kemCiphertext" /> is not the correct size.
+        ///   <paramref name="encapsulatedKey" /> is not the correct size.
         ///   -or-
         ///   <paramref name="psk" /> is empty.
         ///   -or-
@@ -1260,7 +1260,7 @@ namespace System.Security.Cryptography
         ///   <paramref name="senderKey" /> has already been disposed.
         /// </exception>
         public HpkeSenderContext SetupSenderAuthPsk(
-            Span<byte> kemCiphertext,
+            Span<byte> encapsulatedKey,
             Hpke senderKey,
             ReadOnlySpan<byte> psk,
             ReadOnlySpan<byte> pskId,
@@ -1269,11 +1269,11 @@ namespace System.Security.Cryptography
             ObjectDisposedException.ThrowIf(_disposed, this);
             ValidateSenderKey(senderKey);
 
-            if (kemCiphertext.Length != Suite.EncapsulatedKeySizeInBytes)
+            if (encapsulatedKey.Length != Suite.EncapsulatedKeySizeInBytes)
             {
                 throw new ArgumentException(
                     SR.Format(SR.Argument_DestinationImprecise, Suite.EncapsulatedKeySizeInBytes),
-                    nameof(kemCiphertext));
+                    nameof(encapsulatedKey));
             }
 
             if (psk.IsEmpty)
@@ -1286,13 +1286,13 @@ namespace System.Security.Cryptography
                 throw new ArgumentException(SR.Argument_EmptySpan, nameof(pskId));
             }
 
-            return SetupSenderAuthPskCore(kemCiphertext, senderKey, info, psk, pskId);
+            return SetupSenderAuthPskCore(encapsulatedKey, senderKey, info, psk, pskId);
         }
 
         /// <summary>
         ///   Creates a sender encryption context for multi-message encryption using AuthPSK mode.
         /// </summary>
-        /// <param name="kemCiphertext">
+        /// <param name="encapsulatedKey">
         ///   When this method returns, contains the KEM ciphertext produced by the sender, which the recipient needs to create the
         ///   corresponding receiver context.
         /// </param>
@@ -1328,7 +1328,7 @@ namespace System.Security.Cryptography
         ///   <paramref name="senderKey" /> has already been disposed.
         /// </exception>
         public HpkeSenderContext SetupSenderAuthPsk(
-            out byte[] kemCiphertext,
+            out byte[] encapsulatedKey,
             Hpke senderKey,
             ReadOnlySpan<byte> psk,
             ReadOnlySpan<byte> pskId,
@@ -1347,15 +1347,15 @@ namespace System.Security.Cryptography
                 throw new ArgumentException(SR.Argument_EmptySpan, nameof(pskId));
             }
 
-            kemCiphertext = new byte[Suite.EncapsulatedKeySizeInBytes];
+            encapsulatedKey = new byte[Suite.EncapsulatedKeySizeInBytes];
 
-            return SetupSenderAuthPskCore(kemCiphertext, senderKey, info, psk, pskId);
+            return SetupSenderAuthPskCore(encapsulatedKey, senderKey, info, psk, pskId);
         }
 
         /// <summary>
         ///   Creates a sender encryption context for multi-message encryption using AuthPSK mode.
         /// </summary>
-        /// <param name="kemCiphertext">
+        /// <param name="encapsulatedKey">
         ///   When this method returns, contains the KEM ciphertext produced by the sender, which the recipient needs to create the
         ///   corresponding receiver context.
         /// </param>
@@ -1395,7 +1395,7 @@ namespace System.Security.Cryptography
         ///   <paramref name="senderKey" /> has already been disposed.
         /// </exception>
         public HpkeSenderContext SetupSenderAuthPsk(
-            out byte[] kemCiphertext,
+            out byte[] encapsulatedKey,
             Hpke senderKey,
             byte[] psk,
             byte[] pskId,
@@ -1406,7 +1406,7 @@ namespace System.Security.Cryptography
             ArgumentNullException.ThrowIfNull(pskId);
 
             return SetupSenderAuthPsk(
-                out kemCiphertext,
+                out encapsulatedKey,
                 senderKey,
                 new ReadOnlySpan<byte>(psk),
                 new ReadOnlySpan<byte>(pskId),
@@ -1416,7 +1416,7 @@ namespace System.Security.Cryptography
         /// <summary>
         ///   Creates a receiver decryption context for multi-message decryption using AuthPSK mode.
         /// </summary>
-        /// <param name="kemCiphertext">
+        /// <param name="encapsulatedKey">
         ///   The KEM ciphertext produced by the sender.
         /// </param>
         /// <param name="senderKey">
@@ -1438,7 +1438,7 @@ namespace System.Security.Cryptography
         ///   <paramref name="senderKey" /> is <see langword="null" />.
         /// </exception>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="kemCiphertext" /> is not the correct size.
+        ///   <paramref name="encapsulatedKey" /> is not the correct size.
         ///   -or-
         ///   <paramref name="psk" /> is empty.
         ///   -or-
@@ -1454,7 +1454,7 @@ namespace System.Security.Cryptography
         ///   <paramref name="senderKey" /> has already been disposed.
         /// </exception>
         public HpkeReceiverContext SetupReceiverAuthPsk(
-            ReadOnlySpan<byte> kemCiphertext,
+            ReadOnlySpan<byte> encapsulatedKey,
             Hpke senderKey,
             ReadOnlySpan<byte> psk,
             ReadOnlySpan<byte> pskId,
@@ -1463,11 +1463,11 @@ namespace System.Security.Cryptography
             ObjectDisposedException.ThrowIf(_disposed, this);
             ValidateSenderKey(senderKey);
 
-            if (kemCiphertext.Length != Suite.EncapsulatedKeySizeInBytes)
+            if (encapsulatedKey.Length != Suite.EncapsulatedKeySizeInBytes)
             {
                 throw new ArgumentException(
                     SR.Format(SR.Argument_DestinationImprecise, Suite.EncapsulatedKeySizeInBytes),
-                    nameof(kemCiphertext));
+                    nameof(encapsulatedKey));
             }
 
             if (psk.IsEmpty)
@@ -1480,13 +1480,13 @@ namespace System.Security.Cryptography
                 throw new ArgumentException(SR.Argument_EmptySpan, nameof(pskId));
             }
 
-            return SetupReceiverAuthPskCore(kemCiphertext, senderKey, info, psk, pskId);
+            return SetupReceiverAuthPskCore(encapsulatedKey, senderKey, info, psk, pskId);
         }
 
         /// <summary>
         ///   Creates a receiver decryption context for multi-message decryption using AuthPSK mode.
         /// </summary>
-        /// <param name="kemCiphertext">
+        /// <param name="encapsulatedKey">
         ///   The KEM ciphertext produced by the sender.
         /// </param>
         /// <param name="senderKey">
@@ -1505,7 +1505,7 @@ namespace System.Security.Cryptography
         ///   A receiver context that can be used for sequential decryption and secret export operations.
         /// </returns>
         /// <exception cref="ArgumentNullException">
-        ///   <paramref name="kemCiphertext" /> is <see langword="null" />.
+        ///   <paramref name="encapsulatedKey" /> is <see langword="null" />.
         ///   -or-
         ///   <paramref name="senderKey" /> is <see langword="null" />.
         ///   -or-
@@ -1514,7 +1514,7 @@ namespace System.Security.Cryptography
         ///   <paramref name="pskId" /> is <see langword="null" />.
         /// </exception>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="kemCiphertext" /> is not the correct size.
+        ///   <paramref name="encapsulatedKey" /> is not the correct size.
         ///   -or-
         ///   <paramref name="psk" /> is empty.
         ///   -or-
@@ -1530,19 +1530,19 @@ namespace System.Security.Cryptography
         ///   <paramref name="senderKey" /> has already been disposed.
         /// </exception>
         public HpkeReceiverContext SetupReceiverAuthPsk(
-            byte[] kemCiphertext,
+            byte[] encapsulatedKey,
             Hpke senderKey,
             byte[] psk,
             byte[] pskId,
             byte[]? info = null)
         {
-            ArgumentNullException.ThrowIfNull(kemCiphertext);
+            ArgumentNullException.ThrowIfNull(encapsulatedKey);
             ArgumentNullException.ThrowIfNull(senderKey);
             ArgumentNullException.ThrowIfNull(psk);
             ArgumentNullException.ThrowIfNull(pskId);
 
             return SetupReceiverAuthPsk(
-                new ReadOnlySpan<byte>(kemCiphertext),
+                new ReadOnlySpan<byte>(encapsulatedKey),
                 senderKey,
                 new ReadOnlySpan<byte>(psk),
                 new ReadOnlySpan<byte>(pskId),
@@ -1571,13 +1571,13 @@ namespace System.Security.Cryptography
         ///   When overridden in a derived class, performs single-shot Base mode HPKE encryption.
         /// </summary>
         /// <param name="plaintext">The plaintext to encrypt.</param>
-        /// <param name="kemCiphertext">The buffer to receive the KEM ciphertext.</param>
+        /// <param name="encapsulatedKey">The buffer to receive the KEM ciphertext.</param>
         /// <param name="ciphertext">The buffer to receive the AEAD ciphertext and tag.</param>
         /// <param name="aad">The additional authenticated data.</param>
         /// <param name="info">The info parameter for the key schedule.</param>
         protected abstract void SealCore(
             ReadOnlySpan<byte> plaintext,
-            Span<byte> kemCiphertext,
+            Span<byte> encapsulatedKey,
             Span<byte> ciphertext,
             ReadOnlySpan<byte> aad,
             ReadOnlySpan<byte> info);
@@ -1585,13 +1585,13 @@ namespace System.Security.Cryptography
         /// <summary>
         ///   When overridden in a derived class, performs single-shot Base mode HPKE decryption.
         /// </summary>
-        /// <param name="kemCiphertext">The KEM ciphertext produced by the sender.</param>
+        /// <param name="encapsulatedKey">The KEM ciphertext produced by the sender.</param>
         /// <param name="ciphertext">The AEAD ciphertext and tag to decrypt.</param>
         /// <param name="plaintext">The buffer to receive the decrypted plaintext.</param>
         /// <param name="aad">The additional authenticated data.</param>
         /// <param name="info">The info parameter for the key schedule.</param>
         protected abstract void OpenCore(
-            ReadOnlySpan<byte> kemCiphertext,
+            ReadOnlySpan<byte> encapsulatedKey,
             ReadOnlySpan<byte> ciphertext,
             Span<byte> plaintext,
             ReadOnlySpan<byte> aad,
@@ -1600,23 +1600,23 @@ namespace System.Security.Cryptography
         /// <summary>
         ///   When overridden in a derived class, creates a sender encryption context using Base mode.
         /// </summary>
-        /// <param name="kemCiphertext">The buffer to receive the KEM ciphertext.</param>
+        /// <param name="encapsulatedKey">The buffer to receive the KEM ciphertext.</param>
         /// <param name="info">The info parameter for the key schedule.</param>
         /// <returns>A sender encryption context.</returns>
         protected abstract HpkeSenderContext SetupSenderCore(
-            Span<byte> kemCiphertext,
+            Span<byte> encapsulatedKey,
             ReadOnlySpan<byte> info);
 
         /// <summary>
         ///   When overridden in a derived class, creates a sender encryption context using PSK mode.
         /// </summary>
-        /// <param name="kemCiphertext">The buffer to receive the KEM ciphertext.</param>
+        /// <param name="encapsulatedKey">The buffer to receive the KEM ciphertext.</param>
         /// <param name="info">The info parameter for the key schedule.</param>
         /// <param name="psk">The pre-shared key.</param>
         /// <param name="pskId">The pre-shared key identifier.</param>
         /// <returns>A sender encryption context.</returns>
         protected abstract HpkeSenderContext SetupSenderPskCore(
-            Span<byte> kemCiphertext,
+            Span<byte> encapsulatedKey,
             ReadOnlySpan<byte> info,
             ReadOnlySpan<byte> psk,
             ReadOnlySpan<byte> pskId);
@@ -1624,26 +1624,26 @@ namespace System.Security.Cryptography
         /// <summary>
         ///   When overridden in a derived class, creates a sender encryption context using Auth mode.
         /// </summary>
-        /// <param name="kemCiphertext">The buffer to receive the KEM ciphertext.</param>
+        /// <param name="encapsulatedKey">The buffer to receive the KEM ciphertext.</param>
         /// <param name="senderKey">The sender's static key.</param>
         /// <param name="info">The info parameter for the key schedule.</param>
         /// <returns>A sender encryption context.</returns>
         protected abstract HpkeSenderContext SetupSenderAuthCore(
-            Span<byte> kemCiphertext,
+            Span<byte> encapsulatedKey,
             Hpke senderKey,
             ReadOnlySpan<byte> info);
 
         /// <summary>
         ///   When overridden in a derived class, creates a sender encryption context using AuthPSK mode.
         /// </summary>
-        /// <param name="kemCiphertext">The buffer to receive the KEM ciphertext.</param>
+        /// <param name="encapsulatedKey">The buffer to receive the KEM ciphertext.</param>
         /// <param name="senderKey">The sender's static key.</param>
         /// <param name="info">The info parameter for the key schedule.</param>
         /// <param name="psk">The pre-shared key.</param>
         /// <param name="pskId">The pre-shared key identifier.</param>
         /// <returns>A sender encryption context.</returns>
         protected abstract HpkeSenderContext SetupSenderAuthPskCore(
-            Span<byte> kemCiphertext,
+            Span<byte> encapsulatedKey,
             Hpke senderKey,
             ReadOnlySpan<byte> info,
             ReadOnlySpan<byte> psk,
@@ -1652,23 +1652,23 @@ namespace System.Security.Cryptography
         /// <summary>
         ///   When overridden in a derived class, creates a receiver decryption context using Base mode.
         /// </summary>
-        /// <param name="kemCiphertext">The KEM ciphertext produced by the sender.</param>
+        /// <param name="encapsulatedKey">The KEM ciphertext produced by the sender.</param>
         /// <param name="info">The info parameter for the key schedule.</param>
         /// <returns>A receiver decryption context.</returns>
         protected abstract HpkeReceiverContext SetupReceiverCore(
-            ReadOnlySpan<byte> kemCiphertext,
+            ReadOnlySpan<byte> encapsulatedKey,
             ReadOnlySpan<byte> info);
 
         /// <summary>
         ///   When overridden in a derived class, creates a receiver decryption context using PSK mode.
         /// </summary>
-        /// <param name="kemCiphertext">The KEM ciphertext produced by the sender.</param>
+        /// <param name="encapsulatedKey">The KEM ciphertext produced by the sender.</param>
         /// <param name="info">The info parameter for the key schedule.</param>
         /// <param name="psk">The pre-shared key.</param>
         /// <param name="pskId">The pre-shared key identifier.</param>
         /// <returns>A receiver decryption context.</returns>
         protected abstract HpkeReceiverContext SetupReceiverPskCore(
-            ReadOnlySpan<byte> kemCiphertext,
+            ReadOnlySpan<byte> encapsulatedKey,
             ReadOnlySpan<byte> info,
             ReadOnlySpan<byte> psk,
             ReadOnlySpan<byte> pskId);
@@ -1676,26 +1676,26 @@ namespace System.Security.Cryptography
         /// <summary>
         ///   When overridden in a derived class, creates a receiver decryption context using Auth mode.
         /// </summary>
-        /// <param name="kemCiphertext">The KEM ciphertext produced by the sender.</param>
+        /// <param name="encapsulatedKey">The KEM ciphertext produced by the sender.</param>
         /// <param name="senderKey">The sender's static key.</param>
         /// <param name="info">The info parameter for the key schedule.</param>
         /// <returns>A receiver decryption context.</returns>
         protected abstract HpkeReceiverContext SetupReceiverAuthCore(
-            ReadOnlySpan<byte> kemCiphertext,
+            ReadOnlySpan<byte> encapsulatedKey,
             Hpke senderKey,
             ReadOnlySpan<byte> info);
 
         /// <summary>
         ///   When overridden in a derived class, creates a receiver decryption context using AuthPSK mode.
         /// </summary>
-        /// <param name="kemCiphertext">The KEM ciphertext produced by the sender.</param>
+        /// <param name="encapsulatedKey">The KEM ciphertext produced by the sender.</param>
         /// <param name="senderKey">The sender's static key.</param>
         /// <param name="info">The info parameter for the key schedule.</param>
         /// <param name="psk">The pre-shared key.</param>
         /// <param name="pskId">The pre-shared key identifier.</param>
         /// <returns>A receiver decryption context.</returns>
         protected abstract HpkeReceiverContext SetupReceiverAuthPskCore(
-            ReadOnlySpan<byte> kemCiphertext,
+            ReadOnlySpan<byte> encapsulatedKey,
             Hpke senderKey,
             ReadOnlySpan<byte> info,
             ReadOnlySpan<byte> psk,

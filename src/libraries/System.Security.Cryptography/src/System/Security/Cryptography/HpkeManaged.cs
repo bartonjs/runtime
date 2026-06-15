@@ -96,7 +96,7 @@ namespace System.Security.Cryptography
 
         protected override void SealCore(
             ReadOnlySpan<byte> plaintext,
-            Span<byte> kemCiphertext,
+            Span<byte> encapsulatedKey,
             Span<byte> ciphertext,
             ReadOnlySpan<byte> aad,
             ReadOnlySpan<byte> info)
@@ -107,7 +107,7 @@ namespace System.Security.Cryptography
             {
                 // enc = SerializePublicKey(pkE)
                 ECParameters ephPub = ephemeral.ExportParameters(includePrivateParameters: false);
-                SerializePublicKey(ephPub, kemCiphertext);
+                SerializePublicKey(ephPub, encapsulatedKey);
 
                 // DH(skE, pkR)
                 using (ECDiffieHellman recipientPub = ECDiffieHellman.Create(_publicKeyParameters))
@@ -118,9 +118,9 @@ namespace System.Security.Cryptography
                     byte[] pkRm = new byte[Suite.EncapsulationKeySizeInBytes];
                     SerializePublicKey(_publicKeyParameters, pkRm);
 
-                    byte[] kemContext = new byte[kemCiphertext.Length + pkRm.Length];
-                    kemCiphertext.CopyTo(kemContext);
-                    pkRm.CopyTo(kemContext.AsSpan(kemCiphertext.Length));
+                    byte[] kemContext = new byte[encapsulatedKey.Length + pkRm.Length];
+                    encapsulatedKey.CopyTo(kemContext);
+                    pkRm.CopyTo(kemContext.AsSpan(encapsulatedKey.Length));
 
                     // shared_secret = ExtractAndExpand(dh, kem_context)
                     byte[] sharedSecret = ExtractAndExpand(Suite, dh, kemContext);
@@ -132,7 +132,7 @@ namespace System.Security.Cryptography
         }
 
         protected override void OpenCore(
-            ReadOnlySpan<byte> kemCiphertext,
+            ReadOnlySpan<byte> encapsulatedKey,
             ReadOnlySpan<byte> ciphertext,
             Span<byte> plaintext,
             ReadOnlySpan<byte> aad,
@@ -145,7 +145,7 @@ namespace System.Security.Cryptography
 
             // SetupBaseR: shared_secret = Decap(enc, skR), then KeySchedule, then Open
             // pkE = DeserializePublicKey(enc)
-            ECParameters ephPub = DeserializePublicKey(Suite, kemCiphertext);
+            ECParameters ephPub = DeserializePublicKey(Suite, encapsulatedKey);
             using (ECDiffieHellman ephPublicKey = ECDiffieHellman.Create(ephPub))
             {
                 // DH(skR, pkE)
@@ -155,9 +155,9 @@ namespace System.Security.Cryptography
                 byte[] pkRm = new byte[Suite.EncapsulationKeySizeInBytes];
                 SerializePublicKey(_publicKeyParameters, pkRm);
 
-                byte[] kemContext = new byte[kemCiphertext.Length + pkRm.Length];
-                kemCiphertext.CopyTo(kemContext);
-                pkRm.CopyTo(kemContext.AsSpan(kemCiphertext.Length));
+                byte[] kemContext = new byte[encapsulatedKey.Length + pkRm.Length];
+                encapsulatedKey.CopyTo(kemContext);
+                pkRm.CopyTo(kemContext.AsSpan(encapsulatedKey.Length));
 
                 // shared_secret = ExtractAndExpand(dh, kem_context)
                 byte[] sharedSecret = ExtractAndExpand(Suite, dh, kemContext);
@@ -168,14 +168,14 @@ namespace System.Security.Cryptography
         }
 
         protected override HpkeSenderContext SetupSenderCore(
-            Span<byte> kemCiphertext,
+            Span<byte> encapsulatedKey,
             ReadOnlySpan<byte> info)
         {
-            return SetupSenderPskCore(kemCiphertext, info, default, default);
+            return SetupSenderPskCore(encapsulatedKey, info, default, default);
         }
 
         protected override HpkeSenderContext SetupSenderPskCore(
-            Span<byte> kemCiphertext,
+            Span<byte> encapsulatedKey,
             ReadOnlySpan<byte> info,
             ReadOnlySpan<byte> psk,
             ReadOnlySpan<byte> pskId)
@@ -184,7 +184,7 @@ namespace System.Security.Cryptography
             using (ECDiffieHellman ephemeral = ECDiffieHellman.Create(curve))
             {
                 ECParameters ephPub = ephemeral.ExportParameters(includePrivateParameters: false);
-                SerializePublicKey(ephPub, kemCiphertext);
+                SerializePublicKey(ephPub, encapsulatedKey);
 
                 using (ECDiffieHellman recipientPub = ECDiffieHellman.Create(_publicKeyParameters))
                 {
@@ -193,9 +193,9 @@ namespace System.Security.Cryptography
                     byte[] pkRm = new byte[Suite.EncapsulationKeySizeInBytes];
                     SerializePublicKey(_publicKeyParameters, pkRm);
 
-                    byte[] kemContext = new byte[kemCiphertext.Length + pkRm.Length];
-                    kemCiphertext.CopyTo(kemContext);
-                    pkRm.CopyTo(kemContext.AsSpan(kemCiphertext.Length));
+                    byte[] kemContext = new byte[encapsulatedKey.Length + pkRm.Length];
+                    encapsulatedKey.CopyTo(kemContext);
+                    pkRm.CopyTo(kemContext.AsSpan(encapsulatedKey.Length));
 
                     byte[] sharedSecret = ExtractAndExpand(Suite, dh, kemContext);
 
@@ -206,15 +206,15 @@ namespace System.Security.Cryptography
         }
 
         protected override HpkeSenderContext SetupSenderAuthCore(
-            Span<byte> kemCiphertext,
+            Span<byte> encapsulatedKey,
             Hpke senderKey,
             ReadOnlySpan<byte> info)
         {
-            return SetupSenderAuthPskCore(kemCiphertext, senderKey, info, default, default);
+            return SetupSenderAuthPskCore(encapsulatedKey, senderKey, info, default, default);
         }
 
         protected override HpkeSenderContext SetupSenderAuthPskCore(
-            Span<byte> kemCiphertext,
+            Span<byte> encapsulatedKey,
             Hpke senderKey,
             ReadOnlySpan<byte> info,
             ReadOnlySpan<byte> psk,
@@ -252,7 +252,7 @@ namespace System.Security.Cryptography
                 using (ECDiffieHellman ephemeral = ECDiffieHellman.Create(curve))
                 {
                     ECParameters ephPub = ephemeral.ExportParameters(includePrivateParameters: false);
-                    SerializePublicKey(ephPub, kemCiphertext);
+                    SerializePublicKey(ephPub, encapsulatedKey);
 
                     using (ECDiffieHellman recipientPub = ECDiffieHellman.Create(_publicKeyParameters))
                     {
@@ -268,10 +268,10 @@ namespace System.Security.Cryptography
                         byte[] pkSm = new byte[Suite.EncapsulationKeySizeInBytes];
                         SerializePublicKey(senderPublicKeyParameters, pkSm);
 
-                        byte[] kemContext = new byte[kemCiphertext.Length + pkRm.Length + pkSm.Length];
-                        kemCiphertext.CopyTo(kemContext);
-                        pkRm.CopyTo(kemContext.AsSpan(kemCiphertext.Length));
-                        pkSm.CopyTo(kemContext.AsSpan(kemCiphertext.Length + pkRm.Length));
+                        byte[] kemContext = new byte[encapsulatedKey.Length + pkRm.Length + pkSm.Length];
+                        encapsulatedKey.CopyTo(kemContext);
+                        pkRm.CopyTo(kemContext.AsSpan(encapsulatedKey.Length));
+                        pkSm.CopyTo(kemContext.AsSpan(encapsulatedKey.Length + pkRm.Length));
 
                         sharedSecret = ExtractAndExpand(Suite, dh, kemContext);
 
@@ -296,21 +296,21 @@ namespace System.Security.Cryptography
         }
 
         protected override HpkeReceiverContext SetupReceiverCore(
-            ReadOnlySpan<byte> kemCiphertext,
+            ReadOnlySpan<byte> encapsulatedKey,
             ReadOnlySpan<byte> info)
         {
-            return SetupReceiverPskCore(kemCiphertext, info, default, default);
+            return SetupReceiverPskCore(encapsulatedKey, info, default, default);
         }
 
         protected override HpkeReceiverContext SetupReceiverPskCore(
-            ReadOnlySpan<byte> kemCiphertext,
+            ReadOnlySpan<byte> encapsulatedKey,
             ReadOnlySpan<byte> info,
             ReadOnlySpan<byte> psk,
             ReadOnlySpan<byte> pskId)
         {
             ECDiffieHellman privateKey = GetPrivateKey();
 
-            ECParameters ephPub = DeserializePublicKey(Suite, kemCiphertext);
+            ECParameters ephPub = DeserializePublicKey(Suite, encapsulatedKey);
             using (ECDiffieHellman ephPublicKey = ECDiffieHellman.Create(ephPub))
             {
                 byte[] dh = privateKey.DeriveRawSecretAgreement(ephPublicKey.PublicKey);
@@ -318,9 +318,9 @@ namespace System.Security.Cryptography
                 byte[] pkRm = new byte[Suite.EncapsulationKeySizeInBytes];
                 SerializePublicKey(_publicKeyParameters, pkRm);
 
-                byte[] kemContext = new byte[kemCiphertext.Length + pkRm.Length];
-                kemCiphertext.CopyTo(kemContext);
-                pkRm.CopyTo(kemContext.AsSpan(kemCiphertext.Length));
+                byte[] kemContext = new byte[encapsulatedKey.Length + pkRm.Length];
+                encapsulatedKey.CopyTo(kemContext);
+                pkRm.CopyTo(kemContext.AsSpan(encapsulatedKey.Length));
 
                 byte[] sharedSecret = ExtractAndExpand(Suite, dh, kemContext);
 
@@ -330,15 +330,15 @@ namespace System.Security.Cryptography
         }
 
         protected override HpkeReceiverContext SetupReceiverAuthCore(
-            ReadOnlySpan<byte> kemCiphertext,
+            ReadOnlySpan<byte> encapsulatedKey,
             Hpke senderKey,
             ReadOnlySpan<byte> info)
         {
-            return SetupReceiverAuthPskCore(kemCiphertext, senderKey, info, default, default);
+            return SetupReceiverAuthPskCore(encapsulatedKey, senderKey, info, default, default);
         }
 
         protected override HpkeReceiverContext SetupReceiverAuthPskCore(
-            ReadOnlySpan<byte> kemCiphertext,
+            ReadOnlySpan<byte> encapsulatedKey,
             Hpke senderKey,
             ReadOnlySpan<byte> info,
             ReadOnlySpan<byte> psk,
@@ -353,7 +353,7 @@ namespace System.Security.Cryptography
 
             try
             {
-                ECParameters ephPub = DeserializePublicKey(Suite, kemCiphertext);
+                ECParameters ephPub = DeserializePublicKey(Suite, encapsulatedKey);
                 using (ECDiffieHellman ephPublicKey = ECDiffieHellman.Create(ephPub))
                 using (ECDiffieHellman senderPublicKey = ECDiffieHellman.Create(senderPublicKeyParameters))
                 {
@@ -369,10 +369,10 @@ namespace System.Security.Cryptography
                     byte[] pkSm = new byte[Suite.EncapsulationKeySizeInBytes];
                     SerializePublicKey(senderPublicKeyParameters, pkSm);
 
-                    byte[] kemContext = new byte[kemCiphertext.Length + pkRm.Length + pkSm.Length];
-                    kemCiphertext.CopyTo(kemContext);
-                    pkRm.CopyTo(kemContext.AsSpan(kemCiphertext.Length));
-                    pkSm.CopyTo(kemContext.AsSpan(kemCiphertext.Length + pkRm.Length));
+                    byte[] kemContext = new byte[encapsulatedKey.Length + pkRm.Length + pkSm.Length];
+                    encapsulatedKey.CopyTo(kemContext);
+                    pkRm.CopyTo(kemContext.AsSpan(encapsulatedKey.Length));
+                    pkSm.CopyTo(kemContext.AsSpan(encapsulatedKey.Length + pkRm.Length));
 
                     sharedSecret = ExtractAndExpand(Suite, dh, kemContext);
 
