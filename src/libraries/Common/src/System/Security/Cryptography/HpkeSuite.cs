@@ -286,6 +286,26 @@ namespace System.Security.Cryptography
         public int AeadTagSizeInBytes => 16;
 
         /// <summary>
+        ///   Gets the length of the ciphertext produced by encrypting a plaintext of the specified length.
+        /// </summary>
+        /// <param name="plaintextLength">
+        ///   The length of the plaintext, in bytes.
+        /// </param>
+        /// <returns>
+        ///   The length of the ciphertext, in bytes, which is <paramref name="plaintextLength" /> plus
+        ///   <see cref="AeadTagSizeInBytes" />.
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <paramref name="plaintextLength" /> is negative.
+        /// </exception>
+        public int GetCiphertextLength(int plaintextLength)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(plaintextLength);
+
+            return plaintextLength + AeadTagSizeInBytes;
+        }
+
+        /// <summary>
         ///   Compares two <see cref="HpkeSuite" /> objects.
         /// </summary>
         /// <param name="other">

@@ -231,5 +231,26 @@ namespace System.Security.Cryptography.Tests
             Assert.Throws<ArgumentOutOfRangeException>("aead", () =>
                 new HpkeSuite(HpkeSuite.Kem.DHKEM_P256_HKDF_SHA256, HpkeSuite.Kdf.HKDF_SHA256, aead));
         }
+
+        [Theory]
+        [InlineData(0, 16)]
+        [InlineData(1, 17)]
+        [InlineData(100, 116)]
+        [InlineData(int.MaxValue - 16, int.MaxValue)]
+        public static void GetCiphertextLength_ReturnsPlaintextPlusTag(int plaintextLength, int expected)
+        {
+            HpkeSuite suite = HpkeSuite.DHKEM_P256_HKDF_SHA256_AES_128_GCM;
+            Assert.Equal(expected, suite.GetCiphertextLength(plaintextLength));
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(int.MinValue)]
+        public static void GetCiphertextLength_NegativeLength_Throws(int plaintextLength)
+        {
+            HpkeSuite suite = HpkeSuite.DHKEM_P256_HKDF_SHA256_AES_128_GCM;
+            Assert.Throws<ArgumentOutOfRangeException>("plaintextLength", () =>
+                suite.GetCiphertextLength(plaintextLength));
+        }
     }
 }

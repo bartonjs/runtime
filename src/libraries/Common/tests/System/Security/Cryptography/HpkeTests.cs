@@ -110,7 +110,7 @@ namespace System.Security.Cryptography.Tests
             key.Seal(plaintext, out byte[] kemCiphertext, out byte[] ciphertext, aad);
 
             Assert.Equal(suite.EncapsulatedKeySizeInBytes, kemCiphertext.Length);
-            Assert.Equal(plaintext.Length + suite.AeadTagSizeInBytes, ciphertext.Length);
+            Assert.Equal(suite.GetCiphertextLength(plaintext.Length), ciphertext.Length);
 
             byte[] decrypted = key.Open(kemCiphertext, ciphertext, aad: aad);
             Assert.Equal(plaintext, decrypted);
@@ -220,7 +220,7 @@ namespace System.Security.Cryptography.Tests
 
             key.Seal(ReadOnlySpan<byte>.Empty, out byte[] kemCiphertext, out byte[] ciphertext);
 
-            Assert.Equal(suite.AeadTagSizeInBytes, ciphertext.Length);
+            Assert.Equal(suite.GetCiphertextLength(0), ciphertext.Length);
 
             byte[] decrypted = key.Open(kemCiphertext, ciphertext);
             Assert.Empty(decrypted);
@@ -240,6 +240,7 @@ namespace System.Security.Cryptography.Tests
                 {
                     byte[] plaintext = Encoding.UTF8.GetBytes($"message {i}");
                     byte[] ciphertext = senderCtx.Seal(plaintext);
+                    Assert.Equal(suite.GetCiphertextLength(plaintext.Length), ciphertext.Length);
                     byte[] decrypted = receiverCtx.Open(ciphertext);
 
                     Assert.Equal(plaintext, decrypted);

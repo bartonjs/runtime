@@ -1894,6 +1894,7 @@ namespace System.Security.Cryptography
         public string Name { get { throw null; } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.Security.Cryptography.HpkeSuite? other) { throw null; }
+        public int GetCiphertextLength(int plaintextLength) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Security.Cryptography.HpkeSuite? left, System.Security.Cryptography.HpkeSuite? right) { throw null; }
         public static bool operator !=(System.Security.Cryptography.HpkeSuite? left, System.Security.Cryptography.HpkeSuite? right) { throw null; }
