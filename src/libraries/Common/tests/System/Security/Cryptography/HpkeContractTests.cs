@@ -424,8 +424,8 @@ namespace System.Security.Cryptography.Tests
                 }
             };
 
-            HpkeSender ctx = hpke.SetupSender(encapsulatedKey: encapsulatedKey);
-            Assert.Same(returnedCtx, ctx);
+            HpkeSender sender = hpke.SetupSender(encapsulatedKey: encapsulatedKey);
+            Assert.Same(returnedCtx, sender);
         }
 
         [Fact]
@@ -451,8 +451,8 @@ namespace System.Security.Cryptography.Tests
                 }
             };
 
-            HpkeSender ctx = hpke.SetupSender(out byte[] encapsulatedKey);
-            Assert.Same(returnedCtx, ctx);
+            HpkeSender sender = hpke.SetupSender(out byte[] encapsulatedKey);
+            Assert.Same(returnedCtx, sender);
             Assert.Equal(s_suite.EncapsulatedKeySizeInBytes, encapsulatedKey.Length);
             AssertExtensions.FilledWith<byte>(0x33, encapsulatedKey);
         }
@@ -493,8 +493,8 @@ namespace System.Security.Cryptography.Tests
                 }
             };
 
-            HpkeReceiver ctx = hpke.SetupReceiver(encapsulatedKey);
-            Assert.Same(returnedCtx, ctx);
+            HpkeReceiver receiver = hpke.SetupReceiver(encapsulatedKey);
+            Assert.Same(returnedCtx, receiver);
         }
 
         [Fact]
@@ -632,8 +632,8 @@ namespace System.Security.Cryptography.Tests
                 }
             };
 
-            HpkeSender ctx = hpke.SetupSender(encapsulatedKey, info);
-            Assert.Same(returnedCtx, ctx);
+            HpkeSender sender = hpke.SetupSender(encapsulatedKey, info);
+            Assert.Same(returnedCtx, sender);
         }
 
         [Fact]
@@ -661,8 +661,8 @@ namespace System.Security.Cryptography.Tests
                 }
             };
 
-            HpkeReceiver ctx = hpke.SetupReceiver(encapsulatedKey, info);
-            Assert.Same(returnedCtx, ctx);
+            HpkeReceiver receiver = hpke.SetupReceiver(encapsulatedKey, info);
+            Assert.Same(returnedCtx, receiver);
         }
 
         [Fact]
@@ -712,8 +712,8 @@ namespace System.Security.Cryptography.Tests
                 }
             };
 
-            HpkeSender ctx = hpke.SetupSenderPsk(psk, pskId, encapsulatedKey.AsSpan());
-            Assert.Same(returnedCtx, ctx);
+            HpkeSender sender = hpke.SetupSenderPsk(psk, pskId, encapsulatedKey.AsSpan());
+            Assert.Same(returnedCtx, sender);
         }
 
         [Fact]
@@ -759,8 +759,8 @@ namespace System.Security.Cryptography.Tests
                 }
             };
 
-            HpkeSender ctx = hpke.SetupSenderPsk(psk, pskId, out byte[] encapsulatedKey);
-            Assert.Same(returnedCtx, ctx);
+            HpkeSender sender = hpke.SetupSenderPsk(psk, pskId, out byte[] encapsulatedKey);
+            Assert.Same(returnedCtx, sender);
             Assert.Equal(s_suite.EncapsulatedKeySizeInBytes, encapsulatedKey.Length);
         }
 
@@ -801,8 +801,8 @@ namespace System.Security.Cryptography.Tests
                 }
             };
 
-            HpkeSender ctx = hpke.SetupSenderPsk(psk, pskId, encapsulatedKey, info);
-            Assert.Same(returnedCtx, ctx);
+            HpkeSender sender = hpke.SetupSenderPsk(psk, pskId, encapsulatedKey, info);
+            Assert.Same(returnedCtx, sender);
         }
 
         [Fact]
@@ -852,8 +852,8 @@ namespace System.Security.Cryptography.Tests
                 }
             };
 
-            HpkeReceiver ctx = hpke.SetupReceiverPsk(new ReadOnlySpan<byte>(encapsulatedKey), psk, pskId);
-            Assert.Same(returnedCtx, ctx);
+            HpkeReceiver receiver = hpke.SetupReceiverPsk(new ReadOnlySpan<byte>(encapsulatedKey), psk, pskId);
+            Assert.Same(returnedCtx, receiver);
         }
 
         [Fact]
@@ -903,8 +903,8 @@ namespace System.Security.Cryptography.Tests
                 }
             };
 
-            HpkeReceiver ctx = hpke.SetupReceiverPsk(encapsulatedKey, psk, pskId, info);
-            Assert.Same(returnedCtx, ctx);
+            HpkeReceiver receiver = hpke.SetupReceiverPsk(encapsulatedKey, psk, pskId, info);
+            Assert.Same(returnedCtx, receiver);
         }
 
         [Fact]
@@ -967,8 +967,8 @@ namespace System.Security.Cryptography.Tests
                 }
             };
 
-            HpkeSender ctx = hpke.SetupSenderAuth(encapsulatedKey.AsSpan(), senderKey, info);
-            Assert.Same(returnedCtx, ctx);
+            HpkeSender sender = hpke.SetupSenderAuth(encapsulatedKey.AsSpan(), senderKey, info);
+            Assert.Same(returnedCtx, sender);
         }
 
         [Fact]
@@ -987,9 +987,9 @@ namespace System.Security.Cryptography.Tests
                 }
             };
 
-            HpkeSender ctx = hpke.SetupSenderAuth(out byte[] encapsulatedKey, senderKey, default(ReadOnlySpan<byte>));
+            HpkeSender sender = hpke.SetupSenderAuth(out byte[] encapsulatedKey, senderKey, default(ReadOnlySpan<byte>));
             Assert.Equal(s_suite.EncapsulatedKeySizeInBytes, encapsulatedKey.Length);
-            Assert.Same(returnedCtx, ctx);
+            Assert.Same(returnedCtx, sender);
         }
 
         [Fact]
@@ -1028,8 +1028,8 @@ namespace System.Security.Cryptography.Tests
                 }
             };
 
-            HpkeSender ctx = hpke.SetupSenderAuth(encapsulatedKey, senderKey, info);
-            Assert.Same(returnedCtx, ctx);
+            HpkeSender sender = hpke.SetupSenderAuth(encapsulatedKey, senderKey, info);
+            Assert.Same(returnedCtx, sender);
         }
 
         [Fact]
@@ -1092,8 +1092,8 @@ namespace System.Security.Cryptography.Tests
                 }
             };
 
-            HpkeReceiver ctx = hpke.SetupReceiverAuth(new ReadOnlySpan<byte>(encapsulatedKey), senderKey, info);
-            Assert.Same(returnedCtx, ctx);
+            HpkeReceiver receiver = hpke.SetupReceiverAuth(new ReadOnlySpan<byte>(encapsulatedKey), senderKey, info);
+            Assert.Same(returnedCtx, receiver);
         }
 
         [Fact]
@@ -1133,8 +1133,8 @@ namespace System.Security.Cryptography.Tests
                 }
             };
 
-            HpkeReceiver ctx = hpke.SetupReceiverAuth(encapsulatedKey, senderKey, info);
-            Assert.Same(returnedCtx, ctx);
+            HpkeReceiver receiver = hpke.SetupReceiverAuth(encapsulatedKey, senderKey, info);
+            Assert.Same(returnedCtx, receiver);
         }
 
         [Fact]
@@ -1202,8 +1202,8 @@ namespace System.Security.Cryptography.Tests
                 }
             };
 
-            HpkeSender ctx = hpke.SetupSenderAuthPsk(encapsulatedKey.AsSpan(), senderKey, psk, pskId, info);
-            Assert.Same(returnedCtx, ctx);
+            HpkeSender sender = hpke.SetupSenderAuthPsk(encapsulatedKey.AsSpan(), senderKey, psk, pskId, info);
+            Assert.Same(returnedCtx, sender);
         }
 
         [Fact]
@@ -1226,9 +1226,9 @@ namespace System.Security.Cryptography.Tests
                 }
             };
 
-            HpkeSender ctx = hpke.SetupSenderAuthPsk(out byte[] encapsulatedKey, senderKey, psk, pskId);
+            HpkeSender sender = hpke.SetupSenderAuthPsk(out byte[] encapsulatedKey, senderKey, psk, pskId);
             Assert.Equal(s_suite.EncapsulatedKeySizeInBytes, encapsulatedKey.Length);
-            Assert.Same(returnedCtx, ctx);
+            Assert.Same(returnedCtx, sender);
         }
 
         [Fact]
@@ -1281,8 +1281,8 @@ namespace System.Security.Cryptography.Tests
                 }
             };
 
-            HpkeSender ctx = hpke.SetupSenderAuthPsk(encapsulatedKey, senderKey, psk, pskId, info);
-            Assert.Same(returnedCtx, ctx);
+            HpkeSender sender = hpke.SetupSenderAuthPsk(encapsulatedKey, senderKey, psk, pskId, info);
+            Assert.Same(returnedCtx, sender);
         }
 
         [Fact]
@@ -1350,8 +1350,8 @@ namespace System.Security.Cryptography.Tests
                 }
             };
 
-            HpkeReceiver ctx = hpke.SetupReceiverAuthPsk(new ReadOnlySpan<byte>(encapsulatedKey), senderKey, psk, pskId, info);
-            Assert.Same(returnedCtx, ctx);
+            HpkeReceiver receiver = hpke.SetupReceiverAuthPsk(new ReadOnlySpan<byte>(encapsulatedKey), senderKey, psk, pskId, info);
+            Assert.Same(returnedCtx, receiver);
         }
 
         [Fact]
@@ -1406,8 +1406,8 @@ namespace System.Security.Cryptography.Tests
                 }
             };
 
-            HpkeReceiver ctx = hpke.SetupReceiverAuthPsk(encapsulatedKey, senderKey, psk, pskId, info);
-            Assert.Same(returnedCtx, ctx);
+            HpkeReceiver receiver = hpke.SetupReceiverAuthPsk(encapsulatedKey, senderKey, psk, pskId, info);
+            Assert.Same(returnedCtx, receiver);
         }
     }
 

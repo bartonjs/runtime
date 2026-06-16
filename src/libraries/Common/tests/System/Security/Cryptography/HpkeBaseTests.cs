@@ -23,9 +23,9 @@ namespace System.Security.Cryptography.Tests
             byte[] ciphertext = Convert.FromHexString(vector.Ciphertext0);
 
             using Hpke recipientKey = ImportDecapsulationKey(vector.Suite, skRm);
-            using HpkeReceiver receiverCtx = recipientKey.SetupReceiver(enc, info);
+            using HpkeReceiver receiver = recipientKey.SetupReceiver(enc, info);
 
-            byte[] decrypted = receiverCtx.Open(ciphertext, aad);
+            byte[] decrypted = receiver.Open(ciphertext, aad);
             Assert.Equal(plaintext, decrypted);
         }
 
@@ -43,10 +43,10 @@ namespace System.Security.Cryptography.Tests
             byte[] ciphertext0 = Convert.FromHexString(vector.Ciphertext0);
 
             using Hpke recipientKey = ImportDecapsulationKey(vector.Suite, skRm);
-            using HpkeReceiver receiverCtx = recipientKey.SetupReceiverPsk(
+            using HpkeReceiver receiver = recipientKey.SetupReceiverPsk(
                 new ReadOnlySpan<byte>(enc), psk, pskId, info);
 
-            byte[] decrypted0 = receiverCtx.Open(ciphertext0, aad0);
+            byte[] decrypted0 = receiver.Open(ciphertext0, aad0);
             Assert.Equal(plaintext0, decrypted0);
 
             if (vector.Ciphertext1 is not null)
@@ -55,7 +55,7 @@ namespace System.Security.Cryptography.Tests
                 byte[] plaintext1 = Convert.FromHexString(vector.Plaintext1!);
                 byte[] ciphertext1 = Convert.FromHexString(vector.Ciphertext1);
 
-                byte[] decrypted1 = receiverCtx.Open(ciphertext1, aad1);
+                byte[] decrypted1 = receiver.Open(ciphertext1, aad1);
                 Assert.Equal(plaintext1, decrypted1);
             }
 
@@ -65,7 +65,7 @@ namespace System.Security.Cryptography.Tests
                 byte[] ciphertext2 = Convert.FromHexString(vector.Ciphertext2);
 
                 // Plaintext for seq 2 is the same as seq 0/1 in RFC 9180 test vectors
-                byte[] decrypted2 = receiverCtx.Open(ciphertext2, aad2);
+                byte[] decrypted2 = receiver.Open(ciphertext2, aad2);
                 Assert.Equal(plaintext0, decrypted2);
             }
         }
@@ -84,9 +84,9 @@ namespace System.Security.Cryptography.Tests
 
             using Hpke recipientKey = ImportDecapsulationKey(vector.Suite, skRm);
             using Hpke senderPublicKey = ImportEncapsulationKey(vector.Suite, pkSm);
-            using HpkeReceiver receiverCtx = recipientKey.SetupReceiverAuth(enc, senderPublicKey, info);
+            using HpkeReceiver receiver = recipientKey.SetupReceiverAuth(enc, senderPublicKey, info);
 
-            byte[] decrypted = receiverCtx.Open(ciphertext, aad);
+            byte[] decrypted = receiver.Open(ciphertext, aad);
             Assert.Equal(plaintext, decrypted);
         }
 
@@ -106,10 +106,10 @@ namespace System.Security.Cryptography.Tests
 
             using Hpke recipientKey = ImportDecapsulationKey(vector.Suite, skRm);
             using Hpke senderPublicKey = ImportEncapsulationKey(vector.Suite, pkSm);
-            using HpkeReceiver receiverCtx = recipientKey.SetupReceiverAuthPsk(
+            using HpkeReceiver receiver = recipientKey.SetupReceiverAuthPsk(
                 enc, senderPublicKey, psk, pskId, info);
 
-            byte[] decrypted = receiverCtx.Open(ciphertext, aad);
+            byte[] decrypted = receiver.Open(ciphertext, aad);
             Assert.Equal(plaintext, decrypted);
         }
     }
