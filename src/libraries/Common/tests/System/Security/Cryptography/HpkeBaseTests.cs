@@ -23,7 +23,7 @@ namespace System.Security.Cryptography.Tests
             byte[] ciphertext = Convert.FromHexString(vector.Ciphertext0);
 
             using Hpke recipientKey = ImportDecapsulationKey(vector.Suite, skRm);
-            using HpkeReceiverContext receiverCtx = recipientKey.SetupReceiver(enc, info);
+            using HpkeReceiver receiverCtx = recipientKey.SetupReceiver(enc, info);
 
             byte[] decrypted = receiverCtx.Open(ciphertext, aad);
             Assert.Equal(plaintext, decrypted);
@@ -43,7 +43,7 @@ namespace System.Security.Cryptography.Tests
             byte[] ciphertext0 = Convert.FromHexString(vector.Ciphertext0);
 
             using Hpke recipientKey = ImportDecapsulationKey(vector.Suite, skRm);
-            using HpkeReceiverContext receiverCtx = recipientKey.SetupReceiverPsk(
+            using HpkeReceiver receiverCtx = recipientKey.SetupReceiverPsk(
                 new ReadOnlySpan<byte>(enc), psk, pskId, info);
 
             byte[] decrypted0 = receiverCtx.Open(ciphertext0, aad0);
@@ -84,7 +84,7 @@ namespace System.Security.Cryptography.Tests
 
             using Hpke recipientKey = ImportDecapsulationKey(vector.Suite, skRm);
             using Hpke senderPublicKey = ImportEncapsulationKey(vector.Suite, pkSm);
-            using HpkeReceiverContext receiverCtx = recipientKey.SetupReceiverAuth(enc, senderPublicKey, info);
+            using HpkeReceiver receiverCtx = recipientKey.SetupReceiverAuth(enc, senderPublicKey, info);
 
             byte[] decrypted = receiverCtx.Open(ciphertext, aad);
             Assert.Equal(plaintext, decrypted);
@@ -106,7 +106,7 @@ namespace System.Security.Cryptography.Tests
 
             using Hpke recipientKey = ImportDecapsulationKey(vector.Suite, skRm);
             using Hpke senderPublicKey = ImportEncapsulationKey(vector.Suite, pkSm);
-            using HpkeReceiverContext receiverCtx = recipientKey.SetupReceiverAuthPsk(
+            using HpkeReceiver receiverCtx = recipientKey.SetupReceiverAuthPsk(
                 enc, senderPublicKey, psk, pskId, info);
 
             byte[] decrypted = receiverCtx.Open(ciphertext, aad);

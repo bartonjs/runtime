@@ -614,7 +614,7 @@ namespace System.Security.Cryptography
         ///   An error occurred creating the sender context.
         /// </exception>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
-        public HpkeSenderContext SetupSender(
+        public HpkeSender SetupSender(
             Span<byte> encapsulatedKey,
             ReadOnlySpan<byte> info = default)
         {
@@ -647,7 +647,7 @@ namespace System.Security.Cryptography
         ///   An error occurred creating the sender context.
         /// </exception>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
-        public HpkeSenderContext SetupSender(
+        public HpkeSender SetupSender(
             out byte[] encapsulatedKey,
             ReadOnlySpan<byte> info = default)
         {
@@ -677,7 +677,7 @@ namespace System.Security.Cryptography
         ///   An error occurred creating the receiver context, or this instance does not contain a decapsulation key.
         /// </exception>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
-        public HpkeReceiverContext SetupReceiver(
+        public HpkeReceiver SetupReceiver(
             ReadOnlySpan<byte> encapsulatedKey,
             ReadOnlySpan<byte> info = default)
         {
@@ -715,7 +715,7 @@ namespace System.Security.Cryptography
         ///   An error occurred creating the receiver context, or this instance does not contain a decapsulation key.
         /// </exception>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
-        public HpkeReceiverContext SetupReceiver(
+        public HpkeReceiver SetupReceiver(
             byte[] encapsulatedKey,
             byte[]? info = null)
         {
@@ -758,7 +758,7 @@ namespace System.Security.Cryptography
         ///   An error occurred creating the sender context.
         /// </exception>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
-        public HpkeSenderContext SetupSenderPsk(
+        public HpkeSender SetupSenderPsk(
             ReadOnlySpan<byte> psk,
             ReadOnlySpan<byte> pskId,
             Span<byte> encapsulatedKey,
@@ -814,7 +814,7 @@ namespace System.Security.Cryptography
         ///   An error occurred creating the sender context.
         /// </exception>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
-        public HpkeSenderContext SetupSenderPsk(
+        public HpkeSender SetupSenderPsk(
             ReadOnlySpan<byte> psk,
             ReadOnlySpan<byte> pskId,
             out byte[] encapsulatedKey,
@@ -870,7 +870,7 @@ namespace System.Security.Cryptography
         ///   An error occurred creating the sender context.
         /// </exception>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
-        public HpkeSenderContext SetupSenderPsk(
+        public HpkeSender SetupSenderPsk(
             byte[] psk,
             byte[] pskId,
             out byte[] encapsulatedKey,
@@ -915,7 +915,7 @@ namespace System.Security.Cryptography
         ///   An error occurred creating the receiver context, or this instance does not contain a decapsulation key.
         /// </exception>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
-        public HpkeReceiverContext SetupReceiverPsk(
+        public HpkeReceiver SetupReceiverPsk(
             ReadOnlySpan<byte> encapsulatedKey,
             ReadOnlySpan<byte> psk,
             ReadOnlySpan<byte> pskId,
@@ -979,7 +979,7 @@ namespace System.Security.Cryptography
         ///   An error occurred creating the receiver context, or this instance does not contain a decapsulation key.
         /// </exception>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
-        public HpkeReceiverContext SetupReceiverPsk(
+        public HpkeReceiver SetupReceiverPsk(
             byte[] encapsulatedKey,
             byte[] psk,
             byte[] pskId,
@@ -1028,7 +1028,7 @@ namespace System.Security.Cryptography
         ///   -or-
         ///   <paramref name="senderKey" /> has already been disposed.
         /// </exception>
-        public HpkeSenderContext SetupSenderAuth(
+        public HpkeSender SetupSenderAuth(
             Span<byte> encapsulatedKey,
             Hpke senderKey,
             ReadOnlySpan<byte> info = default)
@@ -1073,7 +1073,7 @@ namespace System.Security.Cryptography
         ///   -or-
         ///   <paramref name="senderKey" /> has already been disposed.
         /// </exception>
-        public HpkeSenderContext SetupSenderAuth(
+        public HpkeSender SetupSenderAuth(
             out byte[] encapsulatedKey,
             Hpke senderKey,
             ReadOnlySpan<byte> info = default)
@@ -1113,7 +1113,7 @@ namespace System.Security.Cryptography
         ///   -or-
         ///   <paramref name="senderKey" /> has already been disposed.
         /// </exception>
-        public HpkeSenderContext SetupSenderAuth(
+        public HpkeSender SetupSenderAuth(
             out byte[] encapsulatedKey,
             Hpke senderKey,
             byte[]? info = null)
@@ -1153,7 +1153,7 @@ namespace System.Security.Cryptography
         ///   -or-
         ///   <paramref name="senderKey" /> has already been disposed.
         /// </exception>
-        public HpkeReceiverContext SetupReceiverAuth(
+        public HpkeReceiver SetupReceiverAuth(
             ReadOnlySpan<byte> encapsulatedKey,
             Hpke senderKey,
             ReadOnlySpan<byte> info = default)
@@ -1203,7 +1203,7 @@ namespace System.Security.Cryptography
         ///   -or-
         ///   <paramref name="senderKey" /> has already been disposed.
         /// </exception>
-        public HpkeReceiverContext SetupReceiverAuth(
+        public HpkeReceiver SetupReceiverAuth(
             byte[] encapsulatedKey,
             Hpke senderKey,
             byte[]? info = null)
@@ -1259,7 +1259,7 @@ namespace System.Security.Cryptography
         ///   -or-
         ///   <paramref name="senderKey" /> has already been disposed.
         /// </exception>
-        public HpkeSenderContext SetupSenderAuthPsk(
+        public HpkeSender SetupSenderAuthPsk(
             Span<byte> encapsulatedKey,
             Hpke senderKey,
             ReadOnlySpan<byte> psk,
@@ -1327,7 +1327,7 @@ namespace System.Security.Cryptography
         ///   -or-
         ///   <paramref name="senderKey" /> has already been disposed.
         /// </exception>
-        public HpkeSenderContext SetupSenderAuthPsk(
+        public HpkeSender SetupSenderAuthPsk(
             out byte[] encapsulatedKey,
             Hpke senderKey,
             ReadOnlySpan<byte> psk,
@@ -1394,7 +1394,7 @@ namespace System.Security.Cryptography
         ///   -or-
         ///   <paramref name="senderKey" /> has already been disposed.
         /// </exception>
-        public HpkeSenderContext SetupSenderAuthPsk(
+        public HpkeSender SetupSenderAuthPsk(
             out byte[] encapsulatedKey,
             Hpke senderKey,
             byte[] psk,
@@ -1453,7 +1453,7 @@ namespace System.Security.Cryptography
         ///   -or-
         ///   <paramref name="senderKey" /> has already been disposed.
         /// </exception>
-        public HpkeReceiverContext SetupReceiverAuthPsk(
+        public HpkeReceiver SetupReceiverAuthPsk(
             ReadOnlySpan<byte> encapsulatedKey,
             Hpke senderKey,
             ReadOnlySpan<byte> psk,
@@ -1529,7 +1529,7 @@ namespace System.Security.Cryptography
         ///   -or-
         ///   <paramref name="senderKey" /> has already been disposed.
         /// </exception>
-        public HpkeReceiverContext SetupReceiverAuthPsk(
+        public HpkeReceiver SetupReceiverAuthPsk(
             byte[] encapsulatedKey,
             Hpke senderKey,
             byte[] psk,
@@ -1603,7 +1603,7 @@ namespace System.Security.Cryptography
         /// <param name="encapsulatedKey">The buffer to receive the KEM ciphertext.</param>
         /// <param name="info">The info parameter for the key schedule.</param>
         /// <returns>A sender encryption context.</returns>
-        protected abstract HpkeSenderContext SetupSenderCore(
+        protected abstract HpkeSender SetupSenderCore(
             Span<byte> encapsulatedKey,
             ReadOnlySpan<byte> info);
 
@@ -1615,7 +1615,7 @@ namespace System.Security.Cryptography
         /// <param name="psk">The pre-shared key.</param>
         /// <param name="pskId">The pre-shared key identifier.</param>
         /// <returns>A sender encryption context.</returns>
-        protected abstract HpkeSenderContext SetupSenderPskCore(
+        protected abstract HpkeSender SetupSenderPskCore(
             Span<byte> encapsulatedKey,
             ReadOnlySpan<byte> info,
             ReadOnlySpan<byte> psk,
@@ -1628,7 +1628,7 @@ namespace System.Security.Cryptography
         /// <param name="senderKey">The sender's static key.</param>
         /// <param name="info">The info parameter for the key schedule.</param>
         /// <returns>A sender encryption context.</returns>
-        protected abstract HpkeSenderContext SetupSenderAuthCore(
+        protected abstract HpkeSender SetupSenderAuthCore(
             Span<byte> encapsulatedKey,
             Hpke senderKey,
             ReadOnlySpan<byte> info);
@@ -1642,7 +1642,7 @@ namespace System.Security.Cryptography
         /// <param name="psk">The pre-shared key.</param>
         /// <param name="pskId">The pre-shared key identifier.</param>
         /// <returns>A sender encryption context.</returns>
-        protected abstract HpkeSenderContext SetupSenderAuthPskCore(
+        protected abstract HpkeSender SetupSenderAuthPskCore(
             Span<byte> encapsulatedKey,
             Hpke senderKey,
             ReadOnlySpan<byte> info,
@@ -1655,7 +1655,7 @@ namespace System.Security.Cryptography
         /// <param name="encapsulatedKey">The KEM ciphertext produced by the sender.</param>
         /// <param name="info">The info parameter for the key schedule.</param>
         /// <returns>A receiver decryption context.</returns>
-        protected abstract HpkeReceiverContext SetupReceiverCore(
+        protected abstract HpkeReceiver SetupReceiverCore(
             ReadOnlySpan<byte> encapsulatedKey,
             ReadOnlySpan<byte> info);
 
@@ -1667,7 +1667,7 @@ namespace System.Security.Cryptography
         /// <param name="psk">The pre-shared key.</param>
         /// <param name="pskId">The pre-shared key identifier.</param>
         /// <returns>A receiver decryption context.</returns>
-        protected abstract HpkeReceiverContext SetupReceiverPskCore(
+        protected abstract HpkeReceiver SetupReceiverPskCore(
             ReadOnlySpan<byte> encapsulatedKey,
             ReadOnlySpan<byte> info,
             ReadOnlySpan<byte> psk,
@@ -1680,7 +1680,7 @@ namespace System.Security.Cryptography
         /// <param name="senderKey">The sender's static key.</param>
         /// <param name="info">The info parameter for the key schedule.</param>
         /// <returns>A receiver decryption context.</returns>
-        protected abstract HpkeReceiverContext SetupReceiverAuthCore(
+        protected abstract HpkeReceiver SetupReceiverAuthCore(
             ReadOnlySpan<byte> encapsulatedKey,
             Hpke senderKey,
             ReadOnlySpan<byte> info);
@@ -1694,7 +1694,7 @@ namespace System.Security.Cryptography
         /// <param name="psk">The pre-shared key.</param>
         /// <param name="pskId">The pre-shared key identifier.</param>
         /// <returns>A receiver decryption context.</returns>
-        protected abstract HpkeReceiverContext SetupReceiverAuthPskCore(
+        protected abstract HpkeReceiver SetupReceiverAuthPskCore(
             ReadOnlySpan<byte> encapsulatedKey,
             Hpke senderKey,
             ReadOnlySpan<byte> info,

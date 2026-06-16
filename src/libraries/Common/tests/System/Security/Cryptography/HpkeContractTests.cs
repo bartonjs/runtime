@@ -424,7 +424,7 @@ namespace System.Security.Cryptography.Tests
                 }
             };
 
-            HpkeSenderContext ctx = hpke.SetupSender(encapsulatedKey: encapsulatedKey);
+            HpkeSender ctx = hpke.SetupSender(encapsulatedKey: encapsulatedKey);
             Assert.Same(returnedCtx, ctx);
         }
 
@@ -451,7 +451,7 @@ namespace System.Security.Cryptography.Tests
                 }
             };
 
-            HpkeSenderContext ctx = hpke.SetupSender(out byte[] encapsulatedKey);
+            HpkeSender ctx = hpke.SetupSender(out byte[] encapsulatedKey);
             Assert.Same(returnedCtx, ctx);
             Assert.Equal(s_suite.EncapsulatedKeySizeInBytes, encapsulatedKey.Length);
             AssertExtensions.FilledWith<byte>(0x33, encapsulatedKey);
@@ -493,7 +493,7 @@ namespace System.Security.Cryptography.Tests
                 }
             };
 
-            HpkeReceiverContext ctx = hpke.SetupReceiver(encapsulatedKey);
+            HpkeReceiver ctx = hpke.SetupReceiver(encapsulatedKey);
             Assert.Same(returnedCtx, ctx);
         }
 
@@ -632,7 +632,7 @@ namespace System.Security.Cryptography.Tests
                 }
             };
 
-            HpkeSenderContext ctx = hpke.SetupSender(encapsulatedKey, info);
+            HpkeSender ctx = hpke.SetupSender(encapsulatedKey, info);
             Assert.Same(returnedCtx, ctx);
         }
 
@@ -661,7 +661,7 @@ namespace System.Security.Cryptography.Tests
                 }
             };
 
-            HpkeReceiverContext ctx = hpke.SetupReceiver(encapsulatedKey, info);
+            HpkeReceiver ctx = hpke.SetupReceiver(encapsulatedKey, info);
             Assert.Same(returnedCtx, ctx);
         }
 
@@ -712,7 +712,7 @@ namespace System.Security.Cryptography.Tests
                 }
             };
 
-            HpkeSenderContext ctx = hpke.SetupSenderPsk(psk, pskId, encapsulatedKey.AsSpan());
+            HpkeSender ctx = hpke.SetupSenderPsk(psk, pskId, encapsulatedKey.AsSpan());
             Assert.Same(returnedCtx, ctx);
         }
 
@@ -759,7 +759,7 @@ namespace System.Security.Cryptography.Tests
                 }
             };
 
-            HpkeSenderContext ctx = hpke.SetupSenderPsk(psk, pskId, out byte[] encapsulatedKey);
+            HpkeSender ctx = hpke.SetupSenderPsk(psk, pskId, out byte[] encapsulatedKey);
             Assert.Same(returnedCtx, ctx);
             Assert.Equal(s_suite.EncapsulatedKeySizeInBytes, encapsulatedKey.Length);
         }
@@ -801,7 +801,7 @@ namespace System.Security.Cryptography.Tests
                 }
             };
 
-            HpkeSenderContext ctx = hpke.SetupSenderPsk(psk, pskId, encapsulatedKey, info);
+            HpkeSender ctx = hpke.SetupSenderPsk(psk, pskId, encapsulatedKey, info);
             Assert.Same(returnedCtx, ctx);
         }
 
@@ -852,7 +852,7 @@ namespace System.Security.Cryptography.Tests
                 }
             };
 
-            HpkeReceiverContext ctx = hpke.SetupReceiverPsk(new ReadOnlySpan<byte>(encapsulatedKey), psk, pskId);
+            HpkeReceiver ctx = hpke.SetupReceiverPsk(new ReadOnlySpan<byte>(encapsulatedKey), psk, pskId);
             Assert.Same(returnedCtx, ctx);
         }
 
@@ -903,7 +903,7 @@ namespace System.Security.Cryptography.Tests
                 }
             };
 
-            HpkeReceiverContext ctx = hpke.SetupReceiverPsk(encapsulatedKey, psk, pskId, info);
+            HpkeReceiver ctx = hpke.SetupReceiverPsk(encapsulatedKey, psk, pskId, info);
             Assert.Same(returnedCtx, ctx);
         }
 
@@ -967,7 +967,7 @@ namespace System.Security.Cryptography.Tests
                 }
             };
 
-            HpkeSenderContext ctx = hpke.SetupSenderAuth(encapsulatedKey.AsSpan(), senderKey, info);
+            HpkeSender ctx = hpke.SetupSenderAuth(encapsulatedKey.AsSpan(), senderKey, info);
             Assert.Same(returnedCtx, ctx);
         }
 
@@ -987,7 +987,7 @@ namespace System.Security.Cryptography.Tests
                 }
             };
 
-            HpkeSenderContext ctx = hpke.SetupSenderAuth(out byte[] encapsulatedKey, senderKey, default(ReadOnlySpan<byte>));
+            HpkeSender ctx = hpke.SetupSenderAuth(out byte[] encapsulatedKey, senderKey, default(ReadOnlySpan<byte>));
             Assert.Equal(s_suite.EncapsulatedKeySizeInBytes, encapsulatedKey.Length);
             Assert.Same(returnedCtx, ctx);
         }
@@ -1028,7 +1028,7 @@ namespace System.Security.Cryptography.Tests
                 }
             };
 
-            HpkeSenderContext ctx = hpke.SetupSenderAuth(encapsulatedKey, senderKey, info);
+            HpkeSender ctx = hpke.SetupSenderAuth(encapsulatedKey, senderKey, info);
             Assert.Same(returnedCtx, ctx);
         }
 
@@ -1092,7 +1092,7 @@ namespace System.Security.Cryptography.Tests
                 }
             };
 
-            HpkeReceiverContext ctx = hpke.SetupReceiverAuth(new ReadOnlySpan<byte>(encapsulatedKey), senderKey, info);
+            HpkeReceiver ctx = hpke.SetupReceiverAuth(new ReadOnlySpan<byte>(encapsulatedKey), senderKey, info);
             Assert.Same(returnedCtx, ctx);
         }
 
@@ -1133,7 +1133,7 @@ namespace System.Security.Cryptography.Tests
                 }
             };
 
-            HpkeReceiverContext ctx = hpke.SetupReceiverAuth(encapsulatedKey, senderKey, info);
+            HpkeReceiver ctx = hpke.SetupReceiverAuth(encapsulatedKey, senderKey, info);
             Assert.Same(returnedCtx, ctx);
         }
 
@@ -1202,7 +1202,7 @@ namespace System.Security.Cryptography.Tests
                 }
             };
 
-            HpkeSenderContext ctx = hpke.SetupSenderAuthPsk(encapsulatedKey.AsSpan(), senderKey, psk, pskId, info);
+            HpkeSender ctx = hpke.SetupSenderAuthPsk(encapsulatedKey.AsSpan(), senderKey, psk, pskId, info);
             Assert.Same(returnedCtx, ctx);
         }
 
@@ -1226,7 +1226,7 @@ namespace System.Security.Cryptography.Tests
                 }
             };
 
-            HpkeSenderContext ctx = hpke.SetupSenderAuthPsk(out byte[] encapsulatedKey, senderKey, psk, pskId);
+            HpkeSender ctx = hpke.SetupSenderAuthPsk(out byte[] encapsulatedKey, senderKey, psk, pskId);
             Assert.Equal(s_suite.EncapsulatedKeySizeInBytes, encapsulatedKey.Length);
             Assert.Same(returnedCtx, ctx);
         }
@@ -1281,7 +1281,7 @@ namespace System.Security.Cryptography.Tests
                 }
             };
 
-            HpkeSenderContext ctx = hpke.SetupSenderAuthPsk(encapsulatedKey, senderKey, psk, pskId, info);
+            HpkeSender ctx = hpke.SetupSenderAuthPsk(encapsulatedKey, senderKey, psk, pskId, info);
             Assert.Same(returnedCtx, ctx);
         }
 
@@ -1350,7 +1350,7 @@ namespace System.Security.Cryptography.Tests
                 }
             };
 
-            HpkeReceiverContext ctx = hpke.SetupReceiverAuthPsk(new ReadOnlySpan<byte>(encapsulatedKey), senderKey, psk, pskId, info);
+            HpkeReceiver ctx = hpke.SetupReceiverAuthPsk(new ReadOnlySpan<byte>(encapsulatedKey), senderKey, psk, pskId, info);
             Assert.Same(returnedCtx, ctx);
         }
 
@@ -1406,7 +1406,7 @@ namespace System.Security.Cryptography.Tests
                 }
             };
 
-            HpkeReceiverContext ctx = hpke.SetupReceiverAuthPsk(encapsulatedKey, senderKey, psk, pskId, info);
+            HpkeReceiver ctx = hpke.SetupReceiverAuthPsk(encapsulatedKey, senderKey, psk, pskId, info);
             Assert.Same(returnedCtx, ctx);
         }
     }
@@ -1993,42 +1993,42 @@ namespace System.Security.Cryptography.Tests
             GetCallback(OnOpenCore)(encapsulatedKey, ciphertext, plaintext, aad, info);
         }
 
-        protected override HpkeSenderContext SetupSenderCore(Span<byte> encapsulatedKey, ReadOnlySpan<byte> info)
+        protected override HpkeSender SetupSenderCore(Span<byte> encapsulatedKey, ReadOnlySpan<byte> info)
         {
             return GetCallback(OnSetupSenderCore)(encapsulatedKey, info);
         }
 
-        protected override HpkeSenderContext SetupSenderPskCore(Span<byte> encapsulatedKey, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId)
+        protected override HpkeSender SetupSenderPskCore(Span<byte> encapsulatedKey, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId)
         {
             return GetCallback(OnSetupSenderPskCore)(encapsulatedKey, info, psk, pskId);
         }
 
-        protected override HpkeSenderContext SetupSenderAuthCore(Span<byte> encapsulatedKey, Hpke senderKey, ReadOnlySpan<byte> info)
+        protected override HpkeSender SetupSenderAuthCore(Span<byte> encapsulatedKey, Hpke senderKey, ReadOnlySpan<byte> info)
         {
             return GetCallback(OnSetupSenderAuthCore)(encapsulatedKey, senderKey, info);
         }
 
-        protected override HpkeSenderContext SetupSenderAuthPskCore(Span<byte> encapsulatedKey, Hpke senderKey, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId)
+        protected override HpkeSender SetupSenderAuthPskCore(Span<byte> encapsulatedKey, Hpke senderKey, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId)
         {
             return GetCallback(OnSetupSenderAuthPskCore)(encapsulatedKey, senderKey, info, psk, pskId);
         }
 
-        protected override HpkeReceiverContext SetupReceiverCore(ReadOnlySpan<byte> encapsulatedKey, ReadOnlySpan<byte> info)
+        protected override HpkeReceiver SetupReceiverCore(ReadOnlySpan<byte> encapsulatedKey, ReadOnlySpan<byte> info)
         {
             return GetCallback(OnSetupReceiverCore)(encapsulatedKey, info);
         }
 
-        protected override HpkeReceiverContext SetupReceiverPskCore(ReadOnlySpan<byte> encapsulatedKey, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId)
+        protected override HpkeReceiver SetupReceiverPskCore(ReadOnlySpan<byte> encapsulatedKey, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId)
         {
             return GetCallback(OnSetupReceiverPskCore)(encapsulatedKey, info, psk, pskId);
         }
 
-        protected override HpkeReceiverContext SetupReceiverAuthCore(ReadOnlySpan<byte> encapsulatedKey, Hpke senderKey, ReadOnlySpan<byte> info)
+        protected override HpkeReceiver SetupReceiverAuthCore(ReadOnlySpan<byte> encapsulatedKey, Hpke senderKey, ReadOnlySpan<byte> info)
         {
             return GetCallback(OnSetupReceiverAuthCore)(encapsulatedKey, senderKey, info);
         }
 
-        protected override HpkeReceiverContext SetupReceiverAuthPskCore(ReadOnlySpan<byte> encapsulatedKey, Hpke senderKey, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId)
+        protected override HpkeReceiver SetupReceiverAuthPskCore(ReadOnlySpan<byte> encapsulatedKey, Hpke senderKey, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId)
         {
             return GetCallback(OnSetupReceiverAuthPskCore)(encapsulatedKey, senderKey, info, psk, pskId);
         }
@@ -2047,17 +2047,17 @@ namespace System.Security.Cryptography.Tests
         internal delegate void ExportKeyCoreCallback(Span<byte> destination);
         internal delegate void SealCoreCallback(ReadOnlySpan<byte> plaintext, Span<byte> encapsulatedKey, Span<byte> ciphertext, ReadOnlySpan<byte> aad, ReadOnlySpan<byte> info);
         internal delegate void OpenCoreCallback(ReadOnlySpan<byte> encapsulatedKey, ReadOnlySpan<byte> ciphertext, Span<byte> plaintext, ReadOnlySpan<byte> aad, ReadOnlySpan<byte> info);
-        internal delegate HpkeSenderContext SetupSenderCoreCallback(Span<byte> encapsulatedKey, ReadOnlySpan<byte> info);
-        internal delegate HpkeSenderContext SetupSenderPskCoreCallback(Span<byte> encapsulatedKey, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId);
-        internal delegate HpkeSenderContext SetupSenderAuthCoreCallback(Span<byte> encapsulatedKey, Hpke senderKey, ReadOnlySpan<byte> info);
-        internal delegate HpkeSenderContext SetupSenderAuthPskCoreCallback(Span<byte> encapsulatedKey, Hpke senderKey, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId);
-        internal delegate HpkeReceiverContext SetupReceiverCoreCallback(ReadOnlySpan<byte> encapsulatedKey, ReadOnlySpan<byte> info);
-        internal delegate HpkeReceiverContext SetupReceiverPskCoreCallback(ReadOnlySpan<byte> encapsulatedKey, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId);
-        internal delegate HpkeReceiverContext SetupReceiverAuthCoreCallback(ReadOnlySpan<byte> encapsulatedKey, Hpke senderKey, ReadOnlySpan<byte> info);
-        internal delegate HpkeReceiverContext SetupReceiverAuthPskCoreCallback(ReadOnlySpan<byte> encapsulatedKey, Hpke senderKey, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId);
+        internal delegate HpkeSender SetupSenderCoreCallback(Span<byte> encapsulatedKey, ReadOnlySpan<byte> info);
+        internal delegate HpkeSender SetupSenderPskCoreCallback(Span<byte> encapsulatedKey, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId);
+        internal delegate HpkeSender SetupSenderAuthCoreCallback(Span<byte> encapsulatedKey, Hpke senderKey, ReadOnlySpan<byte> info);
+        internal delegate HpkeSender SetupSenderAuthPskCoreCallback(Span<byte> encapsulatedKey, Hpke senderKey, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId);
+        internal delegate HpkeReceiver SetupReceiverCoreCallback(ReadOnlySpan<byte> encapsulatedKey, ReadOnlySpan<byte> info);
+        internal delegate HpkeReceiver SetupReceiverPskCoreCallback(ReadOnlySpan<byte> encapsulatedKey, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId);
+        internal delegate HpkeReceiver SetupReceiverAuthCoreCallback(ReadOnlySpan<byte> encapsulatedKey, Hpke senderKey, ReadOnlySpan<byte> info);
+        internal delegate HpkeReceiver SetupReceiverAuthPskCoreCallback(ReadOnlySpan<byte> encapsulatedKey, Hpke senderKey, ReadOnlySpan<byte> info, ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId);
     }
 
-    internal sealed class HpkeSenderContract : HpkeSenderContext
+    internal sealed class HpkeSenderContract : HpkeSender
     {
         private readonly int _tagSize;
 
@@ -2090,7 +2090,7 @@ namespace System.Security.Cryptography.Tests
         internal delegate void ExportCoreCallback(ReadOnlySpan<byte> exporterContext, Span<byte> destination);
     }
 
-    internal sealed class HpkeReceiverContract : HpkeReceiverContext
+    internal sealed class HpkeReceiverContract : HpkeReceiver
     {
         private readonly int _tagSize;
 

@@ -4,143 +4,173 @@
 namespace System.Security.Cryptography
 {
     /// <summary>
-    ///   Represents the sender side of an established Hpke encryption context,
-    ///   providing sequential encryption and secret export operations.
+    ///   Represents the receiver side of an established HPKE encryption context,
+    ///   providing sequential decryption and secret export operations.
     /// </summary>
     /// <remarks>
     ///   <para>
-    ///     Each call to <see cref="Seal(ReadOnlySpan{byte}, Span{byte}, ReadOnlySpan{byte})" />
+    ///     Each call to <see cref="Open(ReadOnlySpan{byte}, Span{byte}, ReadOnlySpan{byte})" />
     ///     uses a nonce derived from the context's base nonce and an internal sequence number,
-    ///     which is incremented after each operation.
-    ///     Messages must be decrypted in the same order they were encrypted.
+    ///     which is incremented after each operation. Messages must be decrypted in the same order
+    ///     they were encrypted.
     ///   </para>
     /// </remarks>
-    public abstract class HpkeSenderContext : IDisposable
+    public abstract class HpkeReceiver : IDisposable
     {
         private bool _disposed;
 
         /// <summary>
-        ///   Initializes a new instance of the <see cref="HpkeSenderContext" /> class.
+        ///   Initializes a new instance of the <see cref="HpkeReceiver" /> class.
         /// </summary>
-        protected HpkeSenderContext()
+        protected HpkeReceiver()
         {
         }
 
         /// <summary>
-        ///   Encrypts and authenticates the plaintext, writing the ciphertext and authentication tag
-        ///   into the provided buffer, and advances the sequence number.
+        ///   Decrypts and authenticates the ciphertext, writing the plaintext into the provided buffer,
+        ///   and advances the internal sequence number.
         /// </summary>
-        /// <param name="plaintext">
-        ///   The plaintext to encrypt.
-        /// </param>
         /// <param name="ciphertext">
-        ///   The buffer to receive the AEAD ciphertext and authentication tag.
-        ///   This must be exactly <paramref name="plaintext" />.Length + the suite's AEAD tag size in bytes.
+        ///   The AEAD ciphertext and authentication tag to decrypt.
+        /// </param>
+        /// <param name="plaintext">
+        ///   The buffer to receive the decrypted plaintext.
+        ///   This must be exactly <paramref name="ciphertext" />.Length - the suite's AEAD tag size in bytes.
         /// </param>
         /// <param name="aad">
         ///   The additional authenticated data.
         /// </param>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="ciphertext" /> is not the correct size.
+        ///   <paramref name="plaintext" /> is not the correct size, or
+        ///   <paramref name="ciphertext" /> is too small to contain a valid authentication tag.
         /// </exception>
         /// <exception cref="CryptographicException">
-        ///   An error occurred during encryption, or the message limit has been reached.
+        ///   Decryption failed, or the message limit has been reached.
         /// </exception>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
-        public void Seal(ReadOnlySpan<byte> plaintext, Span<byte> ciphertext, ReadOnlySpan<byte> aad = default)
+        public void Open(ReadOnlySpan<byte> ciphertext, Span<byte> plaintext, ReadOnlySpan<byte> aad = default)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
-            SealCore(plaintext, ciphertext, aad);
+            OpenCore(ciphertext, plaintext, aad);
         }
 
         /// <summary>
-        ///   Encrypts and authenticates the plaintext, writing the ciphertext and authentication tag
-        ///   into the provided byte array, and advances the sequence number.
+        ///   Decrypts and authenticates the ciphertext, writing the plaintext into the provided byte array,
+        ///   and advances the internal sequence number.
         /// </summary>
-        /// <param name="plaintext">
-        ///   The plaintext to encrypt.
-        /// </param>
         /// <param name="ciphertext">
-        ///   The byte array to receive the AEAD ciphertext and authentication tag.
-        ///   This must be exactly <paramref name="plaintext" />.Length + the suite's AEAD tag size in bytes.
+        ///   The AEAD ciphertext and authentication tag to decrypt.
+        /// </param>
+        /// <param name="plaintext">
+        ///   The byte array to receive the decrypted plaintext.
+        ///   This must be exactly <paramref name="ciphertext" />.Length - the suite's AEAD tag size in bytes.
         /// </param>
         /// <param name="aad">
         ///   The additional authenticated data, or <see langword="null" /> for none.
         /// </param>
         /// <exception cref="ArgumentNullException">
-        ///   <paramref name="plaintext" /> or <paramref name="ciphertext" /> is <see langword="null" />.
+        ///   <paramref name="ciphertext" /> or <paramref name="plaintext" /> is <see langword="null" />.
         /// </exception>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="ciphertext" /> is not the correct size.
+        ///   <paramref name="plaintext" /> is not the correct size, or
+        ///   <paramref name="ciphertext" /> is too small to contain a valid authentication tag.
         /// </exception>
         /// <exception cref="CryptographicException">
-        ///   An error occurred during encryption, or the message limit has been reached.
+        ///   Decryption failed, or the message limit has been reached.
         /// </exception>
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
-        public void Seal(byte[] plaintext, byte[] ciphertext, byte[]? aad = null)
+        public void Open(byte[] ciphertext, byte[] plaintext, byte[]? aad = null)
         {
+            ArgumentNullException.ThrowIfNull(ciphertext);
             ArgumentNullException.ThrowIfNull(plaintext);
+
+            Open(
+                new ReadOnlySpan<byte>(ciphertext),
+                new Span<byte>(plaintext),
+                new ReadOnlySpan<byte>(aad));
+        }
+
+        /// <summary>
+        ///   Decrypts and authenticates the ciphertext, and advances the internal sequence number.
+        /// </summary>
+        /// <param name="ciphertext">
+        ///   The AEAD ciphertext and authentication tag to decrypt.
+        /// </param>
+        /// <param name="aad">
+        ///   The additional authenticated data.
+        /// </param>
+        /// <returns>
+        ///   A byte array containing the decrypted plaintext.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="ciphertext" /> is too small to contain a valid authentication tag.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   Decryption failed, or the message limit has been reached.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        public byte[] Open(ReadOnlySpan<byte> ciphertext, ReadOnlySpan<byte> aad = default)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+
+            int tagSize = GetAeadTagSizeInBytes();
+
+            if (ciphertext.Length < tagSize)
+            {
+                throw new ArgumentException(SR.Argument_CiphertextTooSmall, nameof(ciphertext));
+            }
+
+            byte[] plaintext = new byte[ciphertext.Length - tagSize];
+            OpenCore(ciphertext, plaintext, aad);
+
+            return plaintext;
+        }
+
+        /// <summary>
+        ///   Decrypts and authenticates the ciphertext, advances the internal sequence number,
+        ///   and returns the plaintext.
+        /// </summary>
+        /// <param name="ciphertext">
+        ///   The AEAD ciphertext and authentication tag to decrypt.
+        /// </param>
+        /// <param name="aad">
+        ///   The additional authenticated data, or <see langword="null" /> for none.
+        /// </param>
+        /// <returns>
+        ///   A byte array containing the decrypted plaintext.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="ciphertext" /> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="ciphertext" /> is too small to contain a valid authentication tag.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   Decryption failed, or the message limit has been reached.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
+        public byte[] Open(byte[] ciphertext, byte[]? aad = null)
+        {
             ArgumentNullException.ThrowIfNull(ciphertext);
 
-            Seal(
-                new ReadOnlySpan<byte>(plaintext),
-                new Span<byte>(ciphertext),
+            return Open(
+                new ReadOnlySpan<byte>(ciphertext),
                 new ReadOnlySpan<byte>(aad));
         }
 
         /// <summary>
-        ///   Encrypts and authenticates the plaintext, and advances the sequence number.
+        ///   When overridden in a derived class, decrypts using the internal sequence number.
         /// </summary>
-        /// <param name="plaintext">
-        ///   The plaintext to encrypt.
-        /// </param>
-        /// <param name="aad">
-        ///   The additional authenticated data.
-        /// </param>
-        /// <returns>
-        ///   A byte array containing the AEAD ciphertext and authentication tag.
-        /// </returns>
-        /// <exception cref="CryptographicException">
-        ///   An error occurred during encryption, or the message limit has been reached.
-        /// </exception>
-        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
-        public byte[] Seal(ReadOnlySpan<byte> plaintext, ReadOnlySpan<byte> aad = default)
-        {
-            ObjectDisposedException.ThrowIf(_disposed, this);
-
-            byte[] ciphertext = new byte[plaintext.Length + GetAeadTagSizeInBytes()];
-            SealCore(plaintext, ciphertext, aad);
-
-            return ciphertext;
-        }
+        /// <param name="ciphertext">The AEAD ciphertext and tag.</param>
+        /// <param name="plaintext">The buffer to receive the plaintext.</param>
+        /// <param name="aad">The additional authenticated data.</param>
+        protected abstract void OpenCore(ReadOnlySpan<byte> ciphertext, Span<byte> plaintext, ReadOnlySpan<byte> aad);
 
         /// <summary>
-        ///   Encrypts and authenticates the plaintext, and advances the sequence number.
+        ///   When overridden in a derived class, gets the AEAD tag size for this context, in bytes.
         /// </summary>
-        /// <param name="plaintext">
-        ///   The plaintext to encrypt.
-        /// </param>
-        /// <param name="aad">
-        ///   The additional authenticated data, or <see langword="null" /> for none.
-        /// </param>
-        /// <returns>
-        ///   A byte array containing the AEAD ciphertext and authentication tag.
-        /// </returns>
-        /// <exception cref="ArgumentNullException">
-        ///   <paramref name="plaintext" /> is <see langword="null" />.
-        /// </exception>
-        /// <exception cref="CryptographicException">
-        ///   An error occurred during encryption, or the message limit has been reached.
-        /// </exception>
-        /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
-        public byte[] Seal(byte[] plaintext, byte[]? aad = null)
-        {
-            ArgumentNullException.ThrowIfNull(plaintext);
-
-            return Seal(
-                new ReadOnlySpan<byte>(plaintext),
-                new ReadOnlySpan<byte>(aad));
-        }
+        /// <returns>The AEAD tag size in bytes.</returns>
+        protected abstract int GetAeadTagSizeInBytes();
 
         /// <summary>
         ///   Exports a secret from this Hpke context.
@@ -249,14 +279,6 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   When overridden in a derived class, encrypts and authenticates the plaintext.
-        /// </summary>
-        /// <param name="plaintext">The plaintext to encrypt.</param>
-        /// <param name="ciphertext">The buffer to receive the ciphertext and tag.</param>
-        /// <param name="aad">The additional authenticated data.</param>
-        protected abstract void SealCore(ReadOnlySpan<byte> plaintext, Span<byte> ciphertext, ReadOnlySpan<byte> aad);
-
-        /// <summary>
         ///   When overridden in a derived class, exports a secret from the Hpke context.
         /// </summary>
         /// <param name="exporterContext">The exporter context string.</param>
@@ -267,13 +289,7 @@ namespace System.Security.Cryptography
         protected abstract void ExportCore(ReadOnlySpan<byte> exporterContext, Span<byte> destination);
 
         /// <summary>
-        ///   When overridden in a derived class, gets the AEAD tag size for this context, in bytes.
-        /// </summary>
-        /// <returns>The AEAD tag size in bytes.</returns>
-        protected abstract int GetAeadTagSizeInBytes();
-
-        /// <summary>
-        ///   Releases the resources used by this <see cref="HpkeSenderContext" /> instance.
+        ///   Releases the resources used by this <see cref="HpkeReceiver" /> instance.
         /// </summary>
         public void Dispose()
         {
@@ -285,7 +301,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Releases the resources used by this <see cref="HpkeSenderContext" /> instance.
+        ///   Releases the resources used by this <see cref="HpkeReceiver" /> instance.
         /// </summary>
         /// <param name="disposing">
         ///   <see langword="true" /> to release both managed and unmanaged resources;

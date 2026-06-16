@@ -167,14 +167,14 @@ namespace System.Security.Cryptography
             }
         }
 
-        protected override HpkeSenderContext SetupSenderCore(
+        protected override HpkeSender SetupSenderCore(
             Span<byte> encapsulatedKey,
             ReadOnlySpan<byte> info)
         {
             return SetupSenderPskCore(encapsulatedKey, info, default, default);
         }
 
-        protected override HpkeSenderContext SetupSenderPskCore(
+        protected override HpkeSender SetupSenderPskCore(
             Span<byte> encapsulatedKey,
             ReadOnlySpan<byte> info,
             ReadOnlySpan<byte> psk,
@@ -205,7 +205,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        protected override HpkeSenderContext SetupSenderAuthCore(
+        protected override HpkeSender SetupSenderAuthCore(
             Span<byte> encapsulatedKey,
             Hpke senderKey,
             ReadOnlySpan<byte> info)
@@ -213,7 +213,7 @@ namespace System.Security.Cryptography
             return SetupSenderAuthPskCore(encapsulatedKey, senderKey, info, default, default);
         }
 
-        protected override HpkeSenderContext SetupSenderAuthPskCore(
+        protected override HpkeSender SetupSenderAuthPskCore(
             Span<byte> encapsulatedKey,
             Hpke senderKey,
             ReadOnlySpan<byte> info,
@@ -295,14 +295,14 @@ namespace System.Security.Cryptography
             }
         }
 
-        protected override HpkeReceiverContext SetupReceiverCore(
+        protected override HpkeReceiver SetupReceiverCore(
             ReadOnlySpan<byte> encapsulatedKey,
             ReadOnlySpan<byte> info)
         {
             return SetupReceiverPskCore(encapsulatedKey, info, default, default);
         }
 
-        protected override HpkeReceiverContext SetupReceiverPskCore(
+        protected override HpkeReceiver SetupReceiverPskCore(
             ReadOnlySpan<byte> encapsulatedKey,
             ReadOnlySpan<byte> info,
             ReadOnlySpan<byte> psk,
@@ -329,7 +329,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        protected override HpkeReceiverContext SetupReceiverAuthCore(
+        protected override HpkeReceiver SetupReceiverAuthCore(
             ReadOnlySpan<byte> encapsulatedKey,
             Hpke senderKey,
             ReadOnlySpan<byte> info)
@@ -337,7 +337,7 @@ namespace System.Security.Cryptography
             return SetupReceiverAuthPskCore(encapsulatedKey, senderKey, info, default, default);
         }
 
-        protected override HpkeReceiverContext SetupReceiverAuthPskCore(
+        protected override HpkeReceiver SetupReceiverAuthPskCore(
             ReadOnlySpan<byte> encapsulatedKey,
             Hpke senderKey,
             ReadOnlySpan<byte> info,
@@ -788,7 +788,7 @@ namespace System.Security.Cryptography
         // Sender context
         // ----------------------------------------------------------------
 
-        private sealed class HpkeManagedSenderContext : HpkeSenderContext
+        private sealed class HpkeManagedSenderContext : HpkeSender
         {
             private readonly HpkeSuite _suite;
             private readonly byte[] _key;
@@ -845,7 +845,7 @@ namespace System.Security.Cryptography
         // Receiver context
         // ----------------------------------------------------------------
 
-        private sealed class HpkeManagedReceiverContext : HpkeReceiverContext
+        private sealed class HpkeManagedReceiverContext : HpkeReceiver
         {
             private readonly HpkeSuite _suite;
             private readonly byte[] _key;

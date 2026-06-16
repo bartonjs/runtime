@@ -1815,37 +1815,37 @@ namespace System.Security.Cryptography
         public void Seal(System.ReadOnlySpan<byte> plaintext, out byte[] encapsulatedKey, out byte[] ciphertext, System.ReadOnlySpan<byte> aad = default(System.ReadOnlySpan<byte>), System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
         public void Seal(System.ReadOnlySpan<byte> plaintext, System.Span<byte> encapsulatedKey, System.Span<byte> ciphertext, System.ReadOnlySpan<byte> aad = default(System.ReadOnlySpan<byte>), System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { }
         protected abstract void SealCore(System.ReadOnlySpan<byte> plaintext, System.Span<byte> encapsulatedKey, System.Span<byte> ciphertext, System.ReadOnlySpan<byte> aad, System.ReadOnlySpan<byte> info);
-        public System.Security.Cryptography.HpkeReceiverContext SetupReceiver(byte[] encapsulatedKey, byte[]? info = null) { throw null; }
-        public System.Security.Cryptography.HpkeReceiverContext SetupReceiver(System.ReadOnlySpan<byte> encapsulatedKey, System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
-        public System.Security.Cryptography.HpkeReceiverContext SetupReceiverAuth(byte[] encapsulatedKey, System.Security.Cryptography.Hpke senderKey, byte[]? info = null) { throw null; }
-        public System.Security.Cryptography.HpkeReceiverContext SetupReceiverAuth(System.ReadOnlySpan<byte> encapsulatedKey, System.Security.Cryptography.Hpke senderKey, System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
-        protected abstract System.Security.Cryptography.HpkeReceiverContext SetupReceiverAuthCore(System.ReadOnlySpan<byte> encapsulatedKey, System.Security.Cryptography.Hpke senderKey, System.ReadOnlySpan<byte> info);
-        public System.Security.Cryptography.HpkeReceiverContext SetupReceiverAuthPsk(byte[] encapsulatedKey, System.Security.Cryptography.Hpke senderKey, byte[] psk, byte[] pskId, byte[]? info = null) { throw null; }
-        public System.Security.Cryptography.HpkeReceiverContext SetupReceiverAuthPsk(System.ReadOnlySpan<byte> encapsulatedKey, System.Security.Cryptography.Hpke senderKey, System.ReadOnlySpan<byte> psk, System.ReadOnlySpan<byte> pskId, System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
-        protected abstract System.Security.Cryptography.HpkeReceiverContext SetupReceiverAuthPskCore(System.ReadOnlySpan<byte> encapsulatedKey, System.Security.Cryptography.Hpke senderKey, System.ReadOnlySpan<byte> info, System.ReadOnlySpan<byte> psk, System.ReadOnlySpan<byte> pskId);
-        protected abstract System.Security.Cryptography.HpkeReceiverContext SetupReceiverCore(System.ReadOnlySpan<byte> encapsulatedKey, System.ReadOnlySpan<byte> info);
-        public System.Security.Cryptography.HpkeReceiverContext SetupReceiverPsk(byte[] encapsulatedKey, byte[] psk, byte[] pskId, byte[]? info = null) { throw null; }
-        public System.Security.Cryptography.HpkeReceiverContext SetupReceiverPsk(System.ReadOnlySpan<byte> encapsulatedKey, System.ReadOnlySpan<byte> psk, System.ReadOnlySpan<byte> pskId, System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
-        protected abstract System.Security.Cryptography.HpkeReceiverContext SetupReceiverPskCore(System.ReadOnlySpan<byte> encapsulatedKey, System.ReadOnlySpan<byte> info, System.ReadOnlySpan<byte> psk, System.ReadOnlySpan<byte> pskId);
-        public System.Security.Cryptography.HpkeSenderContext SetupSender(out byte[] encapsulatedKey, System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
-        public System.Security.Cryptography.HpkeSenderContext SetupSender(System.Span<byte> encapsulatedKey, System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
-        public System.Security.Cryptography.HpkeSenderContext SetupSenderAuth(out byte[] encapsulatedKey, System.Security.Cryptography.Hpke senderKey, byte[]? info = null) { throw null; }
-        public System.Security.Cryptography.HpkeSenderContext SetupSenderAuth(out byte[] encapsulatedKey, System.Security.Cryptography.Hpke senderKey, System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
-        public System.Security.Cryptography.HpkeSenderContext SetupSenderAuth(System.Span<byte> encapsulatedKey, System.Security.Cryptography.Hpke senderKey, System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
-        protected abstract System.Security.Cryptography.HpkeSenderContext SetupSenderAuthCore(System.Span<byte> encapsulatedKey, System.Security.Cryptography.Hpke senderKey, System.ReadOnlySpan<byte> info);
-        public System.Security.Cryptography.HpkeSenderContext SetupSenderAuthPsk(out byte[] encapsulatedKey, System.Security.Cryptography.Hpke senderKey, byte[] psk, byte[] pskId, byte[]? info = null) { throw null; }
-        public System.Security.Cryptography.HpkeSenderContext SetupSenderAuthPsk(out byte[] encapsulatedKey, System.Security.Cryptography.Hpke senderKey, System.ReadOnlySpan<byte> psk, System.ReadOnlySpan<byte> pskId, System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
-        public System.Security.Cryptography.HpkeSenderContext SetupSenderAuthPsk(System.Span<byte> encapsulatedKey, System.Security.Cryptography.Hpke senderKey, System.ReadOnlySpan<byte> psk, System.ReadOnlySpan<byte> pskId, System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
-        protected abstract System.Security.Cryptography.HpkeSenderContext SetupSenderAuthPskCore(System.Span<byte> encapsulatedKey, System.Security.Cryptography.Hpke senderKey, System.ReadOnlySpan<byte> info, System.ReadOnlySpan<byte> psk, System.ReadOnlySpan<byte> pskId);
-        protected abstract System.Security.Cryptography.HpkeSenderContext SetupSenderCore(System.Span<byte> encapsulatedKey, System.ReadOnlySpan<byte> info);
-        public HpkeSenderContext SetupSenderPsk(byte[] psk, byte[] pskId, out byte[] encapsulatedKey, byte[]? info = null) { throw null; }
-        public HpkeSenderContext SetupSenderPsk(ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId, out byte[] encapsulatedKey, ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
-        public HpkeSenderContext SetupSenderPsk(ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId, Span<byte> encapsulatedKey, ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
-        protected abstract System.Security.Cryptography.HpkeSenderContext SetupSenderPskCore(System.Span<byte> encapsulatedKey, System.ReadOnlySpan<byte> info, System.ReadOnlySpan<byte> psk, System.ReadOnlySpan<byte> pskId);
+        public System.Security.Cryptography.HpkeReceiver SetupReceiver(byte[] encapsulatedKey, byte[]? info = null) { throw null; }
+        public System.Security.Cryptography.HpkeReceiver SetupReceiver(System.ReadOnlySpan<byte> encapsulatedKey, System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
+        public System.Security.Cryptography.HpkeReceiver SetupReceiverAuth(byte[] encapsulatedKey, System.Security.Cryptography.Hpke senderKey, byte[]? info = null) { throw null; }
+        public System.Security.Cryptography.HpkeReceiver SetupReceiverAuth(System.ReadOnlySpan<byte> encapsulatedKey, System.Security.Cryptography.Hpke senderKey, System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
+        protected abstract System.Security.Cryptography.HpkeReceiver SetupReceiverAuthCore(System.ReadOnlySpan<byte> encapsulatedKey, System.Security.Cryptography.Hpke senderKey, System.ReadOnlySpan<byte> info);
+        public System.Security.Cryptography.HpkeReceiver SetupReceiverAuthPsk(byte[] encapsulatedKey, System.Security.Cryptography.Hpke senderKey, byte[] psk, byte[] pskId, byte[]? info = null) { throw null; }
+        public System.Security.Cryptography.HpkeReceiver SetupReceiverAuthPsk(System.ReadOnlySpan<byte> encapsulatedKey, System.Security.Cryptography.Hpke senderKey, System.ReadOnlySpan<byte> psk, System.ReadOnlySpan<byte> pskId, System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
+        protected abstract System.Security.Cryptography.HpkeReceiver SetupReceiverAuthPskCore(System.ReadOnlySpan<byte> encapsulatedKey, System.Security.Cryptography.Hpke senderKey, System.ReadOnlySpan<byte> info, System.ReadOnlySpan<byte> psk, System.ReadOnlySpan<byte> pskId);
+        protected abstract System.Security.Cryptography.HpkeReceiver SetupReceiverCore(System.ReadOnlySpan<byte> encapsulatedKey, System.ReadOnlySpan<byte> info);
+        public System.Security.Cryptography.HpkeReceiver SetupReceiverPsk(byte[] encapsulatedKey, byte[] psk, byte[] pskId, byte[]? info = null) { throw null; }
+        public System.Security.Cryptography.HpkeReceiver SetupReceiverPsk(System.ReadOnlySpan<byte> encapsulatedKey, System.ReadOnlySpan<byte> psk, System.ReadOnlySpan<byte> pskId, System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
+        protected abstract System.Security.Cryptography.HpkeReceiver SetupReceiverPskCore(System.ReadOnlySpan<byte> encapsulatedKey, System.ReadOnlySpan<byte> info, System.ReadOnlySpan<byte> psk, System.ReadOnlySpan<byte> pskId);
+        public System.Security.Cryptography.HpkeSender SetupSender(out byte[] encapsulatedKey, System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
+        public System.Security.Cryptography.HpkeSender SetupSender(System.Span<byte> encapsulatedKey, System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
+        public System.Security.Cryptography.HpkeSender SetupSenderAuth(out byte[] encapsulatedKey, System.Security.Cryptography.Hpke senderKey, byte[]? info = null) { throw null; }
+        public System.Security.Cryptography.HpkeSender SetupSenderAuth(out byte[] encapsulatedKey, System.Security.Cryptography.Hpke senderKey, System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
+        public System.Security.Cryptography.HpkeSender SetupSenderAuth(System.Span<byte> encapsulatedKey, System.Security.Cryptography.Hpke senderKey, System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
+        protected abstract System.Security.Cryptography.HpkeSender SetupSenderAuthCore(System.Span<byte> encapsulatedKey, System.Security.Cryptography.Hpke senderKey, System.ReadOnlySpan<byte> info);
+        public System.Security.Cryptography.HpkeSender SetupSenderAuthPsk(out byte[] encapsulatedKey, System.Security.Cryptography.Hpke senderKey, byte[] psk, byte[] pskId, byte[]? info = null) { throw null; }
+        public System.Security.Cryptography.HpkeSender SetupSenderAuthPsk(out byte[] encapsulatedKey, System.Security.Cryptography.Hpke senderKey, System.ReadOnlySpan<byte> psk, System.ReadOnlySpan<byte> pskId, System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
+        public System.Security.Cryptography.HpkeSender SetupSenderAuthPsk(System.Span<byte> encapsulatedKey, System.Security.Cryptography.Hpke senderKey, System.ReadOnlySpan<byte> psk, System.ReadOnlySpan<byte> pskId, System.ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
+        protected abstract System.Security.Cryptography.HpkeSender SetupSenderAuthPskCore(System.Span<byte> encapsulatedKey, System.Security.Cryptography.Hpke senderKey, System.ReadOnlySpan<byte> info, System.ReadOnlySpan<byte> psk, System.ReadOnlySpan<byte> pskId);
+        protected abstract System.Security.Cryptography.HpkeSender SetupSenderCore(System.Span<byte> encapsulatedKey, System.ReadOnlySpan<byte> info);
+        public HpkeSender SetupSenderPsk(byte[] psk, byte[] pskId, out byte[] encapsulatedKey, byte[]? info = null) { throw null; }
+        public HpkeSender SetupSenderPsk(ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId, out byte[] encapsulatedKey, ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
+        public HpkeSender SetupSenderPsk(ReadOnlySpan<byte> psk, ReadOnlySpan<byte> pskId, Span<byte> encapsulatedKey, ReadOnlySpan<byte> info = default(System.ReadOnlySpan<byte>)) { throw null; }
+        protected abstract System.Security.Cryptography.HpkeSender SetupSenderPskCore(System.Span<byte> encapsulatedKey, System.ReadOnlySpan<byte> info, System.ReadOnlySpan<byte> psk, System.ReadOnlySpan<byte> pskId);
     }
-    public abstract partial class HpkeReceiverContext : System.IDisposable
+    public abstract partial class HpkeReceiver : System.IDisposable
     {
-        protected HpkeReceiverContext() { }
+        protected HpkeReceiver() { }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public void Export(byte[] exporterContext, byte[] destination) { }
@@ -1860,9 +1860,9 @@ namespace System.Security.Cryptography
         public void Open(System.ReadOnlySpan<byte> ciphertext, System.Span<byte> plaintext, System.ReadOnlySpan<byte> aad = default(System.ReadOnlySpan<byte>)) { }
         protected abstract void OpenCore(System.ReadOnlySpan<byte> ciphertext, System.Span<byte> plaintext, System.ReadOnlySpan<byte> aad);
     }
-    public abstract partial class HpkeSenderContext : System.IDisposable
+    public abstract partial class HpkeSender : System.IDisposable
     {
-        protected HpkeSenderContext() { }
+        protected HpkeSender() { }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public void Export(byte[] exporterContext, byte[] destination) { }

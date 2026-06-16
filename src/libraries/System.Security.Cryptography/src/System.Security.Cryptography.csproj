@@ -432,10 +432,10 @@
              Link="Common\System\Security\Cryptography\Hpke.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\HpkeImplementation.cs"
              Link="Common\System\Security\Cryptography\HpkeImplementation.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\HpkeReceiverContext.cs"
-             Link="Common\System\Security\Cryptography\HpkeReceiverContext.cs" />
-    <Compile Include="$(CommonPath)System\Security\Cryptography\HpkeSenderContext.cs"
-             Link="Common\System\Security\Cryptography\HpkeSenderContext.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\HpkeReceiver.cs"
+             Link="Common\System\Security\Cryptography\HpkeReceiver.cs" />
+    <Compile Include="$(CommonPath)System\Security\Cryptography\HpkeSender.cs"
+             Link="Common\System\Security\Cryptography\HpkeSender.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\HpkeSuite.cs"
              Link="Common\System\Security\Cryptography\HpkeSuite.cs" />
     <Compile Include="$(CommonPath)System\Security\Cryptography\Oids.cs"
