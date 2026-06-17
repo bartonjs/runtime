@@ -26,12 +26,23 @@ namespace System.Security.Cryptography
         private bool _disposed;
 
         /// <summary>
-        ///   Gets a value that indicates whether HPKE is supported on the current platform.
+        ///   Determines whether the specified HPKE ciphersuite is supported on the current platform.
         /// </summary>
-        /// <value>
-        ///   <see langword="true" /> if HPKE is supported; otherwise, <see langword="false" />.
-        /// </value>
-        public static bool IsSupported { get; } = HpkeImplementation.SupportsAny();
+        /// <param name="suite">
+        ///   The HPKE ciphersuite to check for support.
+        /// </param>
+        /// <returns>
+        ///   <see langword="true" /> if the specified suite is supported; otherwise, <see langword="false" />.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="suite" /> is <see langword="null" />.
+        /// </exception>
+        public static bool IsSupported(HpkeSuite suite)
+        {
+            ArgumentNullException.ThrowIfNull(suite);
+
+            return HpkeImplementation.IsSuiteSupported(suite);
+        }
 
         /// <summary>
         ///   Gets the HPKE ciphersuite for this instance.
@@ -85,8 +96,8 @@ namespace System.Security.Cryptography
         ///   An error occurred generating the HPKE key pair.
         /// </exception>
         /// <exception cref="PlatformNotSupportedException">
-        ///   The platform does not support HPKE. Callers can use the <see cref="IsSupported" /> property
-        ///   to determine if the platform supports HPKE.
+        ///   The platform does not support HPKE. Callers can use the <see cref="IsSupported(HpkeSuite)" /> method
+        ///   to determine if the platform supports a given HPKE suite.
         /// </exception>
         public static Hpke GenerateKey(HpkeSuite suite)
         {

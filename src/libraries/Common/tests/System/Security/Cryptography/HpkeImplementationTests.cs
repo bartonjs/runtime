@@ -5,7 +5,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
-    [ConditionalClass(typeof(Hpke), nameof(Hpke.IsSupported))]
+    [ConditionalClass(typeof(HpkeTests), nameof(HpkeTests.IsSupported))]
     public class HpkeImplementationTests : HpkeBaseTests
     {
         public override Hpke GenerateKey(HpkeSuite suite)

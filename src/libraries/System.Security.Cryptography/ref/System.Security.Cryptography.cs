@@ -1792,7 +1792,7 @@ namespace System.Security.Cryptography
     public abstract partial class Hpke : System.IDisposable
     {
         protected Hpke(System.Security.Cryptography.HpkeSuite suite) { }
-        public static bool IsSupported { get { throw null; } }
+        public static bool IsSupported(System.Security.Cryptography.HpkeSuite suite) { throw null; }
         public System.Security.Cryptography.HpkeSuite Suite { get { throw null; } }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }

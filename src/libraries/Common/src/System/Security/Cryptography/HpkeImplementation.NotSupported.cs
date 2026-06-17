@@ -5,7 +5,7 @@ namespace System.Security.Cryptography
 {
     internal static partial class HpkeImplementation
     {
-        internal static partial bool SupportsAny() => false;
+        internal static partial bool IsSuiteSupported(HpkeSuite suite) => false;
 
         internal static partial Hpke GenerateKeyCore(HpkeSuite suite) =>
             throw new PlatformNotSupportedException();

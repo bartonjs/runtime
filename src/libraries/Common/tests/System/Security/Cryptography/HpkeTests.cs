@@ -9,15 +9,26 @@ namespace System.Security.Cryptography.Tests
     public class HpkeTests_IsSupported
     {
         [Fact]
-        public static void IsSupported_AgreesWithPlatform()
+        public static void IsSupported_KnownSuites()
         {
-            Assert.Equal(!PlatformDetection.IsBrowser, Hpke.IsSupported);
+            Assert.True(Hpke.IsSupported(HpkeSuite.DHKEM_P256_HKDF_SHA256_AES_128_GCM));
+            Assert.True(Hpke.IsSupported(HpkeSuite.DHKEM_P384_HKDF_SHA384_AES_256_GCM));
+            Assert.True(Hpke.IsSupported(HpkeSuite.DHKEM_X25519_HKDF_SHA256_AES_128_GCM));
+            Assert.True(Hpke.IsSupported(HpkeSuite.DHKEM_X25519_HKDF_SHA256_ChaCha20Poly1305));
+        }
+
+        [Fact]
+        public static void IsSupported_Null_Throws()
+        {
+            Assert.Throws<ArgumentNullException>("suite", () => Hpke.IsSupported(null!));
         }
     }
 
-    [ConditionalClass(typeof(Hpke), nameof(Hpke.IsSupported))]
+    [ConditionalClass(typeof(HpkeTests), nameof(HpkeTests.IsSupported))]
     public class HpkeTests
     {
+        public static bool IsSupported => true;
+
         public static TheoryData<HpkeSuite> NistSuites => new()
         {
             HpkeSuite.DHKEM_P256_HKDF_SHA256_AES_128_GCM,

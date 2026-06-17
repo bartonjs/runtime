@@ -5,7 +5,7 @@ namespace System.Security.Cryptography
 {
     internal static partial class HpkeImplementation
     {
-        internal static partial bool SupportsAny();
+        internal static partial bool IsSuiteSupported(HpkeSuite suite);
 
         internal static partial Hpke GenerateKeyCore(HpkeSuite suite);
         internal static partial Hpke ImportEncapsulationKeyCore(HpkeSuite suite, ReadOnlySpan<byte> source);

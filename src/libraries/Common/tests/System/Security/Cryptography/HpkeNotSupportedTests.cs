@@ -8,7 +8,7 @@ namespace System.Security.Cryptography.Tests
     [ConditionalClass(typeof(HpkeNotSupportedTests), nameof(HpkeNotSupportedTests.IsNotSupported))]
     public static class HpkeNotSupportedTests
     {
-        public static bool IsNotSupported => !Hpke.IsSupported;
+        public static bool IsNotSupported => !HpkeTests.IsSupported;
 
         [Fact]
         public static void GenerateKey_NotSupported()
