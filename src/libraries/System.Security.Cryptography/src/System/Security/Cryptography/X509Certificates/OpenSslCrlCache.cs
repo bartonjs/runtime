@@ -490,10 +490,11 @@ namespace System.Security.Cryptography.X509Certificates
                 CachedCrlEntry ret;
                 Node? evicted;
                 CachedCrlEntry? replaced;
+                int hashCode = GetHashCode(key);
 
                 lock (_lock)
                 {
-                    ret = AddOrUpdate(key, value, out evicted, out replaced);
+                    ret = AddOrUpdate(hashCode, key, value, out evicted, out replaced);
 
                     bool ignore = false;
                     ret.CrlHandle.DangerousAddRef(ref ignore);
@@ -516,7 +517,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             internal bool TryGetValueAndUpRef(string key, [NotNullWhen(true)] out CachedCrlEntry? value)
             {
-                int hashCode = key.GetHashCode();
+                int hashCode = GetHashCode(key);
 
                 lock (_lock)
                 {

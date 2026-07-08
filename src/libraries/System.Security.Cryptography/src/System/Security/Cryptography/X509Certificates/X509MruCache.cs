@@ -31,6 +31,8 @@ namespace System.Security.Cryptography.X509Certificates
             return false;
         }
 
+        private protected static int GetHashCode(string key) => key.GetHashCode();
+
         private protected bool TryGetNode(int hashCode, string key, [NotNullWhen(true)] out Node? value)
         {
             Debug.Assert(_lock.IsHeldByCurrentThread);
@@ -71,13 +73,12 @@ namespace System.Security.Cryptography.X509Certificates
             return false;
         }
 
-        private protected T AddOrUpdate(string key, T value, out Node? evicted, out T? replaced)
+        private protected T AddOrUpdate(int hashCode, string key, T value, out Node? evicted, out T? replaced)
         {
             Debug.Assert(key is not null);
             Debug.Assert(value is not null);
             Debug.Assert(_lock.IsHeldByCurrentThread);
 
-            int hashCode = key.GetHashCode();
             T ret = value;
 
             // The first time we add something, create the object to monitor for GC events.
