@@ -151,15 +151,25 @@ namespace System.Security.Cryptography.X509Certificates
 
             internal byte[]? Get(string uri, TimeSpan downloadTimeout)
             {
+                if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                {
+                    OpenSslX509ChainEventSource.Log.HttpCacheQuery(uri);
+                }
+
                 int hashCode = uri.GetHashCode();
                 Node? toRefresh = null;
                 CachedRequest? req = null;
                 byte[]? ret = null;
+                TimeSpan entryAge = default;
+                bool ignoredEntry = false;
+                Node? evicted = null;
+                bool cacheHit = false;
 
                 lock (_lock)
                 {
                     if (TryGetNode(hashCode, uri, out Node? cached))
                     {
+                        cacheHit = true;
                         req = cached.Value;
 
                         if (req.DownloadTask.IsCompleted)
@@ -168,14 +178,22 @@ namespace System.Security.Cryptography.X509Certificates
 
                             if (data is not null)
                             {
-                                if (!req.RefreshInProgress &&
-                                    DateTimeOffset.UtcNow - req.CacheTime > s_refreshInterval)
+                                if (!req.RefreshInProgress)
                                 {
-                                    req.RefreshInProgress = true;
-                                    toRefresh = cached;
+                                    entryAge = DateTimeOffset.UtcNow - req.CacheTime;
+
+                                    if (entryAge > s_refreshInterval)
+                                    {
+                                        req.RefreshInProgress = true;
+                                        toRefresh = cached;
+                                    }
                                 }
 
                                 ret = data;
+                            }
+                            else
+                            {
+                                ignoredEntry = true;
                             }
                         }
                     }
@@ -187,19 +205,51 @@ namespace System.Security.Cryptography.X509Certificates
                             uri,
                             new CachedRequest(
                                 System.Net.Http.X509ResourceClient.DownloadAssetAsync(uri, downloadTimeout)),
-                            evicted: out _,
+                            out evicted,
                             replaced: out _);
                     }
                 }
 
                 if (toRefresh is not null)
                 {
+                    if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                    {
+                        OpenSslX509ChainEventSource.Log.HttpCacheBackgroundRefresh(
+                            (int)entryAge.TotalSeconds);
+                    }
+
                     _ = Refresh(toRefresh);
                 }
 
                 if (ret is not null)
                 {
+                    if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                    {
+                        OpenSslX509ChainEventSource.Log.HttpCacheHitFinished(ret.Length);
+                    }
+
                     return ret;
+                }
+
+                if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                {
+                    if (ignoredEntry)
+                    {
+                        OpenSslX509ChainEventSource.Log.HttpCacheHitIgnored();
+                    }
+                    else if (cacheHit)
+                    {
+                        OpenSslX509ChainEventSource.Log.HttpCacheHitInProgress();
+                    }
+                    else
+                    {
+                        OpenSslX509ChainEventSource.Log.HttpCacheMiss();
+
+                        if (evicted is not null)
+                        {
+                            OpenSslX509ChainEventSource.Log.HttpCacheFull(evicted.Key);
+                        }
+                    }
                 }
 
                 Debug.Assert(req is not null);
@@ -207,6 +257,11 @@ namespace System.Security.Cryptography.X509Certificates
 
                 if (!downloadTask.Wait(downloadTimeout))
                 {
+                    if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                    {
+                        OpenSslX509ChainEventSource.Log.HttpCacheTimeout();
+                    }
+
                     return null;
                 }
 
@@ -223,16 +278,20 @@ namespace System.Security.Cryptography.X509Certificates
                 {
                     Remove(hashCode, uri);
                 }
+
+                if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                {
+                    OpenSslX509ChainEventSource.Log.HttpCacheExplicitRemoval(uri);
+                }
             }
 
             private async Task Refresh(Node node)
             {
                 bool success = false;
+                string uri = node.Key;
 
                 try
                 {
-                    string uri = node.Key;
-
                     Task<byte[]?> downloadTask = System.Net.Http.X509ResourceClient.DownloadAssetAsync(
                         uri,
                         ChainPal.DefaultRetrievalTimeout);
@@ -257,11 +316,21 @@ namespace System.Security.Cryptography.X509Certificates
                     }
 
                     success = true;
+
+                    if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                    {
+                        OpenSslX509ChainEventSource.Log.HttpCacheBackgroundSuccess(uri);
+                    }
                 }
                 finally
                 {
                     if (!success)
                     {
+                        if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                        {
+                            OpenSslX509ChainEventSource.Log.HttpCacheBackgroundFailure(uri);
+                        }
+
                         lock (_lock)
                         {
                             node.Value.RefreshInProgress = false;
@@ -272,6 +341,14 @@ namespace System.Security.Cryptography.X509Certificates
 
             private protected override bool OnConflictTakeNew(Node current, CachedRequest newValue) =>
                 newValue.CacheTime > current.Value.CacheTime;
+
+            private protected override void Pruned(Node? prunedNode, int countStart, int countEnd)
+            {
+                if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                {
+                    OpenSslX509ChainEventSource.Log.HttpCachePruned(countStart - countEnd, countEnd);
+                }
+            }
         }
 
         private sealed class CachedRequest
