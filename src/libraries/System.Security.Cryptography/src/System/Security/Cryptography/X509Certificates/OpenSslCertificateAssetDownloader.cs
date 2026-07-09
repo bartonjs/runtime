@@ -2,11 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Reflection;
-using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
+
 using OpenSslX509ChainEventSource = System.Security.Cryptography.X509Certificates.OpenSslX509ChainEventSource;
 
 namespace System.Security.Cryptography.X509Certificates
@@ -102,9 +101,14 @@ namespace System.Security.Cryptography.X509Certificates
             return null;
         }
 
+        internal static void ReportCrlCached(string uri)
+        {
+            RequestCache.Instance.Remove(uri);
+        }
+
         internal static SafeOcspResponseHandle? DownloadOcspGet(string uri, TimeSpan downloadTimeout)
         {
-            byte[]? data = DownloadAsset(uri, downloadTimeout);
+            byte[]? data = DownloadAssetNoCache(uri, downloadTimeout);
 
             if (data == null)
             {
@@ -132,7 +136,155 @@ namespace System.Security.Cryptography.X509Certificates
 
         private static byte[]? DownloadAsset(string uri, TimeSpan downloadTimeout)
         {
+            return RequestCache.Instance.Get(uri, downloadTimeout);
+        }
+
+        private static byte[]? DownloadAssetNoCache(string uri, TimeSpan downloadTimeout)
+        {
             return System.Net.Http.X509ResourceClient.DownloadAsset(uri, downloadTimeout);
+        }
+
+        private sealed class RequestCache : X509MruCache<CachedRequest>
+        {
+            internal static RequestCache Instance { get; } = new();
+            internal static TimeSpan s_refreshInterval = TimeSpan.FromMinutes(6);
+
+            internal byte[]? Get(string uri, TimeSpan downloadTimeout)
+            {
+                int hashCode = uri.GetHashCode();
+                Node? toRefresh = null;
+                CachedRequest? req = null;
+                byte[]? ret = null;
+
+                lock (_lock)
+                {
+                    if (TryGetNode(hashCode, uri, out Node? cached))
+                    {
+                        req = cached.Value;
+
+                        if (req.DownloadTask.IsCompleted)
+                        {
+                            byte[]? data = req.DownloadTask.Result;
+
+                            if (data is not null)
+                            {
+                                if (!req.RefreshInProgress &&
+                                    DateTimeOffset.UtcNow - req.CacheTime > s_refreshInterval)
+                                {
+                                    req.RefreshInProgress = true;
+                                    toRefresh = cached;
+                                }
+
+                                ret = data;
+                            }
+                        }
+                    }
+
+                    if (ret is null)
+                    {
+                        req = AddOrUpdate(
+                            hashCode,
+                            uri,
+                            new CachedRequest(
+                                System.Net.Http.X509ResourceClient.DownloadAssetAsync(uri, downloadTimeout)),
+                            evicted: out _,
+                            replaced: out _);
+                    }
+                }
+
+                if (toRefresh is not null)
+                {
+                    _ = Refresh(toRefresh);
+                }
+
+                if (ret is not null)
+                {
+                    return ret;
+                }
+
+                Debug.Assert(req is not null);
+                Task<byte[]?> downloadTask = req.DownloadTask;
+
+                if (!downloadTask.Wait(downloadTimeout))
+                {
+                    return null;
+                }
+
+                return downloadTask.Result;
+            }
+
+            internal void Remove(string uri)
+            {
+                Debug.Assert(uri is not null);
+
+                int hashCode = GetHashCode(uri);
+
+                lock (_lock)
+                {
+                    Remove(hashCode, uri);
+                }
+            }
+
+            private async Task Refresh(Node node)
+            {
+                bool success = false;
+
+                try
+                {
+                    string uri = node.Key;
+
+                    Task<byte[]?> downloadTask = System.Net.Http.X509ResourceClient.DownloadAssetAsync(
+                        uri,
+                        ChainPal.DefaultRetrievalTimeout);
+
+                    byte[]? resp = await downloadTask.ConfigureAwait(false);
+
+                    if (resp is null)
+                    {
+                        return;
+                    }
+
+                    int hashCode = GetHashCode(uri);
+
+                    lock (_lock)
+                    {
+                        AddOrUpdate(
+                            hashCode,
+                            uri,
+                            new CachedRequest(downloadTask),
+                            evicted: out _,
+                            replaced: out _);
+                    }
+
+                    success = true;
+                }
+                finally
+                {
+                    if (!success)
+                    {
+                        lock (_lock)
+                        {
+                            node.Value.RefreshInProgress = false;
+                        }
+                    }
+                }
+            }
+
+            private protected override bool OnConflictTakeNew(Node current, CachedRequest newValue) =>
+                newValue.CacheTime > current.Value.CacheTime;
+        }
+
+        private sealed class CachedRequest
+        {
+            internal bool RefreshInProgress { get; set; }
+            internal Task<byte[]?> DownloadTask { get; }
+            internal DateTimeOffset CacheTime { get; }
+
+            internal CachedRequest(Task<byte[]?> downloadTask)
+            {
+                DownloadTask = downloadTask;
+                CacheTime = DateTimeOffset.UtcNow;
+            }
         }
     }
 }
