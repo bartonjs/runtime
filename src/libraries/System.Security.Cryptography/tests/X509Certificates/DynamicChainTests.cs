@@ -14,6 +14,8 @@ using Microsoft.DotNet.XUnitExtensions;
 using Test.Cryptography;
 using Xunit;
 
+using RSATestData = System.Security.Cryptography.Rsa.Tests.TestData;
+
 namespace System.Security.Cryptography.X509Certificates.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X.509 certificates")]
@@ -1360,6 +1362,249 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        private const string ApplicationCertPoliciesOid = "1.3.6.1.4.1.311.21.10";
+
+        // Explores how the Microsoft Application Policies extension (szOID_APPLICATION_CERT_POLICIES,
+        // 1.3.6.1.4.1.311.21.10) interacts with the standard EKU (2.5.29.37) extension when filtering
+        // a chain via X509ChainPolicy.ApplicationPolicy. Summary of the intended behavior:
+        //   * Application Policies absent  -> EKU governs (with anyEKU 2.5.29.37.0 as the wildcard).
+        //   * Application Policies present -> it is authoritative; EKU is ignored. Its only wildcard
+        //     is anyExtendedKeyUsage (2.5.29.37.0); anyPolicy (2.5.29.32.0) matches nothing.
+        //   * Application Policies present but empty -> authoritative empty set (matches nothing).
+        //   * Application Policies present but undecodable -> the chain is invalid outright,
+        //     regardless of EKU, criticality, or whether any application policy was requested.
+        [Theory]
+        [MemberData(nameof(ApplicationPolicyVsEkuMemberData))]
+        public static void VerifyApplicationPolicyVsEku(AppPolicyEkuCase testCase)
+        {
+            X509Certificate2 rootCert = testCase.Root;
+            X509Certificate2 intermediateCert = testCase.Intermediate;
+
+            CertificateRequest request = new CertificateRequest(
+                "CN=App Policy vs EKU Test End-Entity",
+                s_endEntityKey,
+                HashAlgorithmName.SHA256,
+                RSASignaturePadding.Pkcs1);
+
+            request.CertificateExtensions.Add(BasicConstraintsEndEntity);
+
+            if (testCase.EkuOids is not null)
+            {
+                OidCollection oids = new OidCollection();
+
+                foreach (string oid in testCase.EkuOids)
+                {
+                    oids.Add(new Oid(oid, null));
+                }
+
+                request.CertificateExtensions.Add(new X509EnhancedKeyUsageExtension(oids, critical: false));
+            }
+
+            if (testCase.ApplicationPolicyValue is not null)
+            {
+                request.CertificateExtensions.Add(
+                    new X509Extension(
+                        ApplicationCertPoliciesOid,
+                        testCase.ApplicationPolicyValue,
+                        testCase.ApplicationPolicyCritical));
+            }
+
+            DateTimeOffset notBefore = DateTimeOffset.UtcNow.AddDays(-1);
+            DateTimeOffset notAfter = notBefore.AddDays(30);
+
+            using (X509Certificate2 endEntityCert =
+                request.Create(intermediateCert, notBefore, notAfter, CreateTestSerial()))
+            {
+                TestChain3(
+                    rootCert,
+                    intermediateCert,
+                    endEntityCert,
+                    testCase.ExpectedFlags,
+                    testCase.RequestedApplicationPolicyOid is null
+                        ? null
+                        : policy => policy.ApplicationPolicy.Add(new Oid(testCase.RequestedApplicationPolicyOid, null)));
+            }
+        }
+
+        // The end-entity subject key is irrelevant to what these cases exercise (the intermediate signs
+        // the end-entity cert), so a single fixed key is imported once and reused for every case.
+        private static readonly RSA s_endEntityKey = CreateEndEntityKey();
+
+        private static RSA CreateEndEntityKey()
+        {
+            RSA rsa = RSA.Create();
+            rsa.ImportParameters(RSATestData.RSA2048Params);
+            return rsa;
+        }
+
+        // A single shared root + issuing intermediate is generated once for the whole VerifyApplicationPolicyVsEku
+        // theory. Only the end-entity certificate differs between cases, so it is (re)issued in the test body.
+        private static readonly Lazy<(X509Certificate2 Root, X509Certificate2 Intermediate)> s_appPolicyIssuers =
+            new Lazy<(X509Certificate2, X509Certificate2)>(CreateAppPolicyIssuers);
+
+        private static (X509Certificate2 Root, X509Certificate2 Intermediate) CreateAppPolicyIssuers()
+        {
+            DateTimeOffset now = DateTimeOffset.UtcNow;
+
+            using (RSA rootKey = RSA.Create(2048))
+            {
+                // The intermediate key is intentionally not disposed: the returned intermediate certificate
+                // owns a copy of it and uses it to sign end-entity certificates during test execution.
+                RSA intermediateKey = RSA.Create(2048);
+
+                CertificateRequest rootRequest = new CertificateRequest(
+                    "CN=App Policy vs EKU Test Root",
+                    rootKey,
+                    HashAlgorithmName.SHA256,
+                    RSASignaturePadding.Pkcs1);
+
+                rootRequest.CertificateExtensions.Add(BasicConstraintsCA);
+                rootRequest.CertificateExtensions.Add(
+                    new X509KeyUsageExtension(
+                        X509KeyUsageFlags.KeyCertSign | X509KeyUsageFlags.CrlSign,
+                        critical: false));
+
+                X509Certificate2 root = rootRequest.CreateSelfSigned(now.AddDays(-45), now.AddDays(365));
+
+                CertificateRequest intermediateRequest = new CertificateRequest(
+                    "CN=App Policy vs EKU Test Intermediate",
+                    intermediateKey,
+                    HashAlgorithmName.SHA256,
+                    RSASignaturePadding.Pkcs1);
+
+                intermediateRequest.CertificateExtensions.Add(BasicConstraintsCA);
+                intermediateRequest.CertificateExtensions.Add(
+                    new X509KeyUsageExtension(
+                        X509KeyUsageFlags.KeyCertSign | X509KeyUsageFlags.CrlSign,
+                        critical: false));
+
+                X509Certificate2 intermediate;
+
+                using (X509Certificate2 intermediatePublic =
+                    intermediateRequest.Create(root, now.AddDays(-40), now.AddDays(180), CreateTestSerial()))
+                {
+                    intermediate = intermediatePublic.CopyWithPrivateKey(intermediateKey);
+                }
+
+                return (root, intermediate);
+            }
+        }
+
+        private static byte[] CreateTestSerial()
+        {
+            byte[] serial = new byte[8];
+            RandomNumberGenerator.Fill(serial);
+
+            // Keep the high bit clear so the serial encodes as a positive INTEGER.
+            serial[0] &= 0x7F;
+
+            if (serial[0] == 0)
+            {
+                serial[0] = 1;
+            }
+
+            return serial;
+        }
+
+        public static IEnumerable<object[]> ApplicationPolicyVsEkuMemberData()
+        {
+            const string ServerAuth = "1.3.6.1.5.5.7.3.2";
+            const string ClientAuth = "1.3.6.1.5.5.7.3.1";
+            const string TimeStamp = "1.3.6.1.5.5.7.3.8"; // RFC 3161, used only as a companion value
+            const string AnyEku = "2.5.29.37.0";           // anyExtendedKeyUsage
+            const string AnyPolicy = "2.5.29.32.0";         // anyPolicy (certificate policies)
+
+            const X509ChainStatusFlags Ok = X509ChainStatusFlags.NoError;
+            const X509ChainStatusFlags Usage = X509ChainStatusFlags.NotValidForUsage;
+            const X509ChainStatusFlags BadExt =
+                X509ChainStatusFlags.InvalidExtension | X509ChainStatusFlags.InvalidPolicyConstraints;
+
+            // Well-formed Application Policies extension value carrying the given usage OIDs.
+            static byte[] AppPol(params string[] oids) => EncodeCertificatePoliciesValue(oids);
+
+            AppPolicyEkuCase[] cases =
+            {
+                // Baseline: EKU only (sanity, including TLS Server Auth).
+                new AppPolicyEkuCase("no restrictions; req=Server", null, null, false, ServerAuth, Ok),
+                new AppPolicyEkuCase("EKU=Server; req=Server", new[] { ServerAuth }, null, false, ServerAuth, Ok),
+                new AppPolicyEkuCase("EKU=Server; req=Client", new[] { ServerAuth }, null, false, ClientAuth, Usage),
+                new AppPolicyEkuCase("EKU=Client; req=Server", new[] { ClientAuth }, null, false, ServerAuth, Usage),
+                new AppPolicyEkuCase("EKU=Client; req=none", new[] { ClientAuth }, null, false, null, Ok),
+                new AppPolicyEkuCase("EKU=anyEKU; req=Server", new[] { AnyEku }, null, false, ServerAuth, Ok),
+                new AppPolicyEkuCase("EKU=anyEKU; req=Client", new[] { AnyEku }, null, false, ClientAuth, Ok),
+                new AppPolicyEkuCase("EKU=anyEKU,TS; req=Client", new[] { AnyEku, TimeStamp }, null, false, ClientAuth, Ok),
+                new AppPolicyEkuCase("EKU=anyPolicy(32.0); req=Server", new[] { AnyPolicy }, null, false, ServerAuth, Usage),
+
+                // Application Policies only (no EKU): behaves like the same EKU.
+                new AppPolicyEkuCase("AppPol=Server; req=Server", null, AppPol(ServerAuth), false, ServerAuth, Ok),
+                new AppPolicyEkuCase("AppPol=Server; req=Client", null, AppPol(ServerAuth), false, ClientAuth, Usage),
+                new AppPolicyEkuCase("AppPol=anyEKU(37.0); req=Server", null, AppPol(AnyEku), false, ServerAuth, Ok),
+                new AppPolicyEkuCase("AppPol=anyEKU(37.0); req=Client", null, AppPol(AnyEku), false, ClientAuth, Ok),
+                new AppPolicyEkuCase("AppPol=anyEKU(37.0),TS; req=Server", null, AppPol(AnyEku, TimeStamp), false, ServerAuth, Ok),
+                new AppPolicyEkuCase("AppPol=anyPolicy(32.0); req=Server", null, AppPol(AnyPolicy), false, ServerAuth, Usage),
+                new AppPolicyEkuCase("AppPol=anyPolicy(32.0); req=Client", null, AppPol(AnyPolicy), false, ClientAuth, Usage),
+                new AppPolicyEkuCase("AppPol=TS,anyPolicy(32.0); req=Server", null, AppPol(TimeStamp, AnyPolicy), false, ServerAuth, Usage),
+
+                // Conflicts: Application Policies overrides EKU entirely.
+                new AppPolicyEkuCase("EKU=Server AppPol=Client; req=Server", new[] { ServerAuth }, AppPol(ClientAuth), false, ServerAuth, Usage),
+                new AppPolicyEkuCase("EKU=Server AppPol=Client; req=Client", new[] { ServerAuth }, AppPol(ClientAuth), false, ClientAuth, Ok),
+                new AppPolicyEkuCase("EKU=Client AppPol=Server; req=Server", new[] { ClientAuth }, AppPol(ServerAuth), false, ServerAuth, Ok),
+                new AppPolicyEkuCase("EKU=Client AppPol=Server; req=Client", new[] { ClientAuth }, AppPol(ServerAuth), false, ClientAuth, Usage),
+                new AppPolicyEkuCase("EKU=anyEKU AppPol=Client; req=Server", new[] { AnyEku }, AppPol(ClientAuth), false, ServerAuth, Usage),
+                new AppPolicyEkuCase("EKU=Client AppPol=anyEKU(37.0),TS; req=Server", new[] { ClientAuth }, AppPol(AnyEku, TimeStamp), false, ServerAuth, Ok),
+                new AppPolicyEkuCase("EKU=Client AppPol=anyEKU(37.0),TS; req=Client", new[] { ClientAuth }, AppPol(AnyEku, TimeStamp), false, ClientAuth, Ok),
+
+                // Well-formed but empty Application Policies: authoritative empty set (matches nothing).
+                new AppPolicyEkuCase("AppPol=empty EKU=Server; req=Server", new[] { ServerAuth }, EncodeCertificatePoliciesValue(), false, ServerAuth, Usage),
+                new AppPolicyEkuCase("AppPol=empty; req=none", null, EncodeCertificatePoliciesValue(), false, null, Ok),
+
+                // Undecodable Application Policies: hard failure regardless of EKU / criticality / requested usage.
+                new AppPolicyEkuCase("AppPol=NULL(05 00); req=none", null, new byte[] { 0x05, 0x00 }, false, null, BadExt),
+                new AppPolicyEkuCase("AppPol=NULL(05 00) EKU=Server; req=Server", new[] { ServerAuth }, new byte[] { 0x05, 0x00 }, false, ServerAuth, BadExt),
+                new AppPolicyEkuCase("AppPol=NULL(05 00) critical EKU=Server; req=Server", new[] { ServerAuth }, new byte[] { 0x05, 0x00 }, true, ServerAuth, BadExt),
+                new AppPolicyEkuCase("AppPol=badInner EKU=Server; req=Server", new[] { ServerAuth }, new byte[] { 0x30, 0x03, 0x02, 0x01, 0x2A }, false, ServerAuth, BadExt),
+                new AppPolicyEkuCase("AppPol=truncated EKU=Server; req=Server", new[] { ServerAuth }, new byte[] { 0x30, 0x82, 0x7F, 0xFF }, false, ServerAuth, BadExt),
+            };
+
+            foreach (AppPolicyEkuCase testCase in cases)
+            {
+                (testCase.Root, testCase.Intermediate) = s_appPolicyIssuers.Value;
+                yield return new object[] { testCase };
+            }
+        }
+
+        public sealed class AppPolicyEkuCase
+        {
+            public string Name { get; }
+            public string[] EkuOids { get; }
+            public byte[] ApplicationPolicyValue { get; }
+            public bool ApplicationPolicyCritical { get; }
+            public string RequestedApplicationPolicyOid { get; }
+            public X509ChainStatusFlags ExpectedFlags { get; }
+
+            // Shared across all cases; assigned by the member-data generator.
+            public X509Certificate2 Root { get; set; }
+            public X509Certificate2 Intermediate { get; set; }
+
+            public AppPolicyEkuCase(
+                string name,
+                string[] ekuOids,
+                byte[] applicationPolicyValue,
+                bool applicationPolicyCritical,
+                string requestedApplicationPolicyOid,
+                X509ChainStatusFlags expectedFlags)
+            {
+                Name = name;
+                EkuOids = ekuOids;
+                ApplicationPolicyValue = applicationPolicyValue;
+                ApplicationPolicyCritical = applicationPolicyCritical;
+                RequestedApplicationPolicyOid = requestedApplicationPolicyOid;
+                ExpectedFlags = expectedFlags;
+            }
+
+            public override string ToString() => Name;
+        }
+
         public enum BuildChainWithNotSignatureValidTest : int
         {
             TrustedRoot,
@@ -1625,6 +1870,15 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             //              PolicyQualifierInfo OPTIONAL }
 
             // CertPolicyId ::= OBJECT IDENTIFIER
+            return new X509Extension("2.5.29.32", EncodeCertificatePoliciesValue(policyOids), critical: false);
+        }
+
+        // Produces the DER value shared by the RFC 5280 certificatePolicies (2.5.29.32) extension
+        // and the Microsoft szOID_APPLICATION_CERT_POLICIES (1.3.6.1.4.1.311.21.10) extension, which
+        // are structurally identical: SEQUENCE OF PolicyInformation, PolicyInformation ::= SEQUENCE {
+        // policyIdentifier OBJECT IDENTIFIER, policyQualifiers ... OPTIONAL }.
+        private static byte[] EncodeCertificatePoliciesValue(params string[] policyOids)
+        {
             AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
 
             using (writer.PushSequence()) //CertificatePolicies
@@ -1638,7 +1892,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 }
             }
 
-            return new X509Extension("2.5.29.32", writer.Encode(), critical: false);
+            return writer.Encode();
         }
 
         private static X509Extension BuildPolicyMappings(
