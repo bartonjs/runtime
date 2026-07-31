@@ -1046,565 +1046,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [Theory]
-        [MemberData(nameof(ChainPolicyMemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/128890", TestPlatforms.Android)]
-        public static void CertificatePolicyTest(
-           ChainPolicyTestCase testCase)
-        {
-            using (testCase)
-            {
-                TestChain4(
-                    testCase.Root,
-                    testCase.HighIntermediate,
-                    testCase.LowIntermediate,
-                    testCase.EndEntity,
-                    PlatformPolicyConstraints(testCase.ExpectedFlags),
-                    testCase.ConfigureCallback);
-            }
-        }
-
-        public static IEnumerable<object[]> ChainPolicyMemberData()
-        {
-            foreach (ChainPolicyTestCase testCase in TestCases())
-            {
-                yield return new object[] { testCase };
-            }
-
-            static IEnumerable<ChainPolicyTestCase> TestCases()
-            {
-                // Use the same keys for all chains, just to keep the total time low.
-                // There are enough cases here that keygen shows up in clock time.
-                RSA[] keys = [ RSA.Create(2048), RSA.Create(2048), RSA.Create(2048), RSA.Create(2048) ];
-
-                // These test cases only show in results by their test case number,
-                // because describing them in words would be very verbose.
-                //
-                // Skipped (unyielded) cases need to reserve their numbers so they're
-                // the same on all platforms.
-                //
-                // Ideally, new cases are added with higher values, so that test history
-                // isn't comparing apples and oranges.
-
-                int caseId = 0;
-
-                // No chain.Policy.CertificatePolicy checks, EE uses the mapped policy identifier,
-                // intermediate requires that the EE certs have a policy extension.
-                //
-                // Despite the intermediate specifying a mapping when it's forbidden (inhibit<2),
-                // Everything is reported valid, because the EE cert policy C doesn't require the mapping.
-                for (int rootInhibitMapping = 0; rootInhibitMapping <= 2; rootInhibitMapping++)
-                {
-                    yield return ChainPolicyTestCase.Build(
-                        caseId++,
-                        keys,
-                        rootInhibitMapping,
-                        0,
-                        [ChainPolicyTestCase.PolicyB, ChainPolicyTestCase.PolicyC],
-                        [],
-                        X509ChainStatusFlags.NoError);
-                }
-
-                Debug.Assert(caseId == 3);
-
-                // No chain.Policy.CertificatePolicy checks, EE uses the mapped policy identifier,
-                // intermediate requires that the EE certs have a policy extension.
-                //
-                // The EE policy is required, and the only policy in the EE cert is the mapped one,
-                // but that is forbidden by the intermediate's inhibit=<2, so it's an
-                // Issuance-Chain-Policy violation.
-                for (int rootInhibitMapping = 0; rootInhibitMapping <= 2; rootInhibitMapping++)
-                {
-                    // Windows seems to be the only OS capable of reporting this error.
-
-                    yield return ChainPolicyTestCase.Build(
-                        caseId++,
-                        keys,
-                        rootInhibitMapping,
-                        0,
-                        [ChainPolicyTestCase.PolicyB],
-                        [],
-                        rootInhibitMapping < 2 && OperatingSystem.IsWindows() ?
-                            X509ChainStatusFlags.NoIssuanceChainPolicy :
-                            X509ChainStatusFlags.NoError);
-                }
-
-                Debug.Assert(caseId == 6);
-
-                // No chain.Policy.CertificatePolicy checks, EE uses the mapped policy identifier,
-                // intermediate does not require that the EE certs have a policy extension.
-                //
-                // Even though the intermediate has a disallowed mapping when inhibit=<2,
-                // since the EE isn't _required_ to have a policy, nothing was required to
-                // traverse the map.
-                for (int rootInhibitMapping = 0; rootInhibitMapping <= 2; rootInhibitMapping++)
-                {
-                    yield return ChainPolicyTestCase.Build(
-                        caseId++,
-                        keys,
-                        rootInhibitMapping,
-                        -1,
-                        [ChainPolicyTestCase.PolicyB],
-                        [],
-                        X509ChainStatusFlags.NoError);
-                }
-
-                Debug.Assert(caseId == 9);
-
-                // EE uses the mapped policy identifier,
-                // intermediate requires that the EE certs have a policy extension.
-                // Require that the EE cert is valid for only policy C (no mapping required).
-                //
-                // Despite the intermediate specifying a mapping when it's forbidden (inhibit=<2),
-                // Everything is reported valid, because the EE cert policy C doesn't require the mapping.
-                for (int rootInhibitMapping = 0; rootInhibitMapping <= 2; rootInhibitMapping++)
-                {
-                    yield return ChainPolicyTestCase.Build(
-                        caseId++,
-                        keys,
-                        rootInhibitMapping,
-                        0,
-                        [ChainPolicyTestCase.PolicyB, ChainPolicyTestCase.PolicyC],
-                        [ChainPolicyTestCase.PolicyC],
-                        X509ChainStatusFlags.NoError);
-                }
-
-                Debug.Assert(caseId == 12);
-
-                // EE uses the mapped policy identifier,
-                // intermediate does not require that the EE certs have a policy extension.
-                // Require that the EE cert is valid for only policy C (no mapping required).
-                //
-                // Despite the intermediate specifying a mapping when it's forbidden (inhibit=<2),
-                // Everything is reported valid, because the EE cert policy C doesn't require the mapping.
-                for (int rootInhibitMapping = 0; rootInhibitMapping <= 2; rootInhibitMapping++)
-                {
-                    yield return ChainPolicyTestCase.Build(
-                        caseId++,
-                        keys,
-                        rootInhibitMapping,
-                        -1,
-                        [ChainPolicyTestCase.PolicyB, ChainPolicyTestCase.PolicyC],
-                        [ChainPolicyTestCase.PolicyC],
-                        X509ChainStatusFlags.NoError);
-                }
-
-                Debug.Assert(caseId == 15);
-
-                // EE uses the mapped policy identifier,
-                // intermediate requires that the EE certs have a policy extension.
-                // Require that the EE cert is valid for only policy A (which it calls C).
-                //
-                // Since this requires traversing the mapping, it's NotValidForUsage whenever
-                // the mapping was disallowed (inhibit<2).
-                for (int rootInhibitMapping = 0; rootInhibitMapping <= 2; rootInhibitMapping++)
-                {
-                    yield return ChainPolicyTestCase.Build(
-                        caseId++,
-                        keys,
-                        rootInhibitMapping,
-                        0,
-                        [ChainPolicyTestCase.PolicyB, ChainPolicyTestCase.PolicyC],
-                        [ChainPolicyTestCase.PolicyA],
-                        rootInhibitMapping < 2 ?
-                            X509ChainStatusFlags.NotValidForUsage :
-                            X509ChainStatusFlags.NoError);
-                }
-
-                Debug.Assert(caseId == 18);
-
-                foreach (RSA key in keys)
-                {
-                    key.Dispose();
-                }
-            }
-        }
-
-        public sealed class ChainPolicyTestCase : IDisposable
-        {
-            internal const string PolicyA = "0.1.2.3";
-            internal const string PolicyB = "1.2.3.4";
-            internal const string PolicyC = "2.3.4.5";
-
-            private int _number;
-            private string[] _eePoliciesToCheck;
-
-            internal X509ChainStatusFlags ExpectedFlags { get; private set; }
-            internal X509Certificate2 Root { get; private set; }
-            internal X509Certificate2 HighIntermediate { get; private set; }
-            internal X509Certificate2 LowIntermediate { get; private set; }
-            internal X509Certificate2 EndEntity { get; private set; }
-
-            private ChainPolicyTestCase()
-            {
-            }
-
-            public Action<X509ChainPolicy> ConfigureCallback
-            {
-                get
-                {
-                    if (_eePoliciesToCheck.Length == 0)
-                    {
-                        return null;
-                    }
-
-                    return policy =>
-                    {
-                        foreach (string policyOid in _eePoliciesToCheck)
-                        {
-                            policy.CertificatePolicy.Add(new Oid(policyOid, null));
-                        }
-                    };
-                }
-            }
-
-            public void Dispose()
-            {
-                Root?.Dispose();
-                HighIntermediate?.Dispose();
-                LowIntermediate?.Dispose();
-                EndEntity?.Dispose();
-            }
-
-            internal static ChainPolicyTestCase Build(
-                int number,
-                RSA[] keys,
-                int rootInhibitMapping,
-                int intermediateRequireExplicit,
-                string[] eePolicies,
-                string[] eePoliciesToCheck,
-                X509ChainStatusFlags expectedFlags)
-            {
-                X509Extension[] rootExtensions = new[]
-                {
-                    BasicConstraintsCA,
-                    MaybePolicyConstraints(inhibitPolicyMappingSkipCerts: rootInhibitMapping),
-                };
-
-                X509Extension[] highImedExtensions = new[]
-                {
-                    BasicConstraintsCA,
-                    // The "any" policy.
-                    BuildPolicyByIdentifiers("2.5.29.32.0"),
-                };
-
-                X509Extension[] lowImedExtensions = new[]
-                {
-                    BasicConstraintsCA,
-                    MaybePolicyConstraints(requireExplicitPolicySkipCerts: intermediateRequireExplicit),
-                    BuildPolicyByIdentifiers(PolicyA, PolicyC),
-                    BuildPolicyMappings((PolicyA, PolicyB)),
-                };
-
-                X509Extension[] endEntityExtensions = new[]
-                {
-                    BasicConstraintsEndEntity,
-                    MaybePolicies(eePolicies),
-                };
-
-                X509Certificate2[] certs = new X509Certificate2[4];
-
-                TestDataGenerator.MakeTestChain(
-                    keys,
-                    certs,
-                    endEntityExtensions,
-                    [lowImedExtensions, highImedExtensions],
-                    rootExtensions,
-                    $"{nameof(ChainPolicyTestCase)}-{number}");
-
-                return new ChainPolicyTestCase
-                {
-                    _number = number,
-                    EndEntity = certs[0],
-                    LowIntermediate = certs[1],
-                    HighIntermediate = certs[2],
-                    Root = certs[3],
-                    _eePoliciesToCheck = eePoliciesToCheck,
-                    ExpectedFlags = expectedFlags,
-                };
-
-                static X509Extension MaybePolicies(string[] policyOids)
-                {
-                    if (policyOids.Length == 0)
-                    {
-                        return null;
-                    }
-
-                    return BuildPolicyByIdentifiers(policyOids);
-                }
-
-                static X509Extension MaybePolicyConstraints(
-                    int requireExplicitPolicySkipCerts = -1,
-                    int inhibitPolicyMappingSkipCerts = -1)
-                {
-                    if (inhibitPolicyMappingSkipCerts >= 0 && requireExplicitPolicySkipCerts >= 0)
-                    {
-                        return BuildPolicyConstraints(inhibitPolicyMappingSkipCerts, requireExplicitPolicySkipCerts);
-                    }
-
-                    if (inhibitPolicyMappingSkipCerts >= 0)
-                    {
-                        return BuildPolicyConstraints(inhibitPolicyMappingSkipCerts: inhibitPolicyMappingSkipCerts);
-                    }
-
-                    if (requireExplicitPolicySkipCerts >= 0)
-                    {
-                        return BuildPolicyConstraints(requireExplicitPolicySkipCerts: requireExplicitPolicySkipCerts);
-                    }
-
-                    return null;
-                }
-            }
-
-            public override string ToString()
-            {
-                return $"CaseID {_number}";
-            }
-        }
-
-        private const string ApplicationCertPoliciesOid = "1.3.6.1.4.1.311.21.10";
-
-        // Explores how the Microsoft Application Policies extension (szOID_APPLICATION_CERT_POLICIES,
-        // 1.3.6.1.4.1.311.21.10) interacts with the standard EKU (2.5.29.37) extension when filtering
-        // a chain via X509ChainPolicy.ApplicationPolicy. Summary of the intended behavior:
-        //   * Application Policies absent  -> EKU governs (with anyEKU 2.5.29.37.0 as the wildcard).
-        //   * Application Policies present -> it is authoritative; EKU is ignored. Its only wildcard
-        //     is anyExtendedKeyUsage (2.5.29.37.0); anyPolicy (2.5.29.32.0) matches nothing.
-        //   * Application Policies present but empty -> authoritative empty set (matches nothing).
-        //   * Application Policies present but undecodable -> the chain is invalid outright,
-        //     regardless of EKU, criticality, or whether any application policy was requested.
-        [Theory]
-        [MemberData(nameof(ApplicationPolicyVsEkuMemberData))]
-        public static void VerifyApplicationPolicyVsEku(AppPolicyEkuCase testCase)
-        {
-            X509Certificate2 rootCert = testCase.Root;
-            X509Certificate2 intermediateCert = testCase.Intermediate;
-
-            CertificateRequest request = new CertificateRequest(
-                "CN=App Policy vs EKU Test End-Entity",
-                s_endEntityKey,
-                HashAlgorithmName.SHA256,
-                RSASignaturePadding.Pkcs1);
-
-            request.CertificateExtensions.Add(BasicConstraintsEndEntity);
-
-            if (testCase.EkuOids is not null)
-            {
-                OidCollection oids = new OidCollection();
-
-                foreach (string oid in testCase.EkuOids)
-                {
-                    oids.Add(new Oid(oid, null));
-                }
-
-                request.CertificateExtensions.Add(new X509EnhancedKeyUsageExtension(oids, critical: false));
-            }
-
-            if (testCase.ApplicationPolicyValue is not null)
-            {
-                request.CertificateExtensions.Add(
-                    new X509Extension(
-                        ApplicationCertPoliciesOid,
-                        testCase.ApplicationPolicyValue,
-                        testCase.ApplicationPolicyCritical));
-            }
-
-            DateTimeOffset notBefore = DateTimeOffset.UtcNow.AddDays(-1);
-            DateTimeOffset notAfter = notBefore.AddDays(30);
-
-            using (X509Certificate2 endEntityCert =
-                request.Create(intermediateCert, notBefore, notAfter, CreateTestSerial()))
-            {
-                TestChain3(
-                    rootCert,
-                    intermediateCert,
-                    endEntityCert,
-                    testCase.ExpectedFlags,
-                    testCase.RequestedApplicationPolicyOid is null
-                        ? null
-                        : policy => policy.ApplicationPolicy.Add(new Oid(testCase.RequestedApplicationPolicyOid, null)));
-            }
-        }
-
-        // The end-entity subject key is irrelevant to what these cases exercise (the intermediate signs
-        // the end-entity cert), so a single fixed key is imported once and reused for every case.
-        private static readonly RSA s_endEntityKey = CreateEndEntityKey();
-
-        private static RSA CreateEndEntityKey()
-        {
-            RSA rsa = RSA.Create();
-            rsa.ImportParameters(RSATestData.RSA2048Params);
-            return rsa;
-        }
-
-        // A single shared root + issuing intermediate is generated once for the whole VerifyApplicationPolicyVsEku
-        // theory. Only the end-entity certificate differs between cases, so it is (re)issued in the test body.
-        private static readonly Lazy<(X509Certificate2 Root, X509Certificate2 Intermediate)> s_appPolicyIssuers =
-            new Lazy<(X509Certificate2, X509Certificate2)>(CreateAppPolicyIssuers);
-
-        private static (X509Certificate2 Root, X509Certificate2 Intermediate) CreateAppPolicyIssuers()
-        {
-            DateTimeOffset now = DateTimeOffset.UtcNow;
-
-            using (RSA rootKey = RSA.Create(2048))
-            {
-                // The intermediate key is intentionally not disposed: the returned intermediate certificate
-                // owns a copy of it and uses it to sign end-entity certificates during test execution.
-                RSA intermediateKey = RSA.Create(2048);
-
-                CertificateRequest rootRequest = new CertificateRequest(
-                    "CN=App Policy vs EKU Test Root",
-                    rootKey,
-                    HashAlgorithmName.SHA256,
-                    RSASignaturePadding.Pkcs1);
-
-                rootRequest.CertificateExtensions.Add(BasicConstraintsCA);
-                rootRequest.CertificateExtensions.Add(
-                    new X509KeyUsageExtension(
-                        X509KeyUsageFlags.KeyCertSign | X509KeyUsageFlags.CrlSign,
-                        critical: false));
-
-                X509Certificate2 root = rootRequest.CreateSelfSigned(now.AddDays(-45), now.AddDays(365));
-
-                CertificateRequest intermediateRequest = new CertificateRequest(
-                    "CN=App Policy vs EKU Test Intermediate",
-                    intermediateKey,
-                    HashAlgorithmName.SHA256,
-                    RSASignaturePadding.Pkcs1);
-
-                intermediateRequest.CertificateExtensions.Add(BasicConstraintsCA);
-                intermediateRequest.CertificateExtensions.Add(
-                    new X509KeyUsageExtension(
-                        X509KeyUsageFlags.KeyCertSign | X509KeyUsageFlags.CrlSign,
-                        critical: false));
-
-                X509Certificate2 intermediate;
-
-                using (X509Certificate2 intermediatePublic =
-                    intermediateRequest.Create(root, now.AddDays(-40), now.AddDays(180), CreateTestSerial()))
-                {
-                    intermediate = intermediatePublic.CopyWithPrivateKey(intermediateKey);
-                }
-
-                return (root, intermediate);
-            }
-        }
-
-        private static byte[] CreateTestSerial()
-        {
-            byte[] serial = new byte[8];
-            RandomNumberGenerator.Fill(serial);
-
-            // Keep the high bit clear so the serial encodes as a positive INTEGER.
-            serial[0] &= 0x7F;
-
-            if (serial[0] == 0)
-            {
-                serial[0] = 1;
-            }
-
-            return serial;
-        }
-
-        public static IEnumerable<object[]> ApplicationPolicyVsEkuMemberData()
-        {
-            const string ServerAuth = "1.3.6.1.5.5.7.3.2";
-            const string ClientAuth = "1.3.6.1.5.5.7.3.1";
-            const string TimeStamp = "1.3.6.1.5.5.7.3.8"; // RFC 3161, used only as a companion value
-            const string AnyEku = "2.5.29.37.0";           // anyExtendedKeyUsage
-            const string AnyPolicy = "2.5.29.32.0";         // anyPolicy (certificate policies)
-
-            const X509ChainStatusFlags Ok = X509ChainStatusFlags.NoError;
-            const X509ChainStatusFlags Usage = X509ChainStatusFlags.NotValidForUsage;
-            const X509ChainStatusFlags BadExt =
-                X509ChainStatusFlags.InvalidExtension | X509ChainStatusFlags.InvalidPolicyConstraints;
-
-            // Well-formed Application Policies extension value carrying the given usage OIDs.
-            static byte[] AppPol(params string[] oids) => EncodeCertificatePoliciesValue(oids);
-
-            AppPolicyEkuCase[] cases =
-            {
-                // Baseline: EKU only (sanity, including TLS Server Auth).
-                new AppPolicyEkuCase("no restrictions; req=Server", null, null, false, ServerAuth, Ok),
-                new AppPolicyEkuCase("EKU=Server; req=Server", new[] { ServerAuth }, null, false, ServerAuth, Ok),
-                new AppPolicyEkuCase("EKU=Server; req=Client", new[] { ServerAuth }, null, false, ClientAuth, Usage),
-                new AppPolicyEkuCase("EKU=Client; req=Server", new[] { ClientAuth }, null, false, ServerAuth, Usage),
-                new AppPolicyEkuCase("EKU=Client; req=none", new[] { ClientAuth }, null, false, null, Ok),
-                new AppPolicyEkuCase("EKU=anyEKU; req=Server", new[] { AnyEku }, null, false, ServerAuth, Ok),
-                new AppPolicyEkuCase("EKU=anyEKU; req=Client", new[] { AnyEku }, null, false, ClientAuth, Ok),
-                new AppPolicyEkuCase("EKU=anyEKU,TS; req=Client", new[] { AnyEku, TimeStamp }, null, false, ClientAuth, Ok),
-                new AppPolicyEkuCase("EKU=anyPolicy(32.0); req=Server", new[] { AnyPolicy }, null, false, ServerAuth, Usage),
-
-                // Application Policies only (no EKU): behaves like the same EKU.
-                new AppPolicyEkuCase("AppPol=Server; req=Server", null, AppPol(ServerAuth), false, ServerAuth, Ok),
-                new AppPolicyEkuCase("AppPol=Server; req=Client", null, AppPol(ServerAuth), false, ClientAuth, Usage),
-                new AppPolicyEkuCase("AppPol=anyEKU(37.0); req=Server", null, AppPol(AnyEku), false, ServerAuth, Ok),
-                new AppPolicyEkuCase("AppPol=anyEKU(37.0); req=Client", null, AppPol(AnyEku), false, ClientAuth, Ok),
-                new AppPolicyEkuCase("AppPol=anyEKU(37.0),TS; req=Server", null, AppPol(AnyEku, TimeStamp), false, ServerAuth, Ok),
-                new AppPolicyEkuCase("AppPol=anyPolicy(32.0); req=Server", null, AppPol(AnyPolicy), false, ServerAuth, Usage),
-                new AppPolicyEkuCase("AppPol=anyPolicy(32.0); req=Client", null, AppPol(AnyPolicy), false, ClientAuth, Usage),
-                new AppPolicyEkuCase("AppPol=TS,anyPolicy(32.0); req=Server", null, AppPol(TimeStamp, AnyPolicy), false, ServerAuth, Usage),
-
-                // Conflicts: Application Policies overrides EKU entirely.
-                new AppPolicyEkuCase("EKU=Server AppPol=Client; req=Server", new[] { ServerAuth }, AppPol(ClientAuth), false, ServerAuth, Usage),
-                new AppPolicyEkuCase("EKU=Server AppPol=Client; req=Client", new[] { ServerAuth }, AppPol(ClientAuth), false, ClientAuth, Ok),
-                new AppPolicyEkuCase("EKU=Client AppPol=Server; req=Server", new[] { ClientAuth }, AppPol(ServerAuth), false, ServerAuth, Ok),
-                new AppPolicyEkuCase("EKU=Client AppPol=Server; req=Client", new[] { ClientAuth }, AppPol(ServerAuth), false, ClientAuth, Usage),
-                new AppPolicyEkuCase("EKU=anyEKU AppPol=Client; req=Server", new[] { AnyEku }, AppPol(ClientAuth), false, ServerAuth, Usage),
-                new AppPolicyEkuCase("EKU=Client AppPol=anyEKU(37.0),TS; req=Server", new[] { ClientAuth }, AppPol(AnyEku, TimeStamp), false, ServerAuth, Ok),
-                new AppPolicyEkuCase("EKU=Client AppPol=anyEKU(37.0),TS; req=Client", new[] { ClientAuth }, AppPol(AnyEku, TimeStamp), false, ClientAuth, Ok),
-
-                // Well-formed but empty Application Policies: authoritative empty set (matches nothing).
-                new AppPolicyEkuCase("AppPol=empty EKU=Server; req=Server", new[] { ServerAuth }, EncodeCertificatePoliciesValue(), false, ServerAuth, Usage),
-                new AppPolicyEkuCase("AppPol=empty; req=none", null, EncodeCertificatePoliciesValue(), false, null, Ok),
-
-                // Undecodable Application Policies: hard failure regardless of EKU / criticality / requested usage.
-                new AppPolicyEkuCase("AppPol=NULL(05 00); req=none", null, new byte[] { 0x05, 0x00 }, false, null, BadExt),
-                new AppPolicyEkuCase("AppPol=NULL(05 00) EKU=Server; req=Server", new[] { ServerAuth }, new byte[] { 0x05, 0x00 }, false, ServerAuth, BadExt),
-                new AppPolicyEkuCase("AppPol=NULL(05 00) critical EKU=Server; req=Server", new[] { ServerAuth }, new byte[] { 0x05, 0x00 }, true, ServerAuth, BadExt),
-                new AppPolicyEkuCase("AppPol=badInner EKU=Server; req=Server", new[] { ServerAuth }, new byte[] { 0x30, 0x03, 0x02, 0x01, 0x2A }, false, ServerAuth, BadExt),
-                new AppPolicyEkuCase("AppPol=truncated EKU=Server; req=Server", new[] { ServerAuth }, new byte[] { 0x30, 0x82, 0x7F, 0xFF }, false, ServerAuth, BadExt),
-            };
-
-            foreach (AppPolicyEkuCase testCase in cases)
-            {
-                (testCase.Root, testCase.Intermediate) = s_appPolicyIssuers.Value;
-                yield return new object[] { testCase };
-            }
-        }
-
-        public sealed class AppPolicyEkuCase
-        {
-            public string Name { get; }
-            public string[] EkuOids { get; }
-            public byte[] ApplicationPolicyValue { get; }
-            public bool ApplicationPolicyCritical { get; }
-            public string RequestedApplicationPolicyOid { get; }
-            public X509ChainStatusFlags ExpectedFlags { get; }
-
-            // Shared across all cases; assigned by the member-data generator.
-            public X509Certificate2 Root { get; set; }
-            public X509Certificate2 Intermediate { get; set; }
-
-            public AppPolicyEkuCase(
-                string name,
-                string[] ekuOids,
-                byte[] applicationPolicyValue,
-                bool applicationPolicyCritical,
-                string requestedApplicationPolicyOid,
-                X509ChainStatusFlags expectedFlags)
-            {
-                Name = name;
-                EkuOids = ekuOids;
-                ApplicationPolicyValue = applicationPolicyValue;
-                ApplicationPolicyCritical = applicationPolicyCritical;
-                RequestedApplicationPolicyOid = requestedApplicationPolicyOid;
-                ExpectedFlags = expectedFlags;
-            }
-
-            public override string ToString() => Name;
-        }
-
         public enum BuildChainWithNotSignatureValidTest : int
         {
             TrustedRoot,
@@ -1741,7 +1182,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             return flags;
         }
 
-        private static X509ChainStatusFlags PlatformPolicyConstraints(X509ChainStatusFlags flags)
+        internal static X509ChainStatusFlags PlatformPolicyConstraints(X509ChainStatusFlags flags)
         {
             if (PlatformDetection.UsesAppleCrypto)
             {
@@ -1825,7 +1266,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             return new X509Certificate2(cert);
         }
 
-        private static X509Extension BuildPolicyConstraints(
+        internal static X509Extension BuildPolicyConstraints(
             int? requireExplicitPolicySkipCerts = null,
             int? inhibitPolicyMappingSkipCerts = null)
         {
@@ -1856,7 +1297,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             return new X509Extension("2.5.29.36", writer.Encode(), critical: true);
         }
 
-        private static X509Extension BuildPolicyByIdentifiers(params string[] policyOids)
+        internal static X509Extension BuildPolicyByIdentifiers(params string[] policyOids)
         {
             // id-ce-certificatePolicies OBJECT IDENTIFIER ::=  { id-ce 32 }
 
@@ -1877,7 +1318,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         // and the Microsoft szOID_APPLICATION_CERT_POLICIES (1.3.6.1.4.1.311.21.10) extension, which
         // are structurally identical: SEQUENCE OF PolicyInformation, PolicyInformation ::= SEQUENCE {
         // policyIdentifier OBJECT IDENTIFIER, policyQualifiers ... OPTIONAL }.
-        private static byte[] EncodeCertificatePoliciesValue(params string[] policyOids)
+        internal static byte[] EncodeCertificatePoliciesValue(params string[] policyOids)
         {
             AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
 
@@ -1895,7 +1336,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             return writer.Encode();
         }
 
-        private static X509Extension BuildPolicyMappings(
+        internal static X509Extension BuildPolicyMappings(
             params (string IssuerDomainPolicy, string SubjectDomainPolicy)[] policyMappings)
         {
             //    PolicyMappings ::= SEQUENCE SIZE (1..MAX) OF SEQUENCE {
@@ -1920,7 +1361,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             return new X509Extension("2.5.29.33", writer.Encode(), critical: true);
         }
 
-        private static void TestChain4(
+        internal static void TestChain4(
             X509Certificate2 rootCertificate,
             X509Certificate2 highIntermediateCertificate,
             X509Certificate2 lowIntermediateCertificate,
@@ -1951,12 +1392,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        private static void TestChain3(
+        internal static void TestChain3(
             X509Certificate2 rootCertificate,
             X509Certificate2 intermediateCertificate,
             X509Certificate2 endEntityCertificate,
             X509ChainStatusFlags expectedFlags = X509ChainStatusFlags.NoError,
-            Action<X509ChainPolicy> configurePolicy = null)
+            Action<X509ChainPolicy> configurePolicy = null,
+            Action<X509Chain> extraVerify = null)
         {
             using (ChainHolder chainHolder = new ChainHolder())
             {
@@ -1977,6 +1419,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.True(
                     actualFlags.HasFlag(expectedFlags),
                     $"Expected Flags: \"{expectedFlags}\"; Actual Flags: \"{actualFlags}\"");
+
+                if (extraVerify is not null)
+                {
+                    extraVerify(chain);
+                }
             }
         }
     }

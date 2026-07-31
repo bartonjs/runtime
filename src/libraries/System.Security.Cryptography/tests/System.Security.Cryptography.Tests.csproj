@@ -638,6 +638,7 @@
     <Compile Include="TripleDesTests.cs" />
     <Compile Include="ZeroMemoryTests.cs" />
     <Compile Include="X509Certificates\Cert.cs" />
+    <Compile Include="X509Certificates\AppAndCertPoliciesChainTests.cs" />
     <Compile Include="X509Certificates\CertTests.cs" />
     <Compile Include="X509Certificates\ChainHolder.cs" />
     <Compile Include="X509Certificates\ChainPolicyTests.cs" />
