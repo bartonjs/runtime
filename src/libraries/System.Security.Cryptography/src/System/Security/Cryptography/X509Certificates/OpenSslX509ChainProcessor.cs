@@ -910,7 +910,53 @@ namespace System.Security.Cryptography.X509Certificates
                 certsToRead.Add(element.Certificate);
             }
 
-            CertificatePolicyChain policyChain = new CertificatePolicyChain(certsToRead);
+            CertificatePolicyChain policyChain;
+
+            try
+            {
+                policyChain = new CertificatePolicyChain(certsToRead);
+            }
+            catch (CryptographicException)
+            {
+                overallStatus ??= new List<X509ChainStatus>();
+
+                X509ChainStatus policyConstr = new X509ChainStatus
+                {
+                    Status = X509ChainStatusFlags.InvalidPolicyConstraints,
+                    StatusInformation = GetErrorString(X509VerifyStatusCodeUniversal.X509_V_ERR_INVALID_POLICY_EXTENSION),
+                };
+
+                X509ChainStatus badExt = new X509ChainStatus
+                {
+                    Status = X509ChainStatusFlags.InvalidExtension,
+                    StatusInformation = GetErrorString(X509VerifyStatusCodeUniversal.X509_V_ERR_INVALID_EXTENSION),
+                };
+
+                AddUniqueStatus(overallStatus, ref policyConstr);
+                AddUniqueStatus(overallStatus, ref badExt);
+
+                // No individual element can have seen more errors than the chain overall,
+                // so avoid regrowth of the list.
+                var elementStatus = new List<X509ChainStatus>(overallStatus.Count);
+
+                // TODO: How high/low?
+                for (int i = 0; i < elements.Length; i++)
+                {
+                    X509ChainElement element = elements[i];
+                    elementStatus.Clear();
+                    elementStatus.AddRange(element.ChainElementStatus);
+
+                    AddUniqueStatus(elementStatus, ref policyConstr);
+                    AddUniqueStatus(elementStatus, ref badExt);
+
+                    elements[i] = new X509ChainElement(
+                        element.Certificate,
+                        elementStatus.ToArray(),
+                        element.Information);
+                }
+
+                return;
+            }
 
             bool failsPolicyChecks = false;
 

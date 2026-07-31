@@ -269,20 +269,20 @@ namespace System.Security.Cryptography.X509Certificates
             policy.ImplicitAnyApplicationPolicy = policy.DeclaredApplicationPolicies == null;
             policy.ImplicitAnyCertificatePolicy = policy.DeclaredCertificatePolicies == null;
 
-            policy.SpecifiedAnyApplicationPolicy = CheckExplicitAnyPolicy(policy.DeclaredApplicationPolicies);
-            policy.SpecifiedAnyCertificatePolicy = CheckExplicitAnyPolicy(policy.DeclaredCertificatePolicies);
+            policy.SpecifiedAnyApplicationPolicy = CheckExplicitAnyPolicy(policy.DeclaredApplicationPolicies, Oids.AnyEnhancedKeyUsage);
+            policy.SpecifiedAnyCertificatePolicy = CheckExplicitAnyPolicy(policy.DeclaredCertificatePolicies, Oids.AnyCertPolicy);
 
             return policy;
         }
 
-        private static bool CheckExplicitAnyPolicy(ISet<string>? declaredPolicies)
+        private static bool CheckExplicitAnyPolicy(ISet<string>? declaredPolicies, string anyPolicyOid)
         {
             if (declaredPolicies == null)
             {
                 return false;
             }
 
-            return declaredPolicies.Remove(Oids.AnyCertPolicy);
+            return declaredPolicies.Remove(anyPolicyOid);
         }
 
         private static int ReadInhibitAnyPolicyExtension(byte[] rawData)
