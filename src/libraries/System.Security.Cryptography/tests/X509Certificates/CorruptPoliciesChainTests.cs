@@ -382,10 +382,25 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                     bool isValid = chain.Build(certs[0]);
                     X509ChainStatusFlags aggregateFlags = X509ChainStatusFlags.NoError;
+                    int expectedLength = certs.Length;
 
-                    for (int i = certs.Length - 1; i >= 0; i--)
+                    if (PlatformDetection.IsOpenSslSupported && corruptEku >= 0)
+                    {
+                        // The OpenSSL chain engine will stop processing the chain when it hits a corrupt EKU,
+                        // so the chain length is shorter than expected.
+                        expectedLength = int.Max(1, corruptEku);
+                    }
+
+                    Assert.Equal(expectedLength, chain.ChainElements.Count);
+
+                    for (int i = expectedLength - 1; i >= 0; i--)
                     {
                         X509ChainStatusFlags expectedStatus = X509ChainStatusFlags.NoError;
+
+                        if (i == expectedLength - 1 && expectedLength < certs.Length)
+                        {
+                            expectedStatus |= X509ChainStatusFlags.PartialChain;
+                        }
 
                         if (corruptCertificatePolicy == i ||
                             corruptApplicationPolicy == i ||
