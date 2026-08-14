@@ -51,10 +51,22 @@ namespace System.Security.Cryptography.X509Certificates
         internal static CertificatePolicyChain Build(X509ChainElement[] chain, ref ErrorVector extensionErrors)
         {
             CertificatePolicyChain policies = new CertificatePolicyChain(chain.Length);
+            bool corruptDeclaredPolicies = false;
+            bool ignored = false;
+            ref bool detector = ref corruptDeclaredPolicies;
+
+            int rootDepth = chain.Length - 1;
+            // TODO: If chain]rootDepth] has PartialChain, set rootDepth to -1
 
             for (int i = 0; i < chain.Length; i++)
             {
-                policies._policies[i] = ReadPolicy(chain[i].Certificate, out bool error);
+                // Windows ignores declared policcy corruption on the root cert.
+                if (i == rootDepth)
+                {
+                    detector = ref ignored;
+                }
+
+                policies._policies[i] = ReadPolicy(chain[i].Certificate, out bool error, ref detector);
 
                 if (error)
                 {
@@ -68,6 +80,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
 
             policies.ApplyRestrictions();
+            policies._failAllCertificatePolicies |= corruptDeclaredPolicies;
 
             return policies;
         }
@@ -379,10 +392,11 @@ namespace System.Security.Cryptography.X509Certificates
         // TODO: Delete this overload.
         private static CertificatePolicy ReadPolicy(X509Certificate2 cert)
         {
-            return ReadPolicy(cert, out _);
+            bool ignored = true;
+            return ReadPolicy(cert, out _, ref ignored);
         }
 
-        private static CertificatePolicy ReadPolicy(X509Certificate2 cert, out bool error)
+        private static CertificatePolicy ReadPolicy(X509Certificate2 cert, out bool error, ref bool corruptDeclaredPolicies)
         {
             // If no ApplicationCertPolicies extension is provided then it uses the EKU
             // OIDS.
@@ -412,6 +426,7 @@ namespace System.Security.Cryptography.X509Certificates
                 }
                 catch (CryptographicException)
                 {
+                    corruptDeclaredPolicies = true;
                     error = true;
                 }
             }
@@ -440,10 +455,12 @@ namespace System.Security.Cryptography.X509Certificates
                 }
             }
 
-            if (policyData.EnhancedKeyUsage != null && applicationCertPolicies == null)
+            if (policyData.EnhancedKeyUsage != null)
             {
                 try
                 {
+                    // If policyData.ApplicationCertPolicies is present, but corrupt, applicationCertPolicies
+                    // should stay null, we'll only check EKU for structural validity.
                     if (policyData.ApplicationCertPolicies is null)
                     {
                         applicationCertPolicies = ReadExtendedKeyUsageExtension(policyData.EnhancedKeyUsage);

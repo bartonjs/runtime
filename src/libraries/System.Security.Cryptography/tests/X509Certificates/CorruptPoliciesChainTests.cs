@@ -201,7 +201,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             // When the ApplicationPolicy is corrupt, it seems to treat
             // the element as valid for all usages (but is still
-            // scoped by the issuers), so by checking for a 
+            // scoped by the issuers)
 
             RunCase(
                 corruptEku: level,
@@ -383,12 +383,14 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     bool isValid = chain.Build(certs[0]);
                     X509ChainStatusFlags aggregateFlags = X509ChainStatusFlags.NoError;
                     int expectedLength = certs.Length;
+                    bool detectCorruptEku = corruptEku >= 0 && omitApplicationPolicy;
 
                     if (PlatformDetection.IsOpenSslSupported && corruptEku >= 0)
                     {
                         // The OpenSSL chain engine will stop processing the chain when it hits a corrupt EKU,
                         // so the chain length is shorter than expected.
                         expectedLength = int.Max(1, corruptEku);
+                        detectCorruptEku = true;
                     }
 
                     Assert.Equal(expectedLength, chain.ChainElements.Count);
@@ -404,7 +406,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                         if (corruptCertificatePolicy == i ||
                             corruptApplicationPolicy == i ||
-                            (omitApplicationPolicy && corruptEku == i) ||
+                            (detectCorruptEku && corruptEku == i) ||
                             (corruptMapping && mappingLevel == i))
                         {
                             expectedStatus |=
@@ -419,7 +421,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                         if (checkUnrelatedAppPolicy)
                         {
-                            if (i < ChainSize - 1)
+                            if (i < expectedLength - 1)
                             {
                                 expectedStatus |= X509ChainStatusFlags.NotValidForUsage;
                             }
