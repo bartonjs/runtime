@@ -42,17 +42,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 // There are enough cases here that keygen shows up in clock time.
                 RSA[] keys = [RSA.Create(2048), RSA.Create(2048), RSA.Create(2048), RSA.Create(2048)];
 
-                // These test cases only show in results by their test case number,
-                // because describing them in words would be very verbose.
-                //
-                // Skipped (unyielded) cases need to reserve their numbers so they're
-                // the same on all platforms.
-                //
-                // Ideally, new cases are added with higher values, so that test history
-                // isn't comparing apples and oranges.
-
-                int caseId = 0;
-
                 // No chain.Policy.CertificatePolicy checks, EE uses the mapped policy identifier,
                 // intermediate requires that the EE certs have a policy extension.
                 //
@@ -61,7 +50,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 for (int rootInhibitMapping = 0; rootInhibitMapping <= 2; rootInhibitMapping++)
                 {
                     yield return ChainPolicyTestCase.Build(
-                        caseId++,
+                        $"NoPolicyCheck/EEUsesMappedPolicyAndExtra/PolicyRequired/RootInhibit={rootInhibitMapping}",
                         keys,
                         rootInhibitMapping,
                         0,
@@ -69,8 +58,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                         [],
                         X509ChainStatusFlags.NoError);
                 }
-
-                Debug.Assert(caseId == 3);
 
                 // No chain.Policy.CertificatePolicy checks, EE uses the mapped policy identifier,
                 // intermediate requires that the EE certs have a policy extension.
@@ -83,7 +70,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     // Windows seems to be the only OS capable of reporting this error.
 
                     yield return ChainPolicyTestCase.Build(
-                        caseId++,
+                        $"NoPolicyCheck/EEUsesMappedPolicyOnly/PolicyRequired/RootInhibit={rootInhibitMapping}",
                         keys,
                         rootInhibitMapping,
                         0,
@@ -94,8 +81,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                             X509ChainStatusFlags.NoError);
                 }
 
-                Debug.Assert(caseId == 6);
-
                 // No chain.Policy.CertificatePolicy checks, EE uses the mapped policy identifier,
                 // intermediate does not require that the EE certs have a policy extension.
                 //
@@ -105,7 +90,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 for (int rootInhibitMapping = 0; rootInhibitMapping <= 2; rootInhibitMapping++)
                 {
                     yield return ChainPolicyTestCase.Build(
-                        caseId++,
+                        $"NoPolicyCheck/EEUsesMappedPolicyOnly/PolicyOptional/RootInhibit={rootInhibitMapping}",
                         keys,
                         rootInhibitMapping,
                         -1,
@@ -113,8 +98,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                         [],
                         X509ChainStatusFlags.NoError);
                 }
-
-                Debug.Assert(caseId == 9);
 
                 // EE uses the mapped policy identifier,
                 // intermediate requires that the EE certs have a policy extension.
@@ -125,7 +108,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 for (int rootInhibitMapping = 0; rootInhibitMapping <= 2; rootInhibitMapping++)
                 {
                     yield return ChainPolicyTestCase.Build(
-                        caseId++,
+                        $"CheckExtraPolicy/EEUsesMappedPolicyAndExtra/PolicyRequired/RootInhibit={rootInhibitMapping}",
                         keys,
                         rootInhibitMapping,
                         0,
@@ -133,8 +116,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                         [ChainPolicyTestCase.PolicyC],
                         X509ChainStatusFlags.NoError);
                 }
-
-                Debug.Assert(caseId == 12);
 
                 // EE uses the mapped policy identifier,
                 // intermediate does not require that the EE certs have a policy extension.
@@ -145,7 +126,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 for (int rootInhibitMapping = 0; rootInhibitMapping <= 2; rootInhibitMapping++)
                 {
                     yield return ChainPolicyTestCase.Build(
-                        caseId++,
+                        $"CheckExtraPolicy/EEUsesMappedPolicyAndExtra/PolicyOptional/RootInhibit={rootInhibitMapping}",
                         keys,
                         rootInhibitMapping,
                         -1,
@@ -153,8 +134,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                         [ChainPolicyTestCase.PolicyC],
                         X509ChainStatusFlags.NoError);
                 }
-
-                Debug.Assert(caseId == 15);
 
                 // EE uses the mapped policy identifier,
                 // intermediate requires that the EE certs have a policy extension.
@@ -165,7 +144,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 for (int rootInhibitMapping = 0; rootInhibitMapping <= 2; rootInhibitMapping++)
                 {
                     yield return ChainPolicyTestCase.Build(
-                        caseId++,
+                        $"CheckMappedPolicy/EEUsesMappedPolicyAndExtra/PolicyRequired/RootInhibit={rootInhibitMapping}",
                         keys,
                         rootInhibitMapping,
                         0,
@@ -175,8 +154,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                             X509ChainStatusFlags.NotValidForUsage :
                             X509ChainStatusFlags.NoError);
                 }
-
-                Debug.Assert(caseId == 18);
 
                 foreach (RSA key in keys)
                 {
@@ -191,7 +168,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             internal const string PolicyB = "1.2.3.4";
             internal const string PolicyC = "2.3.4.5";
 
-            private int _number;
+            private string _name;
             private string[] _eePoliciesToCheck;
 
             internal X509ChainStatusFlags ExpectedFlags { get; private set; }
@@ -232,7 +209,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
 
             internal static ChainPolicyTestCase Build(
-                int number,
+                string name,
                 RSA[] keys,
                 int rootInhibitMapping,
                 int intermediateRequireExplicit,
@@ -275,11 +252,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     endEntityExtensions,
                     [lowImedExtensions, highImedExtensions],
                     rootExtensions,
-                    $"{nameof(ChainPolicyTestCase)}-{number}");
+                    name);
 
                 return new ChainPolicyTestCase
                 {
-                    _number = number,
+                    _name = name,
                     EndEntity = certs[0],
                     LowIntermediate = certs[1],
                     HighIntermediate = certs[2],
@@ -323,7 +300,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
             public override string ToString()
             {
-                return $"CaseID {_number}";
+                return _name;
             }
         }
 
