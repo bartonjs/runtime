@@ -718,7 +718,9 @@ namespace System.Security.Cryptography.X509Certificates
             }
             else
             {
-                CertificatePolicyChain.ErrorVector errors = CertificatePolicyChain.CheckEncodingOnly(elements);
+                CertificatePolicyChain.ErrorVector errors = CertificatePolicyChain.CheckEncodingOnly(
+                    ElementsToCerts(elements),
+                    elements.Length);
 
                 if (errors.Any)
                 {
@@ -982,16 +984,27 @@ namespace System.Security.Cryptography.X509Certificates
             OidCollection? applicationPolicy,
             OidCollection? certificatePolicy)
         {
-            List<X509Certificate2> certsToRead = new List<X509Certificate2>();
+            bool isPartialChain = false;
+            X509ChainElement lastElement = elements[^1];
+            Debug.Assert(lastElement.ChainElementStatus is not null);
 
-            foreach (X509ChainElement element in elements)
+            foreach (X509ChainStatus status in lastElement.ChainElementStatus)
             {
-                certsToRead.Add(element.Certificate);
+                if (status.Status == X509ChainStatusFlags.PartialChain)
+                {
+                    isPartialChain = true;
+                    break;
+                }
             }
 
             CertificatePolicyChain.ErrorVector usageErrors = default;
             CertificatePolicyChain.ErrorVector encodingErrors = default;
-            CertificatePolicyChain policyChain = CertificatePolicyChain.Build(elements, ref encodingErrors);
+
+            CertificatePolicyChain policyChain = CertificatePolicyChain.Build(
+                ElementsToCerts(elements),
+                elements.Length,
+                isPartialChain,
+                ref encodingErrors);
 
             if (certificatePolicy is not null)
             {
@@ -1353,6 +1366,14 @@ namespace System.Security.Cryptography.X509Certificates
             return s_errorStrings.GetOrAdd(
                 code.Code,
                 Interop.Crypto.GetX509VerifyCertErrorString);
+        }
+
+        private static IEnumerable<X509Certificate2> ElementsToCerts(X509ChainElement[] elements)
+        {
+            foreach (X509ChainElement element in elements)
+            {
+                yield return element.Certificate;
+            }
         }
 
         private sealed class WorkingChain : IDisposable

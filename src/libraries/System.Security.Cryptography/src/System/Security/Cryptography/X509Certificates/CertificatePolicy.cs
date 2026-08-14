@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Formats.Asn1;
 using System.Security.Cryptography.X509Certificates.Asn1;
 
@@ -41,24 +42,21 @@ namespace System.Security.Cryptography.X509Certificates
             _policies = new CertificatePolicy[count];
         }
 
-        public CertificatePolicyChain(List<X509Certificate2> chain)
+        internal static CertificatePolicyChain Build(
+            IEnumerable<X509Certificate2> chain,
+            int chainLength,
+            bool isPartialChain,
+            ref ErrorVector extensionErrors)
         {
-            _policies = new CertificatePolicy[chain.Count];
-
-            ReadPolicies(chain);
-        }
-
-        internal static CertificatePolicyChain Build(X509ChainElement[] chain, ref ErrorVector extensionErrors)
-        {
-            CertificatePolicyChain policies = new CertificatePolicyChain(chain.Length);
+            CertificatePolicyChain policies = new CertificatePolicyChain(chainLength);
             bool corruptDeclaredPolicies = false;
             bool ignored = false;
             ref bool detector = ref corruptDeclaredPolicies;
 
-            int rootDepth = chain.Length - 1;
-            // TODO: If chain]rootDepth] has PartialChain, set rootDepth to -1
+            int rootDepth = isPartialChain ? -1 : chainLength - 1;
+            int i = 0;
 
-            for (int i = 0; i < chain.Length; i++)
+            foreach (X509Certificate2 cert in chain)
             {
                 // Windows ignores declared policcy corruption on the root cert.
                 if (i == rootDepth)
@@ -66,32 +64,36 @@ namespace System.Security.Cryptography.X509Certificates
                     detector = ref ignored;
                 }
 
-                policies._policies[i] = ReadPolicy(chain[i].Certificate, out bool error, ref detector);
+                policies._policies[i] = ReadPolicy(cert, out bool error, ref detector);
 
                 if (error)
                 {
                     if (extensionErrors.Uninitialized)
                     {
-                        extensionErrors = new ErrorVector(chain.Length);
+                        extensionErrors = new ErrorVector(chainLength);
                     }
 
                     extensionErrors.Set(i);
                 }
+
+                i++;
             }
 
             policies.ApplyRestrictions();
             policies._failAllCertificatePolicies |= corruptDeclaredPolicies;
 
+            Debug.Assert(i == chainLength);
             return policies;
         }
 
-        internal static ErrorVector CheckEncodingOnly(X509ChainElement[] chain)
+        internal static ErrorVector CheckEncodingOnly(IEnumerable<X509Certificate2> chain, int chainLength)
         {
-            ErrorVector vector = new ErrorVector(chain.Length);
+            ErrorVector vector = new ErrorVector(chainLength);
+            int i = 0;
 
-            for (int i = 0; i < chain.Length; i++)
+            foreach (X509Certificate2 cert in chain)
             {
-                PolicyData policyData = chain[i].Certificate.Pal.GetPolicyData();
+                PolicyData policyData = cert.Pal.GetPolicyData();
 
                 try
                 {
@@ -134,8 +136,11 @@ namespace System.Security.Cryptography.X509Certificates
                 {
                     vector.Set(i);
                 }
+
+                i++;
             }
 
+            Debug.Assert(i == chainLength);
             return vector;
         }
 
@@ -314,16 +319,6 @@ namespace System.Security.Cryptography.X509Certificates
             return true;
         }
 
-        private void ReadPolicies(List<X509Certificate2> chain)
-        {
-            for (int i = 0; i < chain.Count; i++)
-            {
-                _policies[i] = ReadPolicy(chain[i]);
-            }
-
-            ApplyRestrictions();
-        }
-
         private void ApplyRestrictions()
         {
             int explicitPolicyDepth = _policies.Length;
@@ -387,13 +382,6 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 restriction = Math.Min(restriction, policyRestriction.Value);
             }
-        }
-
-        // TODO: Delete this overload.
-        private static CertificatePolicy ReadPolicy(X509Certificate2 cert)
-        {
-            bool ignored = true;
-            return ReadPolicy(cert, out _, ref ignored);
         }
 
         private static CertificatePolicy ReadPolicy(X509Certificate2 cert, out bool error, ref bool corruptDeclaredPolicies)
