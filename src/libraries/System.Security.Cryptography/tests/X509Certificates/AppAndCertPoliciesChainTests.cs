@@ -158,7 +158,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
                 // EE uses the mapped policy identifier,
                 // intermediate requires that the EE certs have a policy extension.
-                // Require that the EE cert is valid for only policy A (which it calls C).
+                // Require that the EE cert is valid for only policy A (which it calls B).
                 //
                 // Since this requires traversing the mapping, it's NotValidForUsage whenever
                 // the mapping was disallowed (inhibit<2).

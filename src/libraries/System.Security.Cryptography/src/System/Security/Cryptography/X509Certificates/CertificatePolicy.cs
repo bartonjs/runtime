@@ -67,6 +67,8 @@ namespace System.Security.Cryptography.X509Certificates
                 }
             }
 
+            policies.ApplyRestrictions();
+
             return policies;
         }
 
@@ -306,18 +308,23 @@ namespace System.Security.Cryptography.X509Certificates
                 _policies[i] = ReadPolicy(chain[i]);
             }
 
-            int explicitPolicyDepth = chain.Count;
+            ApplyRestrictions();
+        }
+
+        private void ApplyRestrictions()
+        {
+            int explicitPolicyDepth = _policies.Length;
             int inhibitAnyPolicyDepth = explicitPolicyDepth;
             int inhibitPolicyMappingDepth = explicitPolicyDepth;
 
-            for (int i = 1; i <= chain.Count; i++)
+            for (int i = 1; i <= _policies.Length; i++)
             {
                 // The loop variable (i) matches the definition in RFC 3280,
                 // section 6.1.3. In that description i=1 is the root CA, and n
                 // is the EE/leaf certificate.  In our chain object 0 is the EE cert
-                // and chain.Count-1 is the root cert.  So we will index things as
-                // chain.Count - i (because i is 1 indexed).
-                int dataIdx = chain.Count - i;
+                // and _policies.Length-1 is for the root cert.  So we will index things as
+                // _policies.Length - i (because i is 1 indexed).
+                int dataIdx = _policies.Length - i;
 
                 CertificatePolicy policy = _policies[dataIdx];
 
