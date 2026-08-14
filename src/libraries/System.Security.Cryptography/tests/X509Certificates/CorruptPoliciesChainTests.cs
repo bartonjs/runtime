@@ -9,53 +9,51 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 {
     public static class CorruptPoliciesChainTests
     {
-        private const int ChainSize = 5;
-
         private const string ApplicationCertPoliciesOid = "1.3.6.1.4.1.311.21.10";
         private const string CabfDvOid = "2.23.140.1.2.1";
         private const string TlsClientAuthOid = "1.3.6.1.5.5.7.3.2";
         private const string TlsServerAuthOid = "1.3.6.1.5.5.7.3.1";
         private const string UnofficialMappedPolicyOid = "1.0.0.127";
 
-        private static X509Extension s_unmappedPolicyExtension =
+        private static readonly X509Extension s_unmappedPolicyExtension =
             DynamicChainTests.BuildPolicyByIdentifiers(CabfDvOid);
 
-        private static X509Extension s_policyMapping =
+        private static readonly X509Extension s_policyMapping =
             DynamicChainTests.BuildPolicyMappings((CabfDvOid, UnofficialMappedPolicyOid));
 
-        private static X509Extension s_mappedPolicyExtension =
+        private static readonly X509Extension s_mappedPolicyExtension =
             DynamicChainTests.BuildPolicyByIdentifiers(UnofficialMappedPolicyOid);
 
-        private static X509Extension s_applicationPolicyExtension =
+        private static readonly X509Extension s_applicationPolicyExtension =
             new X509Extension(
                 ApplicationCertPoliciesOid,
                 DynamicChainTests.EncodeCertificatePoliciesValue(TlsClientAuthOid),
                 critical: false);
 
-        private static X509Extension s_ekuExtension =
+        private static readonly X509Extension s_ekuExtension =
             new X509EnhancedKeyUsageExtension(
                 new OidCollection { new Oid(TlsClientAuthOid, null) },
                 critical: false);
 
-        private static X509Extension s_caTrue =
+        private static readonly X509Extension s_caTrue =
             X509BasicConstraintsExtension.CreateForCertificateAuthority();
 
-        private static X509Extension s_caFalse =
+        private static readonly X509Extension s_caFalse =
             X509BasicConstraintsExtension.CreateForEndEntity();
 
-        private static X509Extension s_corruptPolicies =
+        private static readonly X509Extension s_corruptPolicies =
             new X509Extension(s_unmappedPolicyExtension.Oid, [0x05], critical: false);
 
-        private static X509Extension s_corruptMapping =
+        private static readonly X509Extension s_corruptMapping =
             new X509Extension(s_policyMapping.Oid, [0x04, 0x13], critical: false);
 
-        private static X509Extension s_corruptApplicationPolicy =
+        private static readonly X509Extension s_corruptApplicationPolicy =
             new X509Extension(s_applicationPolicyExtension.Oid, [0x01, 0x00], critical: false);
 
-        private static X509Extension s_corruptEku =
+        private static readonly X509Extension s_corruptEku =
             new X509Extension(s_ekuExtension.Oid, [0x30, 0x11], critical: false);
 
-        private static RSA[] s_keys =
+        private static readonly RSA[] s_keys =
         {
             RSA.Create(),
             RSA.Create(),
